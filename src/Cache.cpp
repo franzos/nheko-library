@@ -14,6 +14,7 @@
 #include <QHash>
 #include <QMap>
 #include <QStandardPaths>
+#include <QDebug>
 
 #if __has_include(<keychain.h>)
 #include <keychain.h>
@@ -219,34 +220,34 @@ Cache::setup()
     auto settings = UserSettings::instance();
 
     nhlog::db()->debug("setting up cache");
-
+    qDebug() << localUserId_;
     // Previous location of the cache directory
-    auto oldCache = QString("%1/%2%3")
-                      .arg(QStandardPaths::writableLocation(QStandardPaths::CacheLocation))
-                      .arg(QString::fromUtf8(localUserId_.toUtf8().toHex()))
-                      .arg(QString::fromUtf8(settings->profile().toUtf8().toHex()));
+    // auto oldCache = QString("%1/%2%3")
+    //                   .arg(QStandardPaths::writableLocation(QStandardPaths::CacheLocation))
+    //                   .arg(QString::fromUtf8(localUserId_.toUtf8().toHex()))
+    //                   .arg(QString::fromUtf8(settings->profile().toUtf8().toHex()));
 
     cacheDirectory_ = QString("%1/%2%3")
                         .arg(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
                         .arg(QString::fromUtf8(localUserId_.toUtf8().toHex()))
                         .arg(QString::fromUtf8(settings->profile().toUtf8().toHex()));
-
     bool isInitial = !QFile::exists(cacheDirectory_);
+    qDebug() << cacheDirectory_;
 
     // NOTE: If both cache directories exist it's better to do nothing: it
     // could mean a previous migration failed or was interrupted.
-    bool needsMigration = isInitial && QFile::exists(oldCache);
+    // bool needsMigration = isInitial && QFile::exists(oldCache);
 
-    if (needsMigration) {
-        nhlog::db()->info("found old state directory, migrating");
-        if (!QDir().rename(oldCache, cacheDirectory_)) {
-            throw std::runtime_error(("Unable to migrate the old state directory (" + oldCache +
-                                      ") to the new location (" + cacheDirectory_ + ")")
-                                       .toStdString()
-                                       .c_str());
-        }
-        nhlog::db()->info("completed state migration");
-    }
+    // if (needsMigration) {
+    //     nhlog::db()->info("found old state directory, migrating");
+    //     if (!QDir().rename(oldCache, cacheDirectory_)) {
+    //         throw std::runtime_error(("Unable to migrate the old state directory (" + oldCache +
+    //                                   ") to the new location (" + cacheDirectory_ + ")")
+    //                                    .toStdString()
+    //                                    .c_str());
+    //     }
+    //     nhlog::db()->info("completed state migration");
+    // }
 
     env_ = lmdb::env::create();
     env_.set_mapsize(DB_SIZE);
@@ -353,7 +354,6 @@ Cache::loadSecrets(std::vector<std::pair<std::string, bool>> toLoad)
         emit databaseReady();
         return;
     }
-
     auto [name_, internal] = toLoad.front();
 
     auto job = new QKeychain::ReadPasswordJob(QCoreApplication::applicationName());
@@ -4680,6 +4680,7 @@ init(const QString &user_id)
     qRegisterMetaType<std::map<QString, RoomInfo>>();
     qRegisterMetaType<std::map<QString, mtx::responses::Timeline>>();
     qRegisterMetaType<mtx::responses::QueryKeys>();
+    nhlog::init("px-matrix-client-library");
 
     instance_ = std::make_unique<Cache>(user_id);
 }

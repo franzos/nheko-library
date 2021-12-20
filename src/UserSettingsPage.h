@@ -5,34 +5,19 @@
 
 #pragma once
 
-// #include <QFontDatabase>
-// #include <QFrame>
 #include <QProcessEnvironment>
 #include <QSettings>
 #include <QSharedPointer>
-// #include <QWidget>
 
-// #include "JdenticonProvider.h"
 #include <optional>
 
 class Toggle;
-// class QLabel;
-// class QFormLayout;
-// class QComboBox;
-// class QFontComboBox;
-// class QSpinBox;
-// class QHBoxLayout;
-// class QVBoxLayout;
-
-constexpr int OptionMargin       = 6;
-constexpr int LayoutTopMargin    = 50;
-constexpr int LayoutBottomMargin = LayoutTopMargin;
 
 class UserSettings : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
+    // Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY themeChanged)
     Q_PROPERTY(bool messageHoverHighlight READ messageHoverHighlight WRITE setMessageHoverHighlight
                  NOTIFY messageHoverHighlightChanged)
     Q_PROPERTY(bool enlargeEmojiOnlyMessages READ enlargeEmojiOnlyMessages WRITE
@@ -103,8 +88,6 @@ class UserSettings : public QObject
     Q_PROPERTY(QString homeserver READ homeserver WRITE setHomeserver NOTIFY homeserverChanged)
     Q_PROPERTY(bool disableCertificateValidation READ disableCertificateValidation WRITE
                  setDisableCertificateValidation NOTIFY disableCertificateValidationChanged)
-    // Q_PROPERTY(bool useIdenticon READ useIdenticon WRITE setUseIdenticon NOTIFY useIdenticonChanged)
-
     UserSettings();
 
 public:
@@ -124,8 +107,6 @@ public:
 
     void save();
     void load(std::optional<QString> profile);
-    void applyTheme();
-    void setTheme(QString theme);
     void setMessageHoverHighlight(bool state);
     void setEnlargeEmojiOnlyMessages(bool state);
     void setTray(bool state);
@@ -173,7 +154,6 @@ public:
     void setHiddenTags(QStringList hiddenTags);
     void setUseIdenticon(bool state);
 
-    QString theme() const { return !theme_.isEmpty() ? theme_ : defaultTheme_; }
     bool messageHoverHighlight() const { return messageHoverHighlight_; }
     bool enlargeEmojiOnlyMessages() const { return enlargeEmojiOnlyMessages_; }
     bool tray() const { return tray_; }
@@ -227,12 +207,10 @@ public:
     QString homeserver() const { return homeserver_; }
     bool disableCertificateValidation() const { return disableCertificateValidation_; }
     QStringList hiddenTags() const { return hiddenTags_; }
-    // bool useIdenticon() const { return useIdenticon_ && JdenticonProvider::isAvailable(); }
 
 signals:
     void groupViewStateChanged(bool state);
     void roomSortingChanged(bool state);
-    void themeChanged(QString state);
     void messageHoverHighlightChanged(bool state);
     void enlargeEmojiOnlyMessagesChanged(bool state);
     void trayChanged(bool state);
@@ -278,12 +256,6 @@ signals:
     void useIdenticonChanged(bool state);
 
 private:
-    // Default to system theme if QT_QPA_PLATFORMTHEME var is set.
-    QString defaultTheme_ =
-      QProcessEnvironment::systemEnvironment().value("QT_QPA_PLATFORMTHEME", "").isEmpty()
-        ? "light"
-        : "system";
-    QString theme_;
     bool messageHoverHighlight_;
     bool enlargeEmojiOnlyMessages_;
     bool tray_;
@@ -335,90 +307,3 @@ private:
 
     static QSharedPointer<UserSettings> instance_;
 };
-
-// class HorizontalLine : public QFrame
-// {
-//     Q_OBJECT
-
-// public:
-//     HorizontalLine(QWidget *parent = nullptr);
-// };
-
-// class UserSettingsPage : public QWidget
-// {
-//     Q_OBJECT
-
-// public:
-//     UserSettingsPage(QSharedPointer<UserSettings> settings, QWidget *parent = nullptr);
-
-// protected:
-//     void showEvent(QShowEvent *event) override;
-//     void paintEvent(QPaintEvent *event) override;
-
-// signals:
-//     void moveBack();
-//     void trayOptionChanged(bool value);
-//     void themeChanged();
-//     void decryptSidebarChanged();
-
-// public slots:
-//     void updateSecretStatus();
-
-// private slots:
-//     void importSessionKeys();
-//     void exportSessionKeys();
-
-// private:
-//     // Layouts
-//     QVBoxLayout *topLayout_;
-//     QHBoxLayout *topBarLayout_;
-//     QFormLayout *formLayout_;
-
-//     // Shared settings object.
-//     QSharedPointer<UserSettings> settings_;
-
-//     Toggle *trayToggle_;
-//     Toggle *startInTrayToggle_;
-//     Toggle *groupViewToggle_;
-//     Toggle *timelineButtonsToggle_;
-//     Toggle *typingNotifications_;
-//     Toggle *messageHoverHighlight_;
-//     Toggle *enlargeEmojiOnlyMessages_;
-//     Toggle *sortByImportance_;
-//     Toggle *readReceipts_;
-//     Toggle *markdown_;
-//     Toggle *animateImagesOnHover_;
-//     Toggle *desktopNotifications_;
-//     Toggle *alertOnNotification_;
-//     Toggle *avatarCircles_;
-//     Toggle *useIdenticon_;
-//     Toggle *useStunServer_;
-//     Toggle *decryptSidebar_;
-//     Toggle *privacyScreen_;
-//     QSpinBox *privacyScreenTimeout_;
-//     Toggle *shareKeysWithTrustedUsers_;
-//     Toggle *onlyShareKeysWithVerifiedUsers_;
-//     Toggle *useOnlineKeyBackup_;
-//     Toggle *mobileMode_;
-//     QLabel *deviceFingerprintValue_;
-//     QLabel *deviceIdValue_;
-//     QLabel *backupSecretCached;
-//     QLabel *masterSecretCached;
-//     QLabel *selfSigningSecretCached;
-//     QLabel *userSigningSecretCached;
-
-//     QComboBox *themeCombo_;
-//     QComboBox *scaleFactorCombo_;
-//     QComboBox *fontSizeCombo_;
-//     QFontComboBox *fontSelectionCombo_;
-//     QComboBox *emojiFontSelectionCombo_;
-//     QComboBox *ringtoneCombo_;
-//     QComboBox *microphoneCombo_;
-//     QComboBox *cameraCombo_;
-//     QComboBox *cameraResolutionCombo_;
-//     QComboBox *cameraFrameRateCombo_;
-
-//     QSpinBox *timelineMaxWidthSpin_;
-
-//     int sideMargin_ = 0;
-// };

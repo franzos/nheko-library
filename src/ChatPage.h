@@ -17,7 +17,6 @@
 #include <mtx/events/presence.hpp>
 #include <mtx/secret_storage.hpp>
 
-#include <QHBoxLayout>
 #include <QMap>
 #include <QPoint>
 #include <QTimer>
@@ -78,8 +77,6 @@ public:
     QString currentRoom() const;
 
 public slots:
-    bool handleMatrixUri(const QByteArray &uri);
-    bool handleMatrixUri(const QUrl &uri);
 
     void startChat(QString userid);
     void leaveRoom(const QString &room_id);
@@ -189,7 +186,6 @@ private:
     using Memberships = std::map<std::string, Membership>;
 
     void loadStateFromCache();
-    void resetUI();
 
     template<class Collection>
     Memberships getMemberships(const std::vector<Collection> &events) const;
@@ -199,8 +195,6 @@ private:
 
     template<typename T>
     void connectCallMessage();
-
-    QHBoxLayout *topLayout_;
 
     // TimelineViewManager *view_manager_;
 

@@ -625,19 +625,19 @@ utils::getQuoteBody(const RelatedInfo &related)
     }
 }
 
-QString
-utils::linkColor()
-{
-    const auto theme = UserSettings::instance()->theme();
+// QString
+// utils::linkColor()
+// {
+//     const auto theme = UserSettings::instance()->theme();
 
-    if (theme == "light") {
-        return "#0077b5";
-    } else if (theme == "dark") {
-        return "#38A3D8";
-    } else {
-        return QPalette().color(QPalette::Link).name();
-    }
-}
+//     if (theme == "light") {
+//         return "#0077b5";
+//     } else if (theme == "dark") {
+//         return "#38A3D8";
+//     } else {
+//         return QPalette().color(QPalette::Link).name();
+//     }
+// }
 
 uint32_t
 utils::hashQString(const QString &input)

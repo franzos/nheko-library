@@ -267,8 +267,8 @@ QString
 getQuoteBody(const RelatedInfo &related);
 
 //! Retrieve the color of the links based on the current theme.
-QString
-linkColor();
+// QString
+// linkColor();
 
 //! Returns the hash code of the input QString
 uint32_t

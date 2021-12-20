@@ -8,29 +8,17 @@
 #include <QMessageBox>
 #include <QUrl>
 #include <mtx/responses.hpp>
-
+#include <QDebug>
 #include "AvatarProvider.h"
 #include "Cache.h"
 #include "Cache_p.h"
 #include "ChatPage.h"
 #include "EventAccessors.h"
 #include "Logging.h"
-// #include "MainWindow.h"
 #include "MatrixClient.h"
 #include "UserSettingsPage.h"
 #include "Utils.h"
-// #include "encryption/DeviceVerificationFlow.h"
 #include "encryption/Olm.h"
-// #include "ui/OverlayModal.h"
-// #include "ui/Theme.h"
-// #include "ui/UserProfile.h"
-// #include "voip/CallManager.h"
-
-// #include "notifications/Manager.h"
-
-// #include "timeline/TimelineViewManager.h"
-
-// #include "blurhash.hpp"
 
 ChatPage *ChatPage::instance_             = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
@@ -47,11 +35,9 @@ ChatPage::ChatPage(QSharedPointer<UserSettings> userSettings, QWidget *parent)
   : QWidget(parent)
   , isConnected_(true)
   , userSettings_{userSettings}
-//   , notificationsManager(this)
-//   , callManager_(new CallManager(this))
 {
+    http::init();
     setObjectName("chatPage");
-
     instance_ = this;
 
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
@@ -59,14 +45,6 @@ ChatPage::ChatPage(QSharedPointer<UserSettings> userSettings, QWidget *parent)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
-
-    topLayout_ = new QHBoxLayout(this);
-    topLayout_->setSpacing(0);
-    topLayout_->setMargin(0);
-
-    // view_manager_ = new TimelineViewManager(callManager_, this);
-
-    // topLayout_->addWidget(view_manager_->getWidget());
 
     connect(this,
             &ChatPage::downloadedSecrets,
@@ -146,47 +124,8 @@ ChatPage::ChatPage(QSharedPointer<UserSettings> userSettings, QWidget *parent)
                     nhlog::db()->error("failed to save mentions: {}", e.what());
                 }
             });
-
-    // connect(&notificationsManager,
-    //         &NotificationsManager::notificationClicked,
-    //         this,
-    //         [this](const QString &roomid, const QString &eventid) {
-    //             Q_UNUSED(eventid)
-    //             view_manager_->rooms()->setCurrentRoom(roomid);
-    //             activateWindow();
-    //         });
-    // connect(&notificationsManager,
-    //         &NotificationsManager::sendNotificationReply,
-    //         this,
-    //         [this](const QString &roomid, const QString &eventid, const QString &body) {
-    //             view_manager_->rooms()->setCurrentRoom(roomid);
-    //             view_manager_->queueReply(roomid, eventid, body);
-    //             activateWindow();
-    //         });
-
-    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
-        // ensure the qml context is shutdown before we destroy all other singletons
-        // Otherwise Qml will try to access the room list or settings, after they have been
-        // destroyed
-        // topLayout_->removeWidget(view_manager_->getWidget());
-        // delete view_manager_->getWidget();
-    });
-
-    // connect(
-    //   this,
-    //   &ChatPage::initializeViews,
-    //   view_manager_,
-    //   [this](const mtx::responses::Rooms &rooms) { view_manager_->sync(rooms); },
-    //   Qt::QueuedConnection);
-    // connect(this,
-    //         &ChatPage::initializeEmptyViews,
-    //         view_manager_,
-    //         &TimelineViewManager::initializeRoomlist);
-    // connect(
-    //   this, &ChatPage::chatFocusChanged, view_manager_, &TimelineViewManager::chatFocusChanged);
     connect(this, &ChatPage::syncUI, this, [this](const mtx::responses::Rooms &rooms) {
         // view_manager_->sync(rooms);
-
         static unsigned int prevNotificationCount = 0;
         unsigned int notificationCount            = 0;
         for (const auto &room : rooms.join) {
@@ -247,7 +186,6 @@ ChatPage::ChatPage(QSharedPointer<UserSettings> userSettings, QWidget *parent)
 void
 ChatPage::logout()
 {
-    resetUI();
     deleteConfigs();
 
     emit closing();
@@ -258,22 +196,10 @@ void
 ChatPage::dropToLoginPage(const QString &msg)
 {
     nhlog::ui()->info("dropping to the login page: {}", msg.toStdString());
-
     http::client()->shutdown();
     connectivityTimer_.stop();
-
-    resetUI();
     deleteConfigs();
-
     emit showLoginPage(msg);
-}
-
-void
-ChatPage::resetUI()
-{
-    // view_manager_->clearAll();
-
-    emit unreadMessages(0);
 }
 
 void
@@ -315,8 +241,8 @@ ChatPage::bootstrap(QString userid, QString homeserver, QString token)
 
     try {
         cache::init(userid);
-
-        connect(cache::client(), &Cache::databaseReady, this, [this]() {
+        auto p = cache::client();
+        connect(p, &Cache::databaseReady, this, [this]() {
             nhlog::db()->info("database ready");
 
             const bool isInitialized = cache::isInitialized();
@@ -329,27 +255,14 @@ ChatPage::bootstrap(QString userid, QString homeserver, QString token)
                     if (cacheVersion == cache::CacheVersion::Current) {
                         loadStateFromCache();
                         return;
-                    } else if (cacheVersion == cache::CacheVersion::Older) {
-                        if (!cache::runMigrations()) {
-                            QMessageBox::critical(
-                              this,
-                              tr("Cache migration failed!"),
-                              tr("Migrating the cache to the current version failed. "
-                                 "This can have different reasons. Please open an "
-                                 "issue and try to use an older version in the mean "
-                                 "time. Alternatively you can try deleting the cache "
-                                 "manually."));
-                            QCoreApplication::quit();
-                        }
-                        loadStateFromCache();
-                        return;
                     } else if (cacheVersion == cache::CacheVersion::Newer) {
-                        QMessageBox::critical(
-                          this,
-                          tr("Incompatible cache version"),
-                          tr("The cache on your disk is newer than this version of Nheko "
-                             "supports. Please update Nheko or clear your cache."));
-                        QCoreApplication::quit();
+                        // TODO
+                        // QMessageBox::critical(
+                        //   this,
+                        //   tr("Incompatible cache version"),
+                        //   tr("The cache on your disk is newer than this version of Nheko "
+                        //      "supports. Please update Nheko or clear your cache."));
+                        // QCoreApplication::quit();
                         return;
                     }
                 }
@@ -372,8 +285,6 @@ ChatPage::bootstrap(QString userid, QString homeserver, QString token)
             getProfileInfo();
             getBackupVersion();
             tryInitialSync();
-            // callManager_->refreshTurnServer();
-            // emit MainWindow::instance()->reload();
         });
 
         // connect(cache::client(),
@@ -1257,150 +1168,6 @@ mxidFromSegments(QStringRef sigil, QStringRef mxid)
     } else {
         return "";
     }
-}
-
-bool
-ChatPage::handleMatrixUri(const QByteArray &uri)
-{
-    // nhlog::ui()->info("Received uri! {}", uri.toStdString());
-    // QUrl uri_{QString::fromUtf8(uri)};
-
-    // // Convert matrix.to URIs to proper format
-    // if (uri_.scheme() == "https" && uri_.host() == "matrix.to") {
-    //     QString p = uri_.fragment(QUrl::FullyEncoded);
-    //     if (p.startsWith("/"))
-    //         p.remove(0, 1);
-
-    //     auto temp = p.split("?");
-    //     QString query;
-    //     if (temp.size() >= 2)
-    //         query = QUrl::fromPercentEncoding(temp.takeAt(1).toUtf8());
-
-    //     temp            = temp.first().split("/");
-    //     auto identifier = QUrl::fromPercentEncoding(temp.takeFirst().toUtf8());
-    //     QString eventId = QUrl::fromPercentEncoding(temp.join('/').toUtf8());
-    //     if (!identifier.isEmpty()) {
-    //         if (identifier.startsWith("@")) {
-    //             QByteArray newUri = "matrix:u/" + QUrl::toPercentEncoding(identifier.remove(0, 1));
-    //             if (!query.isEmpty())
-    //                 newUri.append("?" + query.toUtf8());
-    //             return handleMatrixUri(QUrl::fromEncoded(newUri));
-    //         } else if (identifier.startsWith("#")) {
-    //             QByteArray newUri = "matrix:r/" + QUrl::toPercentEncoding(identifier.remove(0, 1));
-    //             if (!eventId.isEmpty())
-    //                 newUri.append("/e/" + QUrl::toPercentEncoding(eventId.remove(0, 1)));
-    //             if (!query.isEmpty())
-    //                 newUri.append("?" + query.toUtf8());
-    //             return handleMatrixUri(QUrl::fromEncoded(newUri));
-    //         } else if (identifier.startsWith("!")) {
-    //             QByteArray newUri =
-    //               "matrix:roomid/" + QUrl::toPercentEncoding(identifier.remove(0, 1));
-    //             if (!eventId.isEmpty())
-    //                 newUri.append("/e/" + QUrl::toPercentEncoding(eventId.remove(0, 1)));
-    //             if (!query.isEmpty())
-    //                 newUri.append("?" + query.toUtf8());
-    //             return handleMatrixUri(QUrl::fromEncoded(newUri));
-    //         }
-    //     }
-    // }
-
-    // // non-matrix URIs are not handled by us, return false
-    // if (uri_.scheme() != "matrix")
-    //     return false;
-
-    // auto tempPath = uri_.path(QUrl::ComponentFormattingOption::FullyEncoded);
-    // if (tempPath.startsWith('/'))
-    //     tempPath.remove(0, 1);
-    // auto segments = tempPath.splitRef('/');
-
-    // if (segments.size() != 2 && segments.size() != 4)
-    //     return false;
-
-    // auto sigil1 = segments[0];
-    // auto mxid1  = mxidFromSegments(sigil1, segments[1]);
-    // if (mxid1.isEmpty())
-    //     return false;
-
-    // QString mxid2;
-    // if (segments.size() == 4 && segments[2] == "e") {
-    //     if (segments[3].isEmpty())
-    //         return false;
-    //     else
-    //         mxid2 = "$" + QUrl::fromPercentEncoding(segments[3].toUtf8());
-    // }
-
-    // std::vector<std::string> vias;
-    // QString action;
-
-    // for (QString item : uri_.query(QUrl::ComponentFormattingOption::FullyEncoded).split('&')) {
-    //     nhlog::ui()->info("item: {}", item.toStdString());
-
-    //     if (item.startsWith("action=")) {
-    //         action = item.remove("action=");
-    //     } else if (item.startsWith("via=")) {
-    //         vias.push_back(QUrl::fromPercentEncoding(item.remove("via=").toUtf8()).toStdString());
-    //     }
-    // }
-
-    // if (sigil1 == "u") {
-    //     if (action.isEmpty()) {
-    //         auto t = view_manager_->rooms()->currentRoom();
-    //         if (t && cache::isRoomMember(mxid1.toStdString(), t->roomId().toStdString())) {
-    //             t->openUserProfile(mxid1);
-    //             return true;
-    //         }
-    //         emit view_manager_->openGlobalUserProfile(mxid1);
-    //     } else if (action == "chat") {
-    //         this->startChat(mxid1);
-    //     }
-    //     return true;
-    // } else if (sigil1 == "roomid") {
-    //     auto joined_rooms = cache::joinedRooms();
-    //     auto targetRoomId = mxid1.toStdString();
-
-    //     for (auto roomid : joined_rooms) {
-    //         if (roomid == targetRoomId) {
-    //             view_manager_->rooms()->setCurrentRoom(mxid1);
-    //             if (!mxid2.isEmpty())
-    //                 view_manager_->showEvent(mxid1, mxid2);
-    //             return true;
-    //         }
-    //     }
-
-    //     if (action == "join" || action.isEmpty()) {
-    //         joinRoomVia(targetRoomId, vias);
-    //         return true;
-    //     }
-    //     return false;
-    // } else if (sigil1 == "r") {
-    //     auto joined_rooms    = cache::joinedRooms();
-    //     auto targetRoomAlias = mxid1.toStdString();
-
-    //     for (auto roomid : joined_rooms) {
-    //         auto aliases = cache::client()->getRoomAliases(roomid);
-    //         if (aliases) {
-    //             if (aliases->alias == targetRoomAlias) {
-    //                 view_manager_->rooms()->setCurrentRoom(QString::fromStdString(roomid));
-    //                 if (!mxid2.isEmpty())
-    //                     view_manager_->showEvent(QString::fromStdString(roomid), mxid2);
-    //                 return true;
-    //             }
-    //         }
-    //     }
-
-    //     if (action == "join" || action.isEmpty()) {
-    //         joinRoomVia(mxid1.toStdString(), vias);
-    //         return true;
-    //     }
-    //     return false;
-    // }
-    return false;
-}
-
-bool
-ChatPage::handleMatrixUri(const QUrl &uri)
-{
-    return handleMatrixUri(uri.toString(QUrl::ComponentFormattingOption::FullyEncoded).toUtf8());
 }
 
 bool
