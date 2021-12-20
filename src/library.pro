@@ -5,8 +5,11 @@ LIBS += -lSQLiteCpp
 
 message(" * Building the px-matrix-client-library")
 
-HEADERS = dummy.h
-SOURCES = dummy.cpp
+HEADERS = Login.h \
+        MatrixClient.h
+
+SOURCES = Login.cpp \
+         MatrixClient.cpp
 
 TEMPLATE = lib
 TARGET = px-matrix-client-library
