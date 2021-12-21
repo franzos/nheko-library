@@ -145,10 +145,8 @@ set(DEP_LIBS
 	qt5keychain
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
-	liblmdb::lmdb
-	PkgConfig::coeurl)
+	liblmdb::lmdb)
 
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
 
