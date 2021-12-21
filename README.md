@@ -27,9 +27,17 @@ The `examples` won't be built as default, so you can run `qmake` as follow to bu
 qmake -config BUILD_EXAMPLES ..
 ```
 
+```bash
+cmake -DBUILD_EXAMPLES=ON ..
+```
+
 **2.** Building without `tests`
-The `tests` will be built as default, so you can run `qmake` as follow to disable the building the tests:
+The `tests` won't be built as default, so you can run `qmake` as follow to enable the building the tests:
 
 ```bash
-qmake -config DONT_BUILD_TESTS ..
+qmake -config BUILD_TESTS ..
+```
+
+```bash
+cmake -DBUILD_TESTS=ON ..
 ```
