@@ -40,12 +40,12 @@ if (NOT CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wshadow")
 endif()
 
-set(SPDLOG_DEBUG_ON false)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	set(SPDLOG_DEBUG_ON true)
+    add_definitions(-DSPDLOG_DEBUG_ON)	
+	message("Build in Debug Mode (Debug Log is Active)")
 else()
-	set(SPDLOG_DEBUG_ON false)
+	message("Build in Release Mode (Debug Log is Disable)")
 endif()
 
 #
@@ -129,7 +129,7 @@ pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
-	add_executable(nheko examples/example.cpp)
+	add_executable(nheko examples/profileInfo.cpp)
 	target_link_libraries(nheko px-matrix-client-library)
 ENDIF()
 

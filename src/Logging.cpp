@@ -16,13 +16,13 @@ std::shared_ptr<spdlog::logger> db_logger     = nullptr;
 std::shared_ptr<spdlog::logger> net_logger    = nullptr;
 std::shared_ptr<spdlog::logger> crypto_logger = nullptr;
 std::shared_ptr<spdlog::logger> ui_logger     = nullptr;
-std::shared_ptr<spdlog::logger> qml_logger    = nullptr;
+std::shared_ptr<spdlog::logger> dev_logger    = nullptr;
 
 constexpr auto MAX_FILE_SIZE = 1024 * 1024 * 6;
 constexpr auto MAX_LOG_FILES = 3;
 
 void
-qmlMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+devMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     std::string localMsg = msg.toStdString();
     const char *file     = context.file ? context.file : "";
@@ -38,26 +38,30 @@ qmlMessageHandler(QtMsgType type, const QMessageLogContext &context, const QStri
 
     switch (type) {
     case QtDebugMsg:
-        nhlog::qml()->debug("{} ({}:{}, {})", localMsg, file, context.line, function);
+        nhlog::dev()->debug("{} ({}:{}, {})", localMsg, file, context.line, function);
         break;
     case QtInfoMsg:
-        nhlog::qml()->info("{} ({}:{}, {})", localMsg, file, context.line, function);
+        nhlog::dev()->info("{} ({}:{}, {})", localMsg, file, context.line, function);
         break;
     case QtWarningMsg:
-        nhlog::qml()->warn("{} ({}:{}, {})", localMsg, file, context.line, function);
+        nhlog::dev()->warn("{} ({}:{}, {})", localMsg, file, context.line, function);
         break;
     case QtCriticalMsg:
-        nhlog::qml()->critical("{} ({}:{}, {})", localMsg, file, context.line, function);
+        nhlog::dev()->critical("{} ({}:{}, {})", localMsg, file, context.line, function);
         break;
     case QtFatalMsg:
-        nhlog::qml()->critical("{} ({}:{}, {})", localMsg, file, context.line, function);
+        nhlog::dev()->critical("{} ({}:{}, {})", localMsg, file, context.line, function);
         break;
     }
 }
 }
 
 namespace nhlog {
+#if SPDLOG_DEBUG_ON
+bool enable_debug_log_from_commandline = true;
+#else
 bool enable_debug_log_from_commandline = false;
+#endif
 
 void
 init(const std::string &file_path)
@@ -75,17 +79,17 @@ init(const std::string &file_path)
     ui_logger     = std::make_shared<spdlog::logger>("ui", std::begin(sinks), std::end(sinks));
     db_logger     = std::make_shared<spdlog::logger>("db", std::begin(sinks), std::end(sinks));
     crypto_logger = std::make_shared<spdlog::logger>("crypto", std::begin(sinks), std::end(sinks));
-    qml_logger    = std::make_shared<spdlog::logger>("qml", std::begin(sinks), std::end(sinks));
+    dev_logger    = std::make_shared<spdlog::logger>("dev", std::begin(sinks), std::end(sinks));
 
     if (enable_debug_log_from_commandline) {
         db_logger->set_level(spdlog::level::trace);
         ui_logger->set_level(spdlog::level::trace);
         crypto_logger->set_level(spdlog::level::trace);
         net_logger->set_level(spdlog::level::trace);
-        qml_logger->set_level(spdlog::level::trace);
+        dev_logger->set_level(spdlog::level::trace);
     }
 
-    qInstallMessageHandler(qmlMessageHandler);
+    qInstallMessageHandler(devMessageHandler);
 }
 
 std::shared_ptr<spdlog::logger>
@@ -113,8 +117,8 @@ crypto()
 }
 
 std::shared_ptr<spdlog::logger>
-qml()
+dev()
 {
-    return qml_logger;
+    return dev_logger;
 }
 }

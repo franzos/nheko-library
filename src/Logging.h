@@ -24,7 +24,7 @@ std::shared_ptr<spdlog::logger>
 crypto();
 
 std::shared_ptr<spdlog::logger>
-qml();
+dev();
 
 extern bool enable_debug_log_from_commandline;
 }
