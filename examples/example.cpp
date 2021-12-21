@@ -8,8 +8,6 @@
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
-    // UserSettings::initialize(std::nullopt);
-    
     auto client = new PxMatrixClient();
     QObject::connect(client, &PxMatrixClient::userDisplayNameReady,[](const QString &name){
         qDebug() << "User Display Name: " << name;

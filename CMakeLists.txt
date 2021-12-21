@@ -109,7 +109,7 @@ set(PX_MATRIX_LIB_DEPS
 
 add_library (px-matrix-client-library ${PX_MATRIX_LIB_DEPS})
 
-if (HAVE_BACKTRACE_SYMBOLS_FD AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
 	set_target_properties(px-matrix-client-library PROPERTIES ENABLE_EXPORTS ON)
 endif()
 

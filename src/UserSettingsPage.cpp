@@ -14,7 +14,6 @@
 #include "Utils.h"
 #include "encryption/Olm.h"
 
-#include "config/nheko.h"
 
 QSharedPointer<UserSettings> UserSettings::instance_;
 
