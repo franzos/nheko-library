@@ -4,7 +4,7 @@
 #include <QObject>
 #include "MatrixClient.h"
 
-class Login{
+class Login: public QObject{
  Q_OBJECT
 
 public:
@@ -12,15 +12,10 @@ public:
     bool hasValidUser();
     mtx::responses::Login userInformation();
 
-
 signals:
     void loginOk(const mtx::responses::Login &res);
     void errorOccurred(std::string &msg);
-
-
-Private:
-
-
+    
 };
 
 

@@ -1,4 +1,7 @@
 #include "Login.h"
+#include <mtx/identifiers.hpp>
+#include <mtx/requests.hpp>
+#include <mtx/responses/login.hpp>
 
 void Login::loginProcess(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
         http::client()->set_server(serverAddress);
@@ -9,9 +12,11 @@ void Login::loginProcess(std::string deviceName, std::string userId, std::string
           [this](const mtx::responses::Login &res, mtx::http::RequestErr err) {
               if (err) {
                   auto error = err->matrix_error.error;
-                  if (error.empty())
-                      error = err->parse_error;
-                  emit errorOccurred(std::string(error));
+                  if (error.empty()){            
+                        error = err->parse_error;
+                  }
+                  std::string s = std::string (error);
+                  emit errorOccurred(s);
                   return;
               }
 
@@ -34,7 +39,7 @@ void Login::loginProcess(std::string deviceName, std::string userId, std::string
     //         http::client()->set_device_id("device_id.toStdString()");
     //         return true;
     // }
-    return false  
+    return false; 
  }
 
   mtx::responses::Login Login::userInformation(){
