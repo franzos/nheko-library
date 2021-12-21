@@ -1042,7 +1042,7 @@ handle_key_request_message(const mtx::events::DeviceEvent<mtx::events::msg::KeyR
     bool verifiedDevice     = false;
     if (verificationStatus &&
         // Share keys, if the option to share with trusted users is enabled or with yourself
-        (PxMatrixClient::instance()->userSettings()->shareKeysWithTrustedUsers() ||
+        (PxMatrixClient::instance()->userSettings()->shareKeysWithTrustedUsers() || 
          req.sender == http::client()->user_id().to_string())) {
         for (const auto &dev : verificationStatus->verified_devices) {
             if (dev == req.content.requesting_device_id) {

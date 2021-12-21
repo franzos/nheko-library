@@ -5,8 +5,8 @@ BUILD_EXAMPLES {
     SUBDIRS +=  examples/examples.pro 
 }
 
-DONT_BUILD_TESTS {
-    message(" * Building without tests")
-} else {
+BUILD_TESTS {
     SUBDIRS +=  tests/tests.pro
+} else {
+    message(" * Building without tests")
 }
