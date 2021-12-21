@@ -41,3 +41,6 @@ qmake -config BUILD_TESTS ..
 ```bash
 cmake -DBUILD_TESTS=ON ..
 ```
+
+#### Documents
+* [Client](./docs/Client.md)

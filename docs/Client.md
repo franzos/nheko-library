@@ -2,6 +2,8 @@
 ### Get Display Name and Avatar
 
 ```cpp
+    #include "PxMatrixClient.h"
+    ...
     auto client = new PxMatrixClient();
     QObject::connect(client, &PxMatrixClient::userDisplayNameReady,[](const QString &name){
         qDebug() << "User Display Name: " << name;
