@@ -6,7 +6,6 @@
 
 #include <QApplication>
 #include <QBuffer>
-#include <QComboBox>
 #include <QDesktopWidget>
 #include <QGuiApplication>
 #include <QImageReader>
@@ -15,7 +14,6 @@
 #include <QSettings>
 #include <QStringBuilder>
 #include <QTextBoundaryFinder>
-#include <QTextDocument>
 #include <QXmlStreamReader>
 
 #include <array>
@@ -780,17 +778,6 @@ utils::centerWidget(QWidget *widget, QWidget *parent)
 
     // Deprecated in 5.13: widget->move(findCenter(QApplication::desktop()->screenGeometry()));
     widget->move(findCenter(QGuiApplication::primaryScreen()->geometry()));
-}
-
-void
-utils::restoreCombobox(QComboBox *combo, const QString &value)
-{
-    for (auto i = 0; i < combo->count(); ++i) {
-        if (value == combo->itemText(i)) {
-            combo->setCurrentIndex(i);
-            break;
-        }
-    }
 }
 
 QImage

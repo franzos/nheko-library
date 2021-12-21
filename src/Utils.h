@@ -23,8 +23,6 @@ QString
 displayName(const QString &room_id, const QString &user_id);
 }
 
-class QComboBox;
-
 // Contains information about related events for
 // outgoing messages
 struct RelatedInfo
@@ -290,9 +288,6 @@ luminance(const QColor &col);
 //! Center a widget in relation to another widget.
 void
 centerWidget(QWidget *widget, QWidget *parent);
-
-void
-restoreCombobox(QComboBox *combo, const QString &value);
 
 //! Read image respecting exif orientation
 QImage

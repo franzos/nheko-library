@@ -77,7 +77,7 @@ set(SRC_FILES
 	src/encryption/Olm.cpp
 	src/AvatarProvider.cpp
 	src/Cache.cpp
-	src/ChatPage.cpp
+	src/PxMatrixClient.cpp
 	src/EventAccessors.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
@@ -119,7 +119,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/AvatarProvider.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
-	src/ChatPage.h
+	src/PxMatrixClient.h
 	src/UserSettingsPage.h
 )
 
@@ -141,9 +141,7 @@ set(DEP_LIBS
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Widgets
-	Qt5::Concurrent
 	Qt5::QuickControls2
-	Qt5::QuickWidgets
 	qt5keychain
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
@@ -154,5 +152,5 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
 
-add_executable(nheko examples/example.cpp)
-target_link_libraries(nheko px-matrix-client-library)
+add_executable(example examples/example.cpp)
+target_link_libraries(example px-matrix-client-library)

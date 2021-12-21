@@ -24,18 +24,9 @@
 
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
-// #include "notifications/Manager.h"
+#include <mtx/responses/sync.hpp>
 
-class OverlayModal;
-// class TimelineViewManager;
 class UserSettings;
-// class NotificationsManager;
-class TimelineModel;
-class CallManager;
-
-constexpr int CONSENSUS_TIMEOUT      = 1000;
-constexpr int SHOW_CONTENT_TIMEOUT   = 3000;
-constexpr int TYPING_REFRESH_TIMEOUT = 10000;
 
 namespace mtx::requests {
 struct CreateRoom;
@@ -49,21 +40,19 @@ struct Rooms;
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
 
-class ChatPage : public QWidget
+class PxMatrixClient : public QWidget
 {
     Q_OBJECT
 
 public:
-    ChatPage(QSharedPointer<UserSettings> userSettings, QWidget *parent = nullptr);
+    PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidget *parent = nullptr);
 
     // Initialize all the components of the UI.
     void bootstrap(QString userid, QString homeserver, QString token);
 
-    static ChatPage *instance() { return instance_; }
+    static PxMatrixClient *instance() { return instance_; }
 
     QSharedPointer<UserSettings> userSettings() { return userSettings_; }
-    CallManager *callManager() { return callManager_; }
-    // TimelineViewManager *timelineManager() { return view_manager_; }
     void deleteConfigs();
 
     void initiateLogout();
@@ -111,8 +100,8 @@ signals:
     void showOverlayProgressBar();
 
     void ownProfileOk();
-    void setUserDisplayName(const QString &name);
-    void setUserAvatar(const QString &avatar);
+    void userDisplayNameReady(const QString &name);
+    void userAvatarReady(const QString &avatar);
     void loggedOut();
 
     void trySyncCb();
@@ -123,7 +112,7 @@ signals:
     void newRoom(const QString &room_id);
     void changeToRoom(const QString &room_id);
 
-    void initializeViews(const mtx::responses::Rooms &rooms);
+    void roomListReady(const mtx::responses::Rooms &rooms);
     void initializeEmptyViews();
     void initializeMentions(const QMap<QString, mtx::responses::Notifications> &notifs);
     void syncUI(const mtx::responses::Rooms &rooms);
@@ -145,9 +134,6 @@ signals:
     void receivedDeviceVerificationAccept(const mtx::events::msg::KeyVerificationAccept &message);
     void receivedDeviceVerificationRequest(const mtx::events::msg::KeyVerificationRequest &message,
                                            std::string sender);
-    void receivedRoomDeviceVerificationRequest(
-      const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
-      TimelineModel *model);
     void receivedDeviceVerificationCancel(const mtx::events::msg::KeyVerificationCancel &message);
     void receivedDeviceVerificationKey(const mtx::events::msg::KeyVerificationKey &message);
     void receivedDeviceVerificationMac(const mtx::events::msg::KeyVerificationMac &message);
@@ -168,7 +154,7 @@ private slots:
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 
 private:
-    static ChatPage *instance_;
+    static PxMatrixClient *instance_;
 
     void startInitialSync();
     void tryInitialSync();
@@ -203,14 +189,11 @@ private:
 
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;
-
-    // NotificationsManager notificationsManager;
-    CallManager *callManager_;
 };
 
 template<class Collection>
 std::map<std::string, mtx::events::StateEvent<mtx::events::state::Member>>
-ChatPage::getMemberships(const std::vector<Collection> &collection) const
+PxMatrixClient::getMemberships(const std::vector<Collection> &collection) const
 {
     std::map<std::string, mtx::events::StateEvent<mtx::events::state::Member>> memberships;
 

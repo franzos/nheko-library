@@ -26,7 +26,7 @@
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "ChatPage.h"
+#include "PxMatrixClient.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
@@ -260,6 +260,7 @@ Cache::setup()
             throw std::runtime_error(
               ("Unable to create state directory:" + cacheDirectory_).toStdString().c_str());
         }
+        qDebug() << "**********" << QFile::exists(cacheDirectory_);
     }
 
     try {
@@ -321,7 +322,7 @@ static void
 fatalSecretError()
 {
     // QMessageBox::critical(
-    //   ChatPage::instance(),
+    //   PxMatrixClient::instance(),
     //   QCoreApplication::translate("SecretStorage", "Failed to connect to secret storage"),
     //   QCoreApplication::translate(
     //     "SecretStorage",
@@ -420,6 +421,7 @@ Cache::storeSecret(const std::string name_, const std::string secret, bool inter
     job->setSettings(UserSettings::instance()->qsettings());
 
     job->setKey(name);
+    qDebug() << QCoreApplication::applicationName() << name << QString::fromStdString(secret);
 
     job->setTextData(QString::fromStdString(secret));
 
@@ -582,7 +584,7 @@ Cache::importSessionKeys(const mtx::crypto::ExportedSessionKeys &keys)
         auto exported_session = mtx::crypto::import_session(s.session_key);
 
         saveInboundMegolmSession(index, std::move(exported_session), data);
-        ChatPage::instance()->receivedSessionKey(index.room_id, index.session_id);
+        PxMatrixClient::instance()->receivedSessionKey(index.room_id, index.session_id);
     }
 }
 

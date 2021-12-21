@@ -14,7 +14,7 @@ HEADERS =   AvatarProvider.h \
             Cache.h \
             CacheCryptoStructs.h \
             CacheStructs.h \
-            ChatPage.h \
+            PxMatrixClient.h \
             EventAccessors.h \
             Logging.h \
             MatrixClient.h \
@@ -27,7 +27,7 @@ HEADERS =   AvatarProvider.h \
 
 SOURCES =   AvatarProvider.cpp \
             Cache.cpp \
-            ChatPage.cpp \
+            PxMatrixClient.cpp \
             EventAccessors.cpp \
             Logging.cpp \
             MatrixClient.cpp \
