@@ -122,36 +122,36 @@ QString
 utils::replaceEmoji(const QString &body)
 {
     QString fmtBody;
-    fmtBody.reserve(body.size());
+    // fmtBody.reserve(body.size());
 
-    QVector<uint> utf32_string = body.toUcs4();
+    // QVector<uint> utf32_string = body.toUcs4();
 
-    bool insideFontBlock = false;
-    for (auto &code : utf32_string) {
-        if (utils::codepointIsEmoji(code)) {
-            if (!insideFontBlock) {
-                fmtBody += QStringLiteral("<font face=\"") % UserSettings::instance()->emojiFont() %
-                           QStringLiteral("\">");
-                insideFontBlock = true;
-            }
+    // bool insideFontBlock = false;
+    // for (auto &code : utf32_string) {
+    //     if (utils::codepointIsEmoji(code)) {
+    //         if (!insideFontBlock) {
+    //             fmtBody += QStringLiteral("<font face=\"") % UserSettings::instance()->emojiFont() %
+    //                        QStringLiteral("\">");
+    //             insideFontBlock = true;
+    //         }
 
-        } else {
-            if (insideFontBlock) {
-                fmtBody += QStringLiteral("</font>");
-                insideFontBlock = false;
-            }
-        }
-        if (QChar::requiresSurrogates(code)) {
-            QChar emoji[] = {static_cast<ushort>(QChar::highSurrogate(code)),
-                             static_cast<ushort>(QChar::lowSurrogate(code))};
-            fmtBody.append(emoji, 2);
-        } else {
-            fmtBody.append(QChar(static_cast<ushort>(code)));
-        }
-    }
-    if (insideFontBlock) {
-        fmtBody += QStringLiteral("</font>");
-    }
+    //     } else {
+    //         if (insideFontBlock) {
+    //             fmtBody += QStringLiteral("</font>");
+    //             insideFontBlock = false;
+    //         }
+    //     }
+    //     if (QChar::requiresSurrogates(code)) {
+    //         QChar emoji[] = {static_cast<ushort>(QChar::highSurrogate(code)),
+    //                          static_cast<ushort>(QChar::lowSurrogate(code))};
+    //         fmtBody.append(emoji, 2);
+    //     } else {
+    //         fmtBody.append(QChar(static_cast<ushort>(code)));
+    //     }
+    // }
+    // if (insideFontBlock) {
+    //     fmtBody += QStringLiteral("</font>");
+    // }
 
     return fmtBody;
 }

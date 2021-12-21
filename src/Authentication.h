@@ -2,13 +2,16 @@
 #define PX_MATRIX_CLIENT_LIBRARY_H
 
 #include <QObject>
+#include <mtx/identifiers.hpp>
+#include <mtx/responses/login.hpp>
+#include <mtx/requests.hpp>
 #include "MatrixClient.h"
 
-class Login: public QObject{
+class Authentication: public QObject{
  Q_OBJECT
 
 public:
-    void loginProcess(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
+    void loginWithUsername(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
     bool hasValidUser();
     mtx::responses::Login userInformation();
 

@@ -1,12 +1,14 @@
-#include "Login.h"
-#include <mtx/identifiers.hpp>
-#include <mtx/requests.hpp>
-#include <mtx/responses/login.hpp>
+#include "Authentication.h"
+#include <QDebug>
 
-void Login::loginProcess(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
+
+
+void Authentication::loginWithUsername(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
         http::client()->set_server(serverAddress);
-        http::client()->login(
-          userId,
+        mtx::identifiers::User user;
+        user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
+        http::client()->login(          
+          user.localpart(),
           password,
           deviceName,
           [this](const mtx::responses::Login &res, mtx::http::RequestErr err) {
@@ -19,19 +21,18 @@ void Login::loginProcess(std::string deviceName, std::string userId, std::string
                   emit errorOccurred(s);
                   return;
               }
-
               if (res.well_known) {
                   http::client()->set_server(res.well_known->homeserver.base_url);
                  // nhlog::net()->info("Login requested to user server: " +
                                      //res.well_known->homeserver.base_url);
               }
-              //TODO put data to Database                
+              //TODO put data to Database  
               emit loginOk(res);
           });
 
 }
 
- bool Login::hasValidUser(){
+ bool Authentication::hasValidUser(){
      //TODO check database if there is access token ...
     //  if(true){ //there is user
     //         http::client()->set_access_token("token.toStdString()");
@@ -42,7 +43,7 @@ void Login::loginProcess(std::string deviceName, std::string userId, std::string
     return false; 
  }
 
-  mtx::responses::Login Login::userInformation(){
+  mtx::responses::Login Authentication::userInformation(){
     //TODO read data from database and fill mtx::responses::Login
     mtx::responses::Login otput; 
     return otput;

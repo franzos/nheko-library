@@ -17,7 +17,6 @@
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "UserSettingsPage.h"
-#include "Utils.h"
 #include "encryption/Olm.h"
 
 PxMatrixClient *PxMatrixClient::instance_             = nullptr;
@@ -137,15 +136,16 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
         // come in while you are reading old ones. Since the window is almost certainly open
         // in this edge case, that's probably a non-issue.
         // TODO: Replace this once we have proper pushrules support. This is a horrible hack
-        if (prevNotificationCount < notificationCount) {
-            if (userSettings_->hasAlertOnNotification())
-                QApplication::alert(this);
-        }
+        // if (prevNotificationCount < notificationCount) {
+        //     if (userSettings_->hasAlertOnNotification())
+        //         QApplication::alert(this);
+        // }
         prevNotificationCount = notificationCount;
 
         // No need to check amounts for this section, as this function internally checks for
         // duplicates.
-        if (notificationCount && userSettings_->hasNotifications())
+        // if (notificationCount && userSettings_->hasNotifications()) //TODO
+        if (notificationCount)
             http::client()->notifications(
               5,
               "",
@@ -220,14 +220,14 @@ PxMatrixClient::deleteConfigs()
 }
 
 void
-PxMatrixClient::bootstrap(QString userid, QString homeserver, QString token)
+PxMatrixClient::initialize(QString userid, QString homeserver, QString token)
 {
     using namespace mtx::identifiers;
 
     try {
         http::client()->set_user(parse<User>(userid.toStdString()));
     } catch (const std::invalid_argument &) {
-        nhlog::ui()->critical("bootstrapped with invalid user_id: {}", userid.toStdString());
+        nhlog::ui()->critical("Initialized with invalid user_id: {}", userid.toStdString());
     }
 
     http::client()->set_server(homeserver.toStdString());
@@ -378,8 +378,8 @@ PxMatrixClient::sendNotifications(const mtx::responses::Notifications &res)
                 if (isRoomActive(room_id))
                     continue;
 
-                if (userSettings_->hasDesktopNotifications()) {
-                    auto info = cache::singleRoomInfo(item.room_id);
+                // if (userSettings_->hasDesktopNotifications()) {
+                    // auto info = cache::singleRoomInfo(item.room_id);
 
                     // AvatarProvider::resolve(QString::fromStdString(info.avatar_url),
                     //                         96,
@@ -388,7 +388,7 @@ PxMatrixClient::sendNotifications(const mtx::responses::Notifications &res)
                     //                             notificationsManager.postNotification(
                     //                               item, image.toImage());
                     //                         });
-                }
+                // }
             }
         } catch (const lmdb::error &e) {
             nhlog::db()->warn("error while sending notification: {}", e.what());
@@ -906,9 +906,8 @@ PxMatrixClient::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &cou
 }
 
 void
-PxMatrixClient::getProfileInfo()
+PxMatrixClient::getProfileInfo(std::string userid)
 {
-    const auto userid = utils::localUser().toStdString();
     http::client()->get_profile(
       userid, [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
           if (err) {
@@ -916,7 +915,6 @@ PxMatrixClient::getProfileInfo()
               return;
           }
           emit userDisplayNameReady(QString::fromStdString(res.display_name));
-
           emit userAvatarReady(QString::fromStdString(res.avatar_url));
       });
 }
