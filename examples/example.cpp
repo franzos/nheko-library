@@ -4,7 +4,6 @@
 #include <QDebug>
 
 #include "../src/PxMatrixClient.h"
-#include "../src/UserSettingsPage.h"
 
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);

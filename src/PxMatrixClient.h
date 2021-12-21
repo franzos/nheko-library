@@ -16,15 +16,16 @@
 #include <mtx/events/member.hpp>
 #include <mtx/events/presence.hpp>
 #include <mtx/secret_storage.hpp>
+#include <mtx/responses/sync.hpp>
 
 #include <QMap>
 #include <QPoint>
 #include <QTimer>
 #include <QWidget>
 
+#include "UserSettingsPage.h"
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
-#include <mtx/responses/sync.hpp>
 
 class UserSettings;
 

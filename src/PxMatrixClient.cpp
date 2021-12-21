@@ -137,15 +137,16 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
         // come in while you are reading old ones. Since the window is almost certainly open
         // in this edge case, that's probably a non-issue.
         // TODO: Replace this once we have proper pushrules support. This is a horrible hack
-        if (prevNotificationCount < notificationCount) {
-            if (userSettings_->hasAlertOnNotification())
-                QApplication::alert(this);
-        }
+        // if (prevNotificationCount < notificationCount) {
+        //     if (userSettings_->hasAlertOnNotification())
+        //         QApplication::alert(this);
+        // }
         prevNotificationCount = notificationCount;
 
         // No need to check amounts for this section, as this function internally checks for
         // duplicates.
-        if (notificationCount && userSettings_->hasNotifications())
+        // if (notificationCount && userSettings_->hasNotifications()) //TODO
+        if (notificationCount)
             http::client()->notifications(
               5,
               "",
@@ -378,8 +379,8 @@ PxMatrixClient::sendNotifications(const mtx::responses::Notifications &res)
                 if (isRoomActive(room_id))
                     continue;
 
-                if (userSettings_->hasDesktopNotifications()) {
-                    auto info = cache::singleRoomInfo(item.room_id);
+                // if (userSettings_->hasDesktopNotifications()) {
+                    // auto info = cache::singleRoomInfo(item.room_id);
 
                     // AvatarProvider::resolve(QString::fromStdString(info.avatar_url),
                     //                         96,
@@ -388,7 +389,7 @@ PxMatrixClient::sendNotifications(const mtx::responses::Notifications &res)
                     //                             notificationsManager.postNotification(
                     //                               item, image.toImage());
                     //                         });
-                }
+                // }
             }
         } catch (const lmdb::error &e) {
             nhlog::db()->warn("error while sending notification: {}", e.what());
@@ -916,7 +917,6 @@ PxMatrixClient::getProfileInfo()
               return;
           }
           emit userDisplayNameReady(QString::fromStdString(res.display_name));
-
           emit userAvatarReady(QString::fromStdString(res.avatar_url));
       });
 }

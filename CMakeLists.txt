@@ -152,5 +152,5 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
 
-add_executable(example examples/example.cpp)
-target_link_libraries(example px-matrix-client-library)
+add_executable(nheko examples/example.cpp)
+target_link_libraries(nheko px-matrix-client-library)
