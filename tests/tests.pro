@@ -4,7 +4,7 @@ QT += gui widgets
 SOURCES += main.cpp
 
 HEADERS += testrunner.h \
-           dummytest.h 
+           LoginTest.h 
     
 
 CONFIG += testcase
