@@ -9,6 +9,8 @@ LIBS += -lspdlog
 
 message(" * Building the px-matrix-client-library")
 
+
+
 HEADERS =   AvatarProvider.h \
             Cache_p.h \
             Cache.h \
@@ -16,6 +18,7 @@ HEADERS =   AvatarProvider.h \
             CacheStructs.h \
             PxMatrixClient.h \
             EventAccessors.h \
+            Login.h \
             Logging.h \
             MatrixClient.h \
             MxcImageProvider.h \
@@ -29,6 +32,7 @@ SOURCES =   AvatarProvider.cpp \
             Cache.cpp \
             PxMatrixClient.cpp \
             EventAccessors.cpp \
+            Login.cpp \
             Logging.cpp \
             MatrixClient.cpp \
             MxcImageProvider.h \

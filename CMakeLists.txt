@@ -52,6 +52,7 @@ endif()
 # Declare source and header files.
 #
 set(SRC_FILES
+	src/Authentication.cpp
 	src/timeline/EventStore.cpp
 	src/timeline/Reaction.cpp
 	src/encryption/Olm.cpp
@@ -98,7 +99,8 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/PxMatrixClient.h
-	src/UserSettingsPage.h
+	src/UserSettingsPage.h	
+	src/Authentication.h
 )
 
 
@@ -137,6 +139,6 @@ IF(BUILD_TESTS)
 	set(CMAKE_AUTOMOC ON)
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
-					tests/dummytest.h)
+					tests/LoginTest.h)
 	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library)
 ENDIF()
