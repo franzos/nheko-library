@@ -34,7 +34,7 @@ class UserSettings : public QObject
 
 public:
     static QSharedPointer<UserSettings> instance();
-    static void initialize(std::optional<QString> profile);
+    static QSharedPointer<UserSettings> initialize(std::optional<QString> profile);
 
     QSettings *qsettings() { return &settings; }
 

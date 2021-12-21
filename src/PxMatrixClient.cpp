@@ -17,7 +17,6 @@
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "UserSettingsPage.h"
-#include "Utils.h"
 #include "encryption/Olm.h"
 
 PxMatrixClient *PxMatrixClient::instance_             = nullptr;
@@ -221,14 +220,14 @@ PxMatrixClient::deleteConfigs()
 }
 
 void
-PxMatrixClient::bootstrap(QString userid, QString homeserver, QString token)
+PxMatrixClient::initialize(QString userid, QString homeserver, QString token)
 {
     using namespace mtx::identifiers;
 
     try {
         http::client()->set_user(parse<User>(userid.toStdString()));
     } catch (const std::invalid_argument &) {
-        nhlog::ui()->critical("bootstrapped with invalid user_id: {}", userid.toStdString());
+        nhlog::ui()->critical("Initialized with invalid user_id: {}", userid.toStdString());
     }
 
     http::client()->set_server(homeserver.toStdString());
@@ -907,9 +906,8 @@ PxMatrixClient::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &cou
 }
 
 void
-PxMatrixClient::getProfileInfo()
+PxMatrixClient::getProfileInfo(std::string userid)
 {
-    const auto userid = utils::localUser().toStdString();
     http::client()->get_profile(
       userid, [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
           if (err) {

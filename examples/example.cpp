@@ -8,9 +8,9 @@
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
-    UserSettings::initialize(std::nullopt);
+    // UserSettings::initialize(std::nullopt);
     
-    auto client = new PxMatrixClient(UserSettings::instance());
+    auto client = new PxMatrixClient();
     QObject::connect(client, &PxMatrixClient::userDisplayNameReady,[](const QString &name){
         qDebug() << "User Display Name: " << name;
     });
@@ -24,6 +24,7 @@ int main(int argc, char *argv[]){
         qDebug() << "Invite Rooms: " << rooms.invite.size();
         qDebug() << "Leave  Rooms: " << rooms.leave.size();
     });
-    client->bootstrap("@hamzeh_test01:pantherx.org","matrix.pantherx.org:443","syt_aGFtemVoX3Rlc3QwMQ_fYmSAoBKiuVyXIrEpvDB_3S4zmr");
+    client->initialize("@hamzeh_test01:pantherx.org","matrix.pantherx.org:443","syt_aGFtemVoX3Rlc3QwMQ_fYmSAoBKiuVyXIrEpvDB_3S4zmr");
+    client->getProfileInfo();
     return app.exec();     
 }

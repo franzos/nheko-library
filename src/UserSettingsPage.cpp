@@ -30,11 +30,12 @@ UserSettings::instance()
     return instance_;
 }
 
-void
+QSharedPointer<UserSettings>
 UserSettings::initialize(std::optional<QString> profile)
 {
     instance_.reset(new UserSettings());
     instance_->load(profile);
+    return instance_;
 }
 
 void

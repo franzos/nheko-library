@@ -26,6 +26,7 @@
 #include "UserSettingsPage.h"
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
+#include "Utils.h"
 
 class UserSettings;
 
@@ -46,10 +47,10 @@ class PxMatrixClient : public QWidget
     Q_OBJECT
 
 public:
-    PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidget *parent = nullptr);
+    PxMatrixClient(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
 
     // Initialize all the components of the UI.
-    void bootstrap(QString userid, QString homeserver, QString token);
+    void initialize(QString userid, QString homeserver, QString token);
 
     static PxMatrixClient *instance() { return instance_; }
 
@@ -65,6 +66,7 @@ public:
 
     // TODO(Nico): Get rid of this!
     QString currentRoom() const;
+    void getProfileInfo(std::string userid = utils::localUser().toStdString());
 
 public slots:
 
@@ -162,7 +164,6 @@ private:
     void trySync();
     void verifyOneTimeKeyCountAfterStartup();
     void ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts);
-    void getProfileInfo();
     void getBackupVersion();
 
     //! Check if the given room is currently open.
