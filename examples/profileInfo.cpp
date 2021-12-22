@@ -3,14 +3,14 @@
 #include <QObject>
 #include <QDebug>
 #include <QEventLoop>
-#include "../src/Authentication.h"
-#include "../src/PxMatrixClient.h"
+#include "../src/PXMatrixClient.h"
 
 mtx::responses::Login loginInfo;
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
-    Authentication *loginTest = new Authentication;
+    px::mtx_client::init();
+    auto loginTest = px::mtx_client::authentication();
     QEventLoop eventLoop;
     QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
         loginInfo = res;
@@ -32,16 +32,16 @@ int main(int argc, char *argv[]){
         eventLoop.exec();
     }
 
-    auto client = new PxMatrixClient();
-    QObject::connect(client, &PxMatrixClient::userDisplayNameReady,[](const std::string &name){
+    auto client = px::mtx_client::chat();
+    QObject::connect(client, &Chat::userDisplayNameReady,[](const std::string &name){
         qInfo() << "User Display Name: " << QString::fromStdString(name);
     });
 
-    QObject::connect(client, &PxMatrixClient::userAvatarReady,[](const std::string &avatar){
+    QObject::connect(client, &Chat::userAvatarReady,[](const std::string &avatar){
         qInfo() << "User avatar      : " << QString::fromStdString(avatar);
     });
 
-    QObject::connect(client, &PxMatrixClient::roomListReady,[](const mtx::responses::Rooms &rooms){
+    QObject::connect(client, &Chat::roomListReady,[](const mtx::responses::Rooms &rooms){
         qInfo() << "Join   Rooms: " << rooms.join.size();
         qInfo() << "Invite Rooms: " << rooms.invite.size();
         qInfo() << "Leave  Rooms: " << rooms.leave.size();

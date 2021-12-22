@@ -43,4 +43,4 @@ cmake -DBUILD_TESTS=ON ..
 ```
 
 #### Documents
-* [Client](./docs/Client.md)
+* [How-to-integrate](./docs/how-to-itegrate.md)
