@@ -220,18 +220,17 @@ PxMatrixClient::deleteConfigs()
 }
 
 void
-PxMatrixClient::initialize(QString userid, QString homeserver, QString token)
+PxMatrixClient::initialize(std::string userid, std::string homeserver, std::string token)
 {
     using namespace mtx::identifiers;
-
     try {
-        http::client()->set_user(parse<User>(userid.toStdString()));
+        http::client()->set_user(parse<User>(userid));
     } catch (const std::invalid_argument &) {
-        nhlog::ui()->critical("Initialized with invalid user_id: {}", userid.toStdString());
+        nhlog::ui()->critical("Initialized with invalid user_id: {}", userid);
     }
 
-    http::client()->set_server(homeserver.toStdString());
-    http::client()->set_access_token(token.toStdString());
+    http::client()->set_server(homeserver);
+    http::client()->set_access_token(token);
     http::client()->verify_certificates(!UserSettings::instance()->disableCertificateValidation());
 
     // The Olm client needs the user_id & device_id that will be included
@@ -240,7 +239,7 @@ PxMatrixClient::initialize(QString userid, QString homeserver, QString token)
     olm::client()->set_device_id(http::client()->device_id());
 
     try {
-        cache::init(userid);
+        cache::init(QString::fromStdString(userid));
         auto p = cache::client();
         connect(p, &Cache::databaseReady, this, [this]() {
             nhlog::db()->info("database ready");
@@ -405,7 +404,6 @@ PxMatrixClient::tryInitialSync()
     // Upload one time keys for the device.
     nhlog::crypto()->info("generating one time keys");
     olm::client()->generate_one_time_keys(MAX_ONETIME_KEYS);
-
     http::client()->upload_keys(
       olm::client()->create_upload_keys_request(),
       [this](const mtx::responses::UploadKeys &res, mtx::http::RequestErr err) {
@@ -914,8 +912,8 @@ PxMatrixClient::getProfileInfo(std::string userid)
               nhlog::net()->warn("failed to retrieve own profile info");
               return;
           }
-          emit userDisplayNameReady(QString::fromStdString(res.display_name));
-          emit userAvatarReady(QString::fromStdString(res.avatar_url));
+          emit userDisplayNameReady(res.display_name);
+          emit userAvatarReady(res.avatar_url);
       });
 }
 
