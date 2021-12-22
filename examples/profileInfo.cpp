@@ -28,7 +28,7 @@ int main(int argc, char *argv[]){
         std::string userId = "@hamzeh_test01:pantherx.org";
         std::string password = "pQn3mDGsYR";
         std::string serverAddress = "https://matrix.pantherx.org";   
-        loginTest->loginWithUsername(deviceName, userId, password, serverAddress); 
+        loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();
     }
 
