@@ -3,7 +3,7 @@
 
 
 
-void Authentication::loginWithUsername(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
+void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
         http::client()->set_server(serverAddress);
         mtx::identifiers::User user;
         user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
