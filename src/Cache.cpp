@@ -226,7 +226,6 @@ Cache::setup()
                         .arg(QString::fromUtf8(localUserId_.toUtf8().toHex()))
                         .arg(QString::fromUtf8(settings->profile().toUtf8().toHex()));
     bool isInitial = !QFile::exists(cacheDirectory_);
-    qDebug() << cacheDirectory_;
 
     env_ = lmdb::env::create();
     env_.set_mapsize(DB_SIZE);
@@ -234,6 +233,7 @@ Cache::setup()
 
     if (isInitial) {
         nhlog::db()->info("initializing LMDB");
+        nhlog::db()->info("\"{}\" created", cacheDirectory_.toStdString());
 
         if (!QDir().mkpath(cacheDirectory_)) {
             throw std::runtime_error(
@@ -318,7 +318,7 @@ static QString
 secretName(std::string name, bool internal)
 {
     auto settings = UserSettings::instance();
-    return (internal ? "nheko." : "matrix.") +
+    return (internal ? "px_mtx_lib." : "matrix.") +
            QString(
              QCryptographicHash::hash(settings->profile().toUtf8(), QCryptographicHash::Sha256)
                .toBase64()) +
@@ -399,7 +399,6 @@ Cache::storeSecret(const std::string name_, const std::string secret, bool inter
     job->setSettings(UserSettings::instance()->qsettings());
 
     job->setKey(name);
-    qDebug() << QCoreApplication::applicationName() << name << QString::fromStdString(secret);
 
     job->setTextData(QString::fromStdString(secret));
 

@@ -50,7 +50,7 @@ public:
     PxMatrixClient(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
 
     // Initialize all the components of the UI.
-    void initialize(QString userid, QString homeserver, QString token);
+    void initialize(std::string userid, std::string homeserver, std::string token);
 
     static PxMatrixClient *instance() { return instance_; }
 
@@ -103,8 +103,8 @@ signals:
     void showOverlayProgressBar();
 
     void ownProfileOk();
-    void userDisplayNameReady(const QString &name);
-    void userAvatarReady(const QString &avatar);
+    void userDisplayNameReady(const std::string &name);
+    void userAvatarReady(const std::string &avatar);
     void loggedOut();
 
     void trySyncCb();
