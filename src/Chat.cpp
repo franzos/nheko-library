@@ -12,14 +12,14 @@
 #include "AvatarProvider.h"
 #include "Cache.h"
 #include "Cache_p.h"
-#include "PxMatrixClient.h"
+#include "Chat.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "UserSettingsPage.h"
 #include "encryption/Olm.h"
 
-PxMatrixClient *PxMatrixClient::instance_             = nullptr;
+Chat *Chat::instance_             = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
 constexpr int RETRY_TIMEOUT               = 5'000;
 constexpr size_t MAX_ONETIME_KEYS         = 50;
@@ -30,12 +30,11 @@ Q_DECLARE_METATYPE(mtx::presence::PresenceState)
 Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
-PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidget *parent)
+Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
   : QWidget(parent)
   , isConnected_(true)
   , userSettings_{userSettings}
 {
-    http::init();
     setObjectName("px_matrix_client");
     instance_ = this;
 
@@ -46,17 +45,17 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
     qRegisterMetaType<SecretsToDecrypt>();
 
     connect(this,
-            &PxMatrixClient::downloadedSecrets,
+            &Chat::downloadedSecrets,
             this,
-            &PxMatrixClient::decryptDownloadedSecrets,
+            &Chat::decryptDownloadedSecrets,
             Qt::QueuedConnection);
 
-    connect(this, &PxMatrixClient::connectionLost, this, [this]() {
+    connect(this, &Chat::connectionLost, this, [this]() {
         nhlog::net()->info("connectivity lost");
         isConnected_ = false;
         http::client()->shutdown();
     });
-    connect(this, &PxMatrixClient::connectionRestored, this, [this]() {
+    connect(this, &Chat::connectionRestored, this, [this]() {
         nhlog::net()->info("trying to re-connect");
         isConnected_ = true;
 
@@ -84,7 +83,7 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
           });
     });
 
-    connect(this, &PxMatrixClient::loggedOut, this, &PxMatrixClient::logout);
+    connect(this, &Chat::loggedOut, this, &Chat::logout);
 
     // connect(
     //   view_manager_,
@@ -110,11 +109,11 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
     //       }
     //   });
 
-    connect(this, &PxMatrixClient::leftRoom, this, &PxMatrixClient::removeRoom);
-    connect(this, &PxMatrixClient::changeToRoom, this, &PxMatrixClient::changeRoom, Qt::QueuedConnection);
-    connect(this, &PxMatrixClient::notificationsRetrieved, this, &PxMatrixClient::sendNotifications);
+    connect(this, &Chat::leftRoom, this, &Chat::removeRoom);
+    connect(this, &Chat::changeToRoom, this, &Chat::changeRoom, Qt::QueuedConnection);
+    connect(this, &Chat::notificationsRetrieved, this, &Chat::sendNotifications);
     connect(this,
-            &PxMatrixClient::highlightedNotifsRetrieved,
+            &Chat::highlightedNotifsRetrieved,
             this,
             [](const mtx::responses::Notifications &notif) {
                 try {
@@ -123,7 +122,7 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
                     nhlog::db()->error("failed to save mentions: {}", e.what());
                 }
             });
-    connect(this, &PxMatrixClient::syncUI, this, [this](const mtx::responses::Rooms &rooms) {
+    connect(this, &Chat::syncUI, this, [this](const mtx::responses::Rooms &rooms) {
         // view_manager_->sync(rooms);
         static unsigned int prevNotificationCount = 0;
         unsigned int notificationCount            = 0;
@@ -163,28 +162,23 @@ PxMatrixClient::PxMatrixClient(QSharedPointer<UserSettings> userSettings, QWidge
     });
 
     connect(
-      this, &PxMatrixClient::tryInitialSyncCb, this, &PxMatrixClient::tryInitialSync, Qt::QueuedConnection);
-    connect(this, &PxMatrixClient::trySyncCb, this, &PxMatrixClient::trySync, Qt::QueuedConnection);
+      this, &Chat::tryInitialSyncCb, this, &Chat::tryInitialSync, Qt::QueuedConnection);
+    connect(this, &Chat::trySyncCb, this, &Chat::trySync, Qt::QueuedConnection);
     connect(
       this,
-      &PxMatrixClient::tryDelayedSyncCb,
+      &Chat::tryDelayedSyncCb,
       this,
-      [this]() { QTimer::singleShot(RETRY_TIMEOUT, this, &PxMatrixClient::trySync); },
+      [this]() { QTimer::singleShot(RETRY_TIMEOUT, this, &Chat::trySync); },
       Qt::QueuedConnection);
 
     connect(
-      this, &PxMatrixClient::newSyncResponse, this, &PxMatrixClient::handleSyncResponse, Qt::QueuedConnection);
+      this, &Chat::newSyncResponse, this, &Chat::handleSyncResponse, Qt::QueuedConnection);
 
-    connect(this, &PxMatrixClient::dropToLoginPageCb, this, &PxMatrixClient::dropToLoginPage);
-
-    connectCallMessage<mtx::events::msg::CallInvite>();
-    connectCallMessage<mtx::events::msg::CallCandidates>();
-    connectCallMessage<mtx::events::msg::CallAnswer>();
-    connectCallMessage<mtx::events::msg::CallHangUp>();
+    connect(this, &Chat::dropToLoginPageCb, this, &Chat::dropToLoginPage);
 }
 
 void
-PxMatrixClient::logout()
+Chat::logout()
 {
     deleteConfigs();
 
@@ -193,7 +187,7 @@ PxMatrixClient::logout()
 }
 
 void
-PxMatrixClient::dropToLoginPage(const QString &msg)
+Chat::dropToLoginPage(const QString &msg)
 {
     nhlog::ui()->info("dropping to the login page: {}", msg.toStdString());
     http::client()->shutdown();
@@ -203,7 +197,7 @@ PxMatrixClient::dropToLoginPage(const QString &msg)
 }
 
 void
-PxMatrixClient::deleteConfigs()
+Chat::deleteConfigs()
 {
     auto settings = UserSettings::instance()->qsettings();
 
@@ -220,7 +214,7 @@ PxMatrixClient::deleteConfigs()
 }
 
 void
-PxMatrixClient::initialize(std::string userid, std::string homeserver, std::string token)
+Chat::initialize(std::string userid, std::string homeserver, std::string token)
 {
     using namespace mtx::identifiers;
     try {
@@ -301,7 +295,7 @@ PxMatrixClient::initialize(std::string userid, std::string homeserver, std::stri
 }
 
 void
-PxMatrixClient::loadStateFromCache()
+Chat::loadStateFromCache()
 {
     nhlog::db()->info("restoring state from cache");
 
@@ -344,7 +338,7 @@ PxMatrixClient::loadStateFromCache()
 }
 
 void
-PxMatrixClient::removeRoom(const QString &room_id)
+Chat::removeRoom(const QString &room_id)
 {
     try {
         cache::removeRoom(room_id);
@@ -356,7 +350,7 @@ PxMatrixClient::removeRoom(const QString &room_id)
 }
 
 void
-PxMatrixClient::sendNotifications(const mtx::responses::Notifications &res)
+Chat::sendNotifications(const mtx::responses::Notifications &res)
 {
     for (const auto &item : res.notifications) {
         const auto event_id = mtx::accessors::event_id(item.event);
@@ -396,7 +390,7 @@ PxMatrixClient::sendNotifications(const mtx::responses::Notifications &res)
 }
 
 void
-PxMatrixClient::tryInitialSync()
+Chat::tryInitialSync()
 {
     nhlog::crypto()->info("ed25519   : {}", olm::client()->identity_keys().ed25519);
     nhlog::crypto()->info("curve25519: {}", olm::client()->identity_keys().curve25519);
@@ -439,7 +433,7 @@ PxMatrixClient::tryInitialSync()
 }
 
 void
-PxMatrixClient::startInitialSync()
+Chat::startInitialSync()
 {
     nhlog::net()->info("trying initial sync");
 
@@ -505,7 +499,7 @@ PxMatrixClient::startInitialSync()
 }
 
 void
-PxMatrixClient::handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token)
+Chat::handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token)
 {
     try {
         if (prev_batch_token != cache::nextBatchToken()) {
@@ -548,7 +542,7 @@ PxMatrixClient::handleSyncResponse(const mtx::responses::Sync &res, const std::s
 }
 
 void
-PxMatrixClient::trySync()
+Chat::trySync()
 {
     mtx::http::SyncOpts opts;
     opts.set_presence = currentPresence();
@@ -593,14 +587,14 @@ PxMatrixClient::trySync()
 }
 
 void
-PxMatrixClient::joinRoom(const QString &room)
+Chat::joinRoom(const QString &room)
 {
     const auto room_id = room.toStdString();
     joinRoomVia(room_id, {}, false);
 }
 
 void
-PxMatrixClient::joinRoomVia(const std::string &room_id,
+Chat::joinRoomVia(const std::string &room_id,
                       const std::vector<std::string> &via,
                       bool promptForConfirmation)
 {
@@ -634,7 +628,7 @@ PxMatrixClient::joinRoomVia(const std::string &room_id,
 }
 
 void
-PxMatrixClient::createRoom(const mtx::requests::CreateRoom &req)
+Chat::createRoom(const mtx::requests::CreateRoom &req)
 {
     http::client()->create_room(
       req, [this](const mtx::responses::CreateRoom &res, mtx::http::RequestErr err) {
@@ -658,7 +652,7 @@ PxMatrixClient::createRoom(const mtx::requests::CreateRoom &req)
 }
 
 void
-PxMatrixClient::leaveRoom(const QString &room_id)
+Chat::leaveRoom(const QString &room_id)
 {
     http::client()->leave_room(
       room_id.toStdString(),
@@ -674,13 +668,13 @@ PxMatrixClient::leaveRoom(const QString &room_id)
 }
 
 void
-PxMatrixClient::changeRoom(const QString &room_id)
+Chat::changeRoom(const QString &room_id)
 {
     // view_manager_->rooms()->setCurrentRoom(room_id);
 }
 
 void
-PxMatrixClient::inviteUser(QString userid, QString reason)
+Chat::inviteUser(QString userid, QString reason)
 {
     auto room = currentRoom();
 
@@ -706,7 +700,7 @@ PxMatrixClient::inviteUser(QString userid, QString reason)
       reason.trimmed().toStdString());
 }
 void
-PxMatrixClient::kickUser(QString userid, QString reason)
+Chat::kickUser(QString userid, QString reason)
 {
     auto room = currentRoom();
 
@@ -732,7 +726,7 @@ PxMatrixClient::kickUser(QString userid, QString reason)
       reason.trimmed().toStdString());
 }
 void
-PxMatrixClient::banUser(QString userid, QString reason)
+Chat::banUser(QString userid, QString reason)
 {
     auto room = currentRoom();
 
@@ -758,7 +752,7 @@ PxMatrixClient::banUser(QString userid, QString reason)
       reason.trimmed().toStdString());
 }
 void
-PxMatrixClient::unbanUser(QString userid, QString reason)
+Chat::unbanUser(QString userid, QString reason)
 {
     auto room = currentRoom();
 
@@ -785,19 +779,19 @@ PxMatrixClient::unbanUser(QString userid, QString reason)
 }
 
 void
-PxMatrixClient::receivedSessionKey(const std::string &room_id, const std::string &session_id)
+Chat::receivedSessionKey(const std::string &room_id, const std::string &session_id)
 {
     // view_manager_->receivedSessionKey(room_id, session_id);
 }
 
 QString
-PxMatrixClient::status() const
+Chat::status() const
 {
     return QString::fromStdString(cache::statusMessage(utils::localUser().toStdString()));
 }
 
 void
-PxMatrixClient::setStatus(const QString &status)
+Chat::setStatus(const QString &status)
 {
     http::client()->put_presence_status(
       currentPresence(), status.toStdString(), [](mtx::http::RequestErr err) {
@@ -808,7 +802,7 @@ PxMatrixClient::setStatus(const QString &status)
 }
 
 mtx::presence::PresenceState
-PxMatrixClient::currentPresence() const
+Chat::currentPresence() const
 {
     switch (userSettings_->presence()) {
     case UserSettings::Presence::Online:
@@ -823,7 +817,7 @@ PxMatrixClient::currentPresence() const
 }
 
 void
-PxMatrixClient::verifyOneTimeKeyCountAfterStartup()
+Chat::verifyOneTimeKeyCountAfterStartup()
 {
     http::client()->upload_keys(
       olm::client()->create_upload_keys_request(),
@@ -856,7 +850,7 @@ PxMatrixClient::verifyOneTimeKeyCountAfterStartup()
 }
 
 void
-PxMatrixClient::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
+Chat::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
 {
     if (auto count = counts.find(mtx::crypto::SIGNED_CURVE25519); count != counts.end()) {
         nhlog::crypto()->debug(
@@ -904,7 +898,7 @@ PxMatrixClient::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &cou
 }
 
 void
-PxMatrixClient::getProfileInfo(std::string userid)
+Chat::getProfileInfo(std::string userid)
 {
     http::client()->get_profile(
       userid, [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
@@ -918,7 +912,7 @@ PxMatrixClient::getProfileInfo(std::string userid)
 }
 
 void
-PxMatrixClient::getBackupVersion()
+Chat::getBackupVersion()
 {
     if (!UserSettings::instance()->useOnlineKeyBackup()) {
         nhlog::crypto()->info("Online key backup disabled.");
@@ -972,7 +966,7 @@ PxMatrixClient::getBackupVersion()
 }
 
 void
-PxMatrixClient::initiateLogout()
+Chat::initiateLogout()
 {
     http::client()->logout([this](const mtx::responses::Logout &, mtx::http::RequestErr err) {
         if (err) {
@@ -990,22 +984,12 @@ PxMatrixClient::initiateLogout()
     emit showOverlayProgressBar();
 }
 
-template<typename T>
 void
-PxMatrixClient::connectCallMessage()
-{
-    // connect(callManager_,
-    //         qOverload<const QString &, const T &>(&CallManager::newMessage),
-    //         view_manager_,
-    //         qOverload<const QString &, const T &>(&TimelineViewManager::queueCallMessage));
-}
-
-void
-PxMatrixClient::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
+Chat::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                    const SecretsToDecrypt &secrets)
 {
     QString text = QInputDialog::getText(
-      PxMatrixClient::instance(),
+      Chat::instance(),
       QCoreApplication::translate("CrossSigningSecrets", "Decrypt secrets"),
       keyDesc.name.empty()
         ? QCoreApplication::translate(
@@ -1031,7 +1015,7 @@ PxMatrixClient::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDesc
 
     if (!decryptionKey) {
         QMessageBox::information(
-          PxMatrixClient::instance(),
+          Chat::instance(),
           QCoreApplication::translate("CrossSigningSecrets", "Decryption failed"),
           QCoreApplication::translate("CrossSigningSecrets",
                                       "Failed to decrypt secrets with the "
@@ -1107,7 +1091,7 @@ PxMatrixClient::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDesc
 }
 
 void
-PxMatrixClient::startChat(QString userid)
+Chat::startChat(QString userid)
 {
     auto joined_rooms = cache::joinedRooms();
     auto room_infos   = cache::getRoomInfo(joined_rooms);
@@ -1137,7 +1121,7 @@ PxMatrixClient::startChat(QString userid)
         req.invite    = {userid.toStdString()};
         req.is_direct = true;
     }
-    emit PxMatrixClient::instance()->createRoom(req);
+    emit Chat::instance()->createRoom(req);
 }
 
 static QString
@@ -1162,13 +1146,13 @@ mxidFromSegments(QStringRef sigil, QStringRef mxid)
 }
 
 bool
-PxMatrixClient::isRoomActive(const QString &room_id)
+Chat::isRoomActive(const QString &room_id)
 {
     return isActiveWindow() && currentRoom() == room_id;
 }
 
 QString
-PxMatrixClient::currentRoom() const
+Chat::currentRoom() const
 {
     // if (view_manager_->rooms()->currentRoom())
     //     return view_manager_->rooms()->currentRoom()->roomId();

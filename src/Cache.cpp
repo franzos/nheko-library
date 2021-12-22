@@ -26,7 +26,7 @@
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "PxMatrixClient.h"
+#include "Chat.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
@@ -300,7 +300,7 @@ static void
 fatalSecretError()
 {
     // QMessageBox::critical(
-    //   PxMatrixClient::instance(),
+    //   Chat::instance(),
     //   QCoreApplication::translate("SecretStorage", "Failed to connect to secret storage"),
     //   QCoreApplication::translate(
     //     "SecretStorage",
@@ -561,7 +561,7 @@ Cache::importSessionKeys(const mtx::crypto::ExportedSessionKeys &keys)
         auto exported_session = mtx::crypto::import_session(s.session_key);
 
         saveInboundMegolmSession(index, std::move(exported_session), data);
-        PxMatrixClient::instance()->receivedSessionKey(index.room_id, index.session_id);
+        Chat::instance()->receivedSessionKey(index.room_id, index.session_id);
     }
 }
 
@@ -4659,7 +4659,6 @@ init(const QString &user_id)
     qRegisterMetaType<std::map<QString, RoomInfo>>();
     qRegisterMetaType<std::map<QString, mtx::responses::Timeline>>();
     qRegisterMetaType<mtx::responses::QueryKeys>();
-    nhlog::init("px-matrix-client-library");
 
     instance_ = std::make_unique<Cache>(user_id);
 }

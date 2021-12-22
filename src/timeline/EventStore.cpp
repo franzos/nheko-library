@@ -11,7 +11,7 @@
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "PxMatrixClient.h"
+#include "Chat.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
@@ -410,31 +410,31 @@ EventStore::handle_room_verification(mtx::events::collections::TimelineEvents ev
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationCancel> &msg) {
             nhlog::db()->debug("handle_room_verification: Cancel");
-            PxMatrixClient::instance()->receivedDeviceVerificationCancel(msg.content);
+            Chat::instance()->receivedDeviceVerificationCancel(msg.content);
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationAccept> &msg) {
             nhlog::db()->debug("handle_room_verification: Accept");
-            PxMatrixClient::instance()->receivedDeviceVerificationAccept(msg.content);
+            Chat::instance()->receivedDeviceVerificationAccept(msg.content);
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationKey> &msg) {
             nhlog::db()->debug("handle_room_verification: Key");
-            PxMatrixClient::instance()->receivedDeviceVerificationKey(msg.content);
+            Chat::instance()->receivedDeviceVerificationKey(msg.content);
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationMac> &msg) {
             nhlog::db()->debug("handle_room_verification: Mac");
-            PxMatrixClient::instance()->receivedDeviceVerificationMac(msg.content);
+            Chat::instance()->receivedDeviceVerificationMac(msg.content);
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationReady> &msg) {
             nhlog::db()->debug("handle_room_verification: Ready");
-            PxMatrixClient::instance()->receivedDeviceVerificationReady(msg.content);
+            Chat::instance()->receivedDeviceVerificationReady(msg.content);
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationDone> &msg) {
             nhlog::db()->debug("handle_room_verification: Done");
-            PxMatrixClient::instance()->receivedDeviceVerificationDone(msg.content);
+            Chat::instance()->receivedDeviceVerificationDone(msg.content);
         },
         [](const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationStart> &msg) {
             nhlog::db()->debug("handle_room_verification: Start");
-            PxMatrixClient::instance()->receivedDeviceVerificationStart(msg.content, msg.sender);
+            Chat::instance()->receivedDeviceVerificationStart(msg.content, msg.sender);
         },
         [](const auto &) {},
       },

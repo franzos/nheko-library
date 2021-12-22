@@ -58,11 +58,12 @@ set(SRC_FILES
 	src/encryption/Olm.cpp
 	src/AvatarProvider.cpp
 	src/Cache.cpp
-	src/PxMatrixClient.cpp
+	src/Chat.cpp
 	src/EventAccessors.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
 	src/MxcImageProvider.cpp
+	src/PXMatrixClient.cpp
 	src/UserSettingsPage.cpp
 	src/Utils.cpp
 	)
@@ -98,7 +99,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/AvatarProvider.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
-	src/PxMatrixClient.h
+	src/Chat.h
 	src/UserSettingsPage.h	
 	src/Authentication.h
 )
