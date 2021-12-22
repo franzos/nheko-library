@@ -9,7 +9,7 @@ class LoginTest: public QObject
 {
     Q_OBJECT
 private slots:
-    void loginTurue(){
+    void loginWithCorrectPassword(){
         Authentication *loginTest = new Authentication;
         QEventLoop eventLoop;
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
@@ -25,10 +25,10 @@ private slots:
         std::string userId = "@hamzeh_test02:pantherx.org";
         std::string password = "5wn685g7mN";
         std::string serverAddress = "https://matrix.pantherx.org";   
-        loginTest->loginWithUsername(deviceName, userId, password, serverAddress); 
+        loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
-    void loginFaile(){
+    void loginWithUncorrectPassword(){
         Authentication *loginTest = new Authentication;
         QEventLoop eventLoop;
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
@@ -44,7 +44,7 @@ private slots:
         std::string userId = "@hamzeh_test02:pantherx.org";
         std::string password = "5wn685g7mNmm";
         std::string serverAddress = "https://matrix.pantherx.org";   
-        loginTest->loginWithUsername(deviceName, userId, password, serverAddress); 
+        loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
     

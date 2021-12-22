@@ -32,7 +32,7 @@ private slots:
             loginInfo = loginTest->userInformation();
             qDebug() << "has valid";
         } else {
-            loginTest->loginWithUsername(deviceName, userId, password, serverAddress); 
+            loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
             eventLoop.exec();
         }
     }
