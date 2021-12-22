@@ -48,3 +48,17 @@ void Authentication::loginWithPassword(std::string deviceName, std::string userI
     mtx::responses::Login otput; 
     return otput;
   }
+
+  void Authentication::logout(){
+    http::client()->logout([this](const mtx::responses::Logout &, mtx::http::RequestErr err) {
+        if (err) {
+            // TODO: handle special errors
+           // nhlog::net()->warn("failed to logout: {}", err);
+           std::string msg = "failed to logout ";
+           emit errorOccurred(msg);
+            return;
+        }
+        //TODO Delete account from DB via deviceId
+        emit logoutOk();
+    });
+  }
