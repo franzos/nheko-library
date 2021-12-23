@@ -42,17 +42,17 @@ struct Rooms;
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
 
-class PxMatrixClient : public QWidget
+class Chat : public QWidget
 {
     Q_OBJECT
 
 public:
-    PxMatrixClient(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
+    Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
 
     // Initialize all the components of the UI.
     void initialize(std::string userid, std::string homeserver, std::string token);
 
-    static PxMatrixClient *instance() { return instance_; }
+    static Chat *instance() { return instance_; }
 
     QSharedPointer<UserSettings> userSettings() { return userSettings_; }
     void deleteConfigs();
@@ -157,7 +157,7 @@ private slots:
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 
 private:
-    static PxMatrixClient *instance_;
+    static Chat *instance_;
 
     void startInitialSync();
     void tryInitialSync();
@@ -181,11 +181,6 @@ private:
     //! Send desktop notification for the received messages.
     void sendNotifications(const mtx::responses::Notifications &);
 
-    template<typename T>
-    void connectCallMessage();
-
-    // TimelineViewManager *view_manager_;
-
     QTimer connectivityTimer_;
     std::atomic_bool isConnected_;
 
@@ -195,7 +190,7 @@ private:
 
 template<class Collection>
 std::map<std::string, mtx::events::StateEvent<mtx::events::state::Member>>
-PxMatrixClient::getMemberships(const std::vector<Collection> &collection) const
+Chat::getMemberships(const std::vector<Collection> &collection) const
 {
     std::map<std::string, mtx::events::StateEvent<mtx::events::state::Member>> memberships;
 

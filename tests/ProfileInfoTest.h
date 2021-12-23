@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "../src/Authentication.h"
-#include "../src/PxMatrixClient.h"
+#include "../src/Chat.h"
 
 class ProfileInfoTest: public QObject
 {
@@ -37,13 +37,13 @@ private slots:
         }
     }
     void test(){
-        auto client = new PxMatrixClient();
-        QObject::connect(client, &PxMatrixClient::userDisplayNameReady,[&](const std::string &name){
+        auto client = new Chat();
+        QObject::connect(client, &Chat::userDisplayNameReady,[&](const std::string &name){
             qDebug() << QString::fromStdString(name);
             eventLoop.quit();
         });
 
-        QObject::connect(client, &PxMatrixClient::userAvatarReady,[&](const std::string &avatar){
+        QObject::connect(client, &Chat::userAvatarReady,[&](const std::string &avatar){
             qDebug() << QString::fromStdString(avatar);
             eventLoop.quit();
         });
