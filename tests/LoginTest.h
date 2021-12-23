@@ -28,6 +28,7 @@ private slots:
         std::string userId = "@fakhri_test01:pantherx.org";
         std::string password = "a2bqy9iHU8";
         std::string serverAddress = "https://matrix.pantherx.org";   
+        loginTest->serverDiscovery(userId);
         loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }

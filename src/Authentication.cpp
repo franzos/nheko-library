@@ -1,5 +1,6 @@
 #include "Authentication.h"
 #include <QDebug>
+#include <iostream>
 
 
 
@@ -62,3 +63,50 @@ void Authentication::loginWithPassword(std::string deviceName, std::string userI
         emit logoutOk();
     });
   }
+
+std::string Authentication::serverDiscovery(std::string userId){
+    mtx::identifiers::User user;    
+    try {
+        user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
+    } catch (const std::exception &) {
+        // showError(error_matrixid_label_,
+        //           tr("You have entered an invalid Matrix ID  e.g @joe:matrix.org"));
+        return " ";
+    }
+  QString homeServer = QString::fromStdString(user.hostname());
+  http::client()->set_server(user.hostname());
+  http::client()->well_known(   
+    [this](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
+        if (err) {
+            if (err->status_code == 404) {
+                // nhlog::net()->info("Autodiscovery: No .well-known.");
+                // checkHomeserverVersion();
+                std::cout<<"Error 1 "<<std::endl;
+                return "";
+            }
+
+            if (!err->parse_error.empty()) {
+                // emit versionErrorCb(tr("Autodiscovery failed. Received malformed response."));
+                // nhlog::net()->error("Autodiscovery failed. Received malformed response.");
+                std::cout<<"Error 2"<<std::endl;
+                return "";
+            }
+
+            // emit versionErrorCb(tr("Autodiscovery failed. Unknown error when "
+            //                        "requesting .well-known."));
+            // nhlog::net()->error("Autodiscovery failed. Unknown error when "
+            //                     "requesting .well-known. {} {}",
+            //                     err->status_code,
+            //                     err->error_code);
+            
+            return "";
+        }
+
+        // nhlog::net()->info("Autodiscovery: Discovered '" + res.homeserver.base_url + "'");
+        //http::client()->set_server(res.homeserver.base_url);
+        std::cout<<"Test: "<< res.homeserver.base_url<<std::endl;
+        //homeServer = res.homeserver.base_url;
+    });
+   return homeServer;
+
+}
