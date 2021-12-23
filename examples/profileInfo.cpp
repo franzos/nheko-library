@@ -41,10 +41,16 @@ int main(int argc, char *argv[]){
         qInfo() << "User avatar      : " << QString::fromStdString(avatar);
     });
 
-    QObject::connect(client, &Chat::roomListReady,[](const mtx::responses::Rooms &rooms){
-        qInfo() << "Join   Rooms: " << rooms.join.size();
-        qInfo() << "Invite Rooms: " << rooms.invite.size();
-        qInfo() << "Leave  Rooms: " << rooms.leave.size();
+    QObject::connect(client, &Chat::roomListReady,[client](){
+        auto rooms = client->joinedRoomList();
+        for(auto const room: rooms){
+            auto info = room.second;
+            qDebug() << " + "   << room.first 
+                                << QString::fromStdString(info.name) 
+                                << QString::fromStdString(info.topic) 
+                                << QString::fromStdString(info.avatar_url) 
+                                << QString::fromStdString(info.version) << info.member_count;
+        }
     });
     client->initialize(loginInfo.user_id.to_string(),
                         "https://matrix.pantherx.org",

@@ -6,6 +6,7 @@
 
 #include "Authentication.h"
 #include "Chat.h"
+#include "Cache.h"
 
 namespace px {
     namespace mtx_client {
@@ -14,4 +15,4 @@ namespace px {
 
         bool init();
     }
-};
+}

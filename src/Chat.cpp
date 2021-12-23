@@ -5,7 +5,6 @@
 
 #include <QApplication>
 #include <QInputDialog>
-#include <QMessageBox>
 #include <QUrl>
 #include <mtx/responses.hpp>
 #include <QDebug>
@@ -181,8 +180,6 @@ void
 Chat::logout()
 {
     deleteConfigs();
-
-    emit closing();
     connectivityTimer_.stop();
 }
 
@@ -294,6 +291,10 @@ Chat::initialize(std::string userid, std::string homeserver, std::string token)
     }
 }
 
+std::map<QString, RoomInfo> Chat::joinedRoomList(){
+    return cache::getRoomInfo(cache::joinedRooms());
+}    
+
 void
 Chat::loadStateFromCache()
 {
@@ -301,12 +302,8 @@ Chat::loadStateFromCache()
 
     try {
         olm::client()->load(cache::restoreOlmAccount(), cache::client()->pickleSecret());
-
-        emit initializeEmptyViews();
-        emit initializeMentions(cache::getTimelineMentions());
-
+        emit roomListReady();
         cache::calculateRoomReadStatus();
-
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());
         emit dropToLoginPageCb(tr("Failed to restore OLM account. Please login again."));
@@ -332,7 +329,7 @@ Chat::loadStateFromCache()
     getBackupVersion();
     verifyOneTimeKeyCountAfterStartup();
 
-    emit contentLoaded();
+    emit initiateFinished();
     // Start receiving events.
     emit trySyncCb();
 }
@@ -480,12 +477,8 @@ Chat::startInitialSync()
 
         try {
             cache::client()->saveState(res);
-
             olm::handle_to_device_messages(res.to_device.events);
-
-            emit roomListReady(std::move(res.rooms));
-            emit initializeMentions(cache::getTimelineMentions());
-
+            emit roomListReady();
             cache::calculateRoomReadStatus();
         } catch (const lmdb::error &e) {
             nhlog::db()->error("failed to save state after initial sync: {}", e.what());
@@ -494,7 +487,7 @@ Chat::startInitialSync()
         }
 
         emit trySyncCb();
-        emit contentLoaded();
+        emit initiateFinished();
     });
 }
 
@@ -598,14 +591,6 @@ Chat::joinRoomVia(const std::string &room_id,
                       const std::vector<std::string> &via,
                       bool promptForConfirmation)
 {
-    if (promptForConfirmation &&
-        QMessageBox::Yes !=
-          QMessageBox::question(
-            this,
-            tr("Confirm join"),
-            tr("Do you really want to join %1?").arg(QString::fromStdString(room_id))))
-        return;
-
     http::client()->join_room(
       room_id, via, [this, room_id](const mtx::responses::RoomId &, mtx::http::RequestErr err) {
           if (err) {
@@ -677,14 +662,6 @@ void
 Chat::inviteUser(QString userid, QString reason)
 {
     auto room = currentRoom();
-
-    if (QMessageBox::question(this,
-                              tr("Confirm invite"),
-                              tr("Do you really want to invite %1 (%2)?")
-                                .arg(cache::displayName(room, userid))
-                                .arg(userid)) != QMessageBox::Yes)
-        return;
-
     http::client()->invite_user(
       room.toStdString(),
       userid.toStdString(),
@@ -703,14 +680,6 @@ void
 Chat::kickUser(QString userid, QString reason)
 {
     auto room = currentRoom();
-
-    if (QMessageBox::question(this,
-                              tr("Confirm kick"),
-                              tr("Do you really want to kick %1 (%2)?")
-                                .arg(cache::displayName(room, userid))
-                                .arg(userid)) != QMessageBox::Yes)
-        return;
-
     http::client()->kick_user(
       room.toStdString(),
       userid.toStdString(),
@@ -729,14 +698,6 @@ void
 Chat::banUser(QString userid, QString reason)
 {
     auto room = currentRoom();
-
-    if (QMessageBox::question(this,
-                              tr("Confirm ban"),
-                              tr("Do you really want to ban %1 (%2)?")
-                                .arg(cache::displayName(room, userid))
-                                .arg(userid)) != QMessageBox::Yes)
-        return;
-
     http::client()->ban_user(
       room.toStdString(),
       userid.toStdString(),
@@ -755,14 +716,6 @@ void
 Chat::unbanUser(QString userid, QString reason)
 {
     auto room = currentRoom();
-
-    if (QMessageBox::question(this,
-                              tr("Confirm unban"),
-                              tr("Do you really want to unban %1 (%2)?")
-                                .arg(cache::displayName(room, userid))
-                                .arg(userid)) != QMessageBox::Yes)
-        return;
-
     http::client()->unban_user(
       room.toStdString(),
       userid.toStdString(),
@@ -971,7 +924,7 @@ Chat::initiateLogout()
     http::client()->logout([this](const mtx::responses::Logout &, mtx::http::RequestErr err) {
         if (err) {
             // TODO: handle special errors
-            emit contentLoaded();
+            // emit contentLoaded();
             nhlog::net()->warn("failed to logout: {} - {}",
                                mtx::errors::to_string(err->matrix_error.errcode),
                                err->matrix_error.error);
@@ -980,8 +933,6 @@ Chat::initiateLogout()
 
         emit loggedOut();
     });
-
-    emit showOverlayProgressBar();
 }
 
 void
@@ -1013,15 +964,15 @@ Chat::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription ke
         }
     }
 
-    if (!decryptionKey) {
-        QMessageBox::information(
-          Chat::instance(),
-          QCoreApplication::translate("CrossSigningSecrets", "Decryption failed"),
-          QCoreApplication::translate("CrossSigningSecrets",
-                                      "Failed to decrypt secrets with the "
-                                      "provided recovery key or passphrase"));
-        return;
-    }
+    // if (!decryptionKey) {
+    //     QMessageBox::information(
+    //       Chat::instance(),
+    //       QCoreApplication::translate("CrossSigningSecrets", "Decryption failed"),
+    //       QCoreApplication::translate("CrossSigningSecrets",
+    //                                   "Failed to decrypt secrets with the "
+    //                                   "provided recovery key or passphrase"));
+    //     return;
+    // }
 
     auto deviceKeys = cache::client()->userKeys(http::client()->user_id().to_string());
     mtx::requests::KeySignaturesUpload req;
@@ -1106,13 +1057,6 @@ Chat::startChat(QString userid)
             }
         }
     }
-
-    if (QMessageBox::Yes !=
-        QMessageBox::question(
-          this,
-          tr("Confirm invite"),
-          tr("Do you really want to start a private chat with %1?").arg(userid)))
-        return;
 
     mtx::requests::CreateRoom req;
     req.preset     = mtx::requests::Preset::PrivateChat;

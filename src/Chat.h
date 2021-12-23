@@ -24,6 +24,7 @@
 #include <QWidget>
 
 #include "UserSettingsPage.h"
+#include "Cache.h"
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
 #include "Utils.h"
@@ -48,28 +49,20 @@ class Chat : public QWidget
 
 public:
     Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
-
-    // Initialize all the components of the UI.
     void initialize(std::string userid, std::string homeserver, std::string token);
-
     static Chat *instance() { return instance_; }
-
     QSharedPointer<UserSettings> userSettings() { return userSettings_; }
     void deleteConfigs();
-
     void initiateLogout();
-
     QString status() const;
     void setStatus(const QString &status);
-
     mtx::presence::PresenceState currentPresence() const;
-
     // TODO(Nico): Get rid of this!
     QString currentRoom() const;
     void getProfileInfo(std::string userid = utils::localUser().toStdString());
 
 public slots:
-
+    std::map<QString, RoomInfo> joinedRoomList();
     void startChat(QString userid);
     void leaveRoom(const QString &room_id);
     void createRoom(const mtx::requests::CreateRoom &req);
@@ -77,12 +70,10 @@ public slots:
     void joinRoomVia(const std::string &room_id,
                      const std::vector<std::string> &via,
                      bool promptForConfirmation = true);
-
     void inviteUser(QString userid, QString reason);
     void kickUser(QString userid, QString reason);
     void banUser(QString userid, QString reason);
     void unbanUser(QString userid, QString reason);
-
     void receivedSessionKey(const std::string &room_id, const std::string &session_id);
     void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
@@ -93,16 +84,11 @@ signals:
     void notificationsRetrieved(const mtx::responses::Notifications &);
     void highlightedNotifsRetrieved(const mtx::responses::Notifications &, const QPoint widgetPos);
 
-    void contentLoaded();
-    void closing();
-    void changeWindowTitle(const int);
+    void initiateFinished();
     void unreadMessages(int count);
     void showNotification(const QString &msg);
     void showLoginPage(const QString &msg);
-    void showUserSettingsPage();
-    void showOverlayProgressBar();
 
-    void ownProfileOk();
     void userDisplayNameReady(const std::string &name);
     void userAvatarReady(const std::string &avatar);
     void loggedOut();
@@ -115,9 +101,7 @@ signals:
     void newRoom(const QString &room_id);
     void changeToRoom(const QString &room_id);
 
-    void roomListReady(const mtx::responses::Rooms &rooms);
-    void initializeEmptyViews();
-    void initializeMentions(const QMap<QString, mtx::responses::Notifications> &notifs);
+    void roomListReady();
     void syncUI(const mtx::responses::Rooms &rooms);
     void dropToLoginPageCb(const QString &msg);
 
@@ -129,7 +113,6 @@ signals:
                        const QImage &icon);
 
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
-    void themeChanged();
     void decryptSidebarChanged();
     void chatFocusChanged(const bool focused);
 
@@ -153,12 +136,10 @@ private slots:
     void removeRoom(const QString &room_id);
     void changeRoom(const QString &room_id);
     void dropToLoginPage(const QString &msg);
-
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 
 private:
     static Chat *instance_;
-
     void startInitialSync();
     void tryInitialSync();
     void trySync();

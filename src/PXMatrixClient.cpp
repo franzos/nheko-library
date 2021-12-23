@@ -20,6 +20,7 @@ namespace px {
         bool init(){
             http::init();
             nhlog::init("px-matrix-client-library");
+            return true;
         }
     }
-};
+}

@@ -40,14 +40,6 @@ if (NOT CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wshadow")
 endif()
 
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DSPDLOG_DEBUG_ON)	
-	message("Build in Debug Mode (Debug Log is Active)")
-else()
-	message("Build in Release Mode (Debug Log is Disable)")
-endif()
-
 #
 # Declare source and header files.
 #
@@ -109,8 +101,13 @@ set(PX_MATRIX_LIB_DEPS
 	${SRC_FILES}
 	${MOC_HEADERS})
 
-
-add_library (px-matrix-client-library ${PX_MATRIX_LIB_DEPS})
+IF(SHARED_LIB)
+	add_library (px-matrix-client-library SHARED ${PX_MATRIX_LIB_DEPS})
+	message(" + Build as shared library.")
+ELSE()
+	add_library (px-matrix-client-library ${PX_MATRIX_LIB_DEPS})
+	message(" + Build as static library.")
+ENDIF()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
 	set_target_properties(px-matrix-client-library PROPERTIES ENABLE_EXPORTS ON)
@@ -131,9 +128,17 @@ set(DEP_LIBS
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DSPDLOG_DEBUG_ON)	
+	message(" + Build in Debug Mode (Debug Log is Active)")
+else()
+	message(" + Build in Release Mode (Debug Log is Disable)")
+endif()
+
 IF(BUILD_EXAMPLES)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo px-matrix-client-library)
+	message(" + \"examples\" will be built.")
 ENDIF()
 
 IF(BUILD_TESTS)
@@ -143,4 +148,5 @@ IF(BUILD_TESTS)
 					tests/LoginTest.h
 					tests/ProfileInfoTest.h)
 	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library)
+	message(" + \"tests\" will be built.")
 ENDIF()
