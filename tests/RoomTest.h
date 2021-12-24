@@ -8,15 +8,19 @@ class RoomTest: public QObject
 {
     Q_OBJECT
 private:
-    mtx::responses::Login loginInfo;
+    mtx::responses::Login loginInfoUser1;
     std::string deviceName = "test";
-    std::string userId = "@hamzeh_test01:pantherx.org";
-    std::string password = "pQn3mDGsYR";
+    std::string userId1 = "@hamzeh_test01:pantherx.org";
+    std::string password1 = "pQn3mDGsYR";
+    std::string userId2 = "@hamzeh_test02:pantherx.org";
+    std::string password2 = "5wn685g7mN";
     std::string serverAddress = "https://matrix.pantherx.org";   
-    std::string inviteUserId = "@hamzeh_test02:pantherx.org";
+    
     QEventLoop eventLoop;
-    Chat        *chat = nullptr;
-    std::string roomID; 
+    Chat        *chatUser1 = nullptr;
+    Chat        *chatUser2 = nullptr;
+    std::string inviteRoomId;
+    std::string joinRoomId;
 
     QString GetRandomString(int len) {
         const QString possibleCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
@@ -37,7 +41,7 @@ private slots:
         px::mtx_client::init();
         auto loginTest = px::mtx_client::authentication();
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
-            loginInfo = res;
+            loginInfoUser1 = res;
             eventLoop.quit();
         });
         QObject::connect(loginTest,  &Authentication::errorOccurred, [&](const std::string &out){
@@ -46,19 +50,15 @@ private slots:
         });
 
         if(loginTest->hasValidUser()){
-            loginInfo = loginTest->userInformation();
-            qDebug() << "has valid";
+            loginInfoUser1 = loginTest->userInformation();
         } else {
-            loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
+            loginTest->loginWithPassword(deviceName, userId1, password1, serverAddress); 
             eventLoop.exec();
         }
-        chat = px::mtx_client::chat();
-        chat->initialize( loginInfo.user_id.to_string(),
+        chatUser1 = px::mtx_client::chat();
+        chatUser1->initialize( loginInfoUser1.user_id.to_string(),
                     serverAddress,
-                    loginInfo.access_token);
-    }
-    void roomList(){
-        QFAIL("TODO");
+                    loginInfoUser1.access_token);
     }
 
     void createRoom(){
@@ -68,62 +68,83 @@ private slots:
         roomRqs.visibility = common::RoomVisibility::Public;
         roomRqs.name = GetRandomString(10).toStdString();
         roomRqs.topic = "test";
-        connect(chat, &Chat::roomCreated,[&](const std::string roomId){
-            qDebug() << "Room ID:" << QString::fromStdString(roomId);
-            roomID = roomId;
+        connect(chatUser1, &Chat::roomCreated,[&](const std::string roomId){
+            inviteRoomId = roomId;
             eventLoop.quit();
         });
 
-        connect(chat, &Chat::roomCreationFailed,[&](const std::string error){
+        connect(chatUser1, &Chat::roomCreationFailed,[&](const std::string error){
             QFAIL(error.c_str());
             eventLoop.quit();
         });
-        chat->createRoom(roomRqs);
+        chatUser1->createRoom(roomRqs);
         eventLoop.exec();
     }
 
     void inviteRoom(){
-        if(roomID.empty())
+        if(inviteRoomId.empty())
             QFAIL("room id is empty because of the previous test case (createRoom) failed");
         else {
-            connect(chat, &Chat::userInvited,[&](const std::string room_id,const std::string user_id){
-                QCOMPARE(roomID,room_id);
-                QCOMPARE("@hamzeh_test02:pantherx.org",user_id);
+            connect(chatUser1, &Chat::userInvited,[&](const std::string room_id,const std::string user_id){
+                QCOMPARE(inviteRoomId,room_id);
+                QCOMPARE(userId2,user_id);
                 eventLoop.quit();
             });
 
-            connect(chat, &Chat::userInvitationFailed,[&](const std::string room_id,const std::string user_id, const std::string error){
-                QFAIL(error.c_str());
+            connect(chatUser1, &Chat::userInvitationFailed,[&](const std::string room_id,const std::string user_id, const std::string error){
+                QFAIL((error + "(\"" + room_id + ", " + user_id + "\")").c_str());
                 eventLoop.quit();
             });
-            chat->inviteUser(roomID,inviteUserId, "test");
+            chatUser1->inviteUser(inviteRoomId,userId2, "test");
             eventLoop.exec();
         }
     }
 
-    void deleteRoom(){
-        if(roomID.empty())
-            QFAIL("room id is empty because of the previous test case (createRoom) failed");
-        else {
-            connect(chat, &Chat::leftRoom,[&](const std::string room_id){
-                QCOMPARE(roomID,room_id);
-                eventLoop.quit();
-            });
-
-            connect(chat, &Chat::roomLeaveFailed,[&](const std::string error){
-                QFAIL(error.c_str());
-                eventLoop.quit();
-            });
-            chat->leaveRoom(roomID);
-            eventLoop.exec();
+    void roomList(){
+        auto rooms = chatUser1->joinedRoomList();
+        for(auto const room: rooms){
+            if(room.first.toStdString() == inviteRoomId) {
+                return;
+            }
         }
+        QFAIL("Created room in the previous step not found!");
     }
 
     void joinRoom(){
-        QFAIL("TODO");
+        QFAIL("TODO (Logout user1, Login user2, roomList, createRoom, join)");
+        // if(joinRoomId.empty())
+        //     QFAIL("room id is empty because of the previous test case (createRoom) failed");
+        // connect(chatUser1,&Chat::joinedRoom,[&](const std::string &roomID){
+        //     QCOMPARE(roomID,joinRoomId);
+        //     eventLoop.quit();
+        // });
+        // connect(chatUser1,&Chat::joinRoomFailed,[&](const std::string &error){
+        //     QFAIL(error.c_str());
+        //     eventLoop.quit();
+        // });
+        // chatUser1->joinedRoom(joinRoomId);
+        // eventLoop.exec();
     }
 
-    void leaveRoom(){
-        QFAIL("TODO");
+    void deleteRoom(){
+        if(inviteRoomId.empty())
+            QFAIL("room id is empty because of the previous test case (createRoom) failed");
+        else {
+            connect(chatUser1, &Chat::leftRoom,[&](const std::string room_id){
+                QCOMPARE(inviteRoomId,room_id);
+                eventLoop.quit();
+            });
+
+            connect(chatUser1, &Chat::roomLeaveFailed,[&](const std::string error){
+                QFAIL(error.c_str());
+                eventLoop.quit();
+            });
+            chatUser1->leaveRoom(inviteRoomId);
+            eventLoop.exec();
+        }
+    }
+
+    void cleanupTestCase(){
+        QFAIL("TODO (logout)");
     }
 };
