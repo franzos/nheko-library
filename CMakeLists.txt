@@ -146,7 +146,8 @@ IF(BUILD_TESTS)
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
 					tests/LoginTest.h
-					tests/ProfileInfoTest.h)
+					tests/ProfileInfoTest.h
+					tests/RoomTest.h)
 	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library)
 	message(" + \"tests\" will be built.")
 ENDIF()

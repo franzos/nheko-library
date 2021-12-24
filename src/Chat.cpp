@@ -109,7 +109,6 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
     //   });
 
     connect(this, &Chat::leftRoom, this, &Chat::removeRoom);
-    connect(this, &Chat::changeToRoom, this, &Chat::changeRoom, Qt::QueuedConnection);
     connect(this, &Chat::notificationsRetrieved, this, &Chat::sendNotifications);
     connect(this,
             &Chat::highlightedNotifsRetrieved,
@@ -335,11 +334,11 @@ Chat::loadStateFromCache()
 }
 
 void
-Chat::removeRoom(const QString &room_id)
+Chat::removeRoom(const std::string &room_id)
 {
     try {
         cache::removeRoom(room_id);
-        cache::removeInvite(room_id.toStdString());
+        cache::removeInvite(room_id);
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failure while removing room: {}", e.what());
         // TODO: Notify the user.
@@ -580,9 +579,8 @@ Chat::trySync()
 }
 
 void
-Chat::joinRoom(const QString &room)
+Chat::joinRoom(const std::string &room_id)
 {
-    const auto room_id = room.toStdString();
     joinRoomVia(room_id, {}, false);
 }
 
@@ -592,23 +590,20 @@ Chat::joinRoomVia(const std::string &room_id,
                       bool promptForConfirmation)
 {
     http::client()->join_room(
-      room_id, via, [this, room_id](const mtx::responses::RoomId &, mtx::http::RequestErr err) {
+      room_id, via, [this, room_id](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
           if (err) {
-              emit showNotification(
-                tr("Failed to join room: %1").arg(QString::fromStdString(err->matrix_error.error)));
+              emit joinRoomFailed(err->matrix_error.error);
               return;
           }
 
-          emit tr("You joined the room");
+          emit joinedRoom(roomId.room_id);
 
           // We remove any invites with the same room_id.
           try {
               cache::removeInvite(room_id);
           } catch (const lmdb::error &e) {
-              emit showNotification(tr("Failed to remove invite: %1").arg(e.what()));
+              nhlog::db()->error("Failed to remove invite: {}", e.what()); // TODO error to user
           }
-
-        //   view_manager_->rooms()->setCurrentRoom(QString::fromStdString(room_id));
       });
 }
 
@@ -621,60 +616,45 @@ Chat::createRoom(const mtx::requests::CreateRoom &req)
               const auto err_code   = mtx::errors::to_string(err->matrix_error.errcode);
               const auto error      = err->matrix_error.error;
               const int status_code = static_cast<int>(err->status_code);
-
               nhlog::net()->warn("failed to create room: {} {} ({})", error, err_code, status_code);
-
-              emit showNotification(
-                tr("Room creation failed: %1").arg(QString::fromStdString(error)));
+              emit roomCreationFailed(error);
               return;
           }
 
-          QString newRoomId = QString::fromStdString(res.room_id.to_string());
-          emit showNotification(tr("Room %1 created.").arg(newRoomId));
-          emit newRoom(newRoomId);
-          emit changeToRoom(newRoomId);
+          nhlog::net()->info("Room {} created.",res.room_id.to_string());
+          emit roomCreated(res.room_id.to_string());
       });
 }
 
 void
-Chat::leaveRoom(const QString &room_id)
+Chat::leaveRoom(const std::string &room_id)
 {
     http::client()->leave_room(
-      room_id.toStdString(),
+      room_id,
       [this, room_id](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
-              emit showNotification(tr("Failed to leave room: %1")
-                                      .arg(QString::fromStdString(err->matrix_error.error)));
+              emit roomLeaveFailed(err->matrix_error.error);
               return;
           }
-
           emit leftRoom(room_id);
       });
 }
 
 void
-Chat::changeRoom(const QString &room_id)
+Chat::inviteUser(const std::string &roomid,const std::string &userid, const std::string &reason)
 {
-    // view_manager_->rooms()->setCurrentRoom(room_id);
-}
-
-void
-Chat::inviteUser(QString userid, QString reason)
-{
-    auto room = currentRoom();
     http::client()->invite_user(
-      room.toStdString(),
-      userid.toStdString(),
-      [this, userid, room](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+      roomid,
+      userid,
+      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
-              emit showNotification(tr("Failed to invite %1 to %2: %3")
-                                      .arg(userid)
-                                      .arg(room)
-                                      .arg(QString::fromStdString(err->matrix_error.error)));
+              emit userInvitationFailed(userid,
+                                        roomid,
+                                        err->matrix_error.error);
           } else
-              emit showNotification(tr("Invited user: %1").arg(userid));
+              emit userInvited(roomid, userid);
       },
-      reason.trimmed().toStdString());
+      QString::fromStdString(reason).trimmed().toStdString());
 }
 void
 Chat::kickUser(QString userid, QString reason)

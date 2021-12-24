@@ -64,13 +64,13 @@ public:
 public slots:
     std::map<QString, RoomInfo> joinedRoomList();
     void startChat(QString userid);
-    void leaveRoom(const QString &room_id);
+    void leaveRoom(const std::string &room_id);
     void createRoom(const mtx::requests::CreateRoom &req);
-    void joinRoom(const QString &room);
+    void joinRoom(const std::string &room);
     void joinRoomVia(const std::string &room_id,
                      const std::vector<std::string> &via,
                      bool promptForConfirmation = true);
-    void inviteUser(QString userid, QString reason);
+    void inviteUser(const std::string &roomid, const std::string &userid, const std::string & reason);
     void kickUser(QString userid, QString reason);
     void banUser(QString userid, QString reason);
     void unbanUser(QString userid, QString reason);
@@ -97,9 +97,14 @@ signals:
     void tryDelayedSyncCb();
     void tryInitialSyncCb();
     void newSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
-    void leftRoom(const QString &room_id);
-    void newRoom(const QString &room_id);
-    void changeToRoom(const QString &room_id);
+    void leftRoom(const std::string &room_id);
+    void roomLeaveFailed(const std::string &error);
+    void roomCreated(const std::string &room_id);
+    void roomCreationFailed(const std::string &error);
+    void joinedRoom(const std::string &room_id);
+    void joinRoomFailed(const std::string &error);
+    void userInvited(const std::string &room_id, const std::string user_id);
+    void userInvitationFailed(const std::string &room_id, const std::string user_id, const std::string &error);
 
     void roomListReady();
     void syncUI(const mtx::responses::Rooms &rooms);
@@ -133,8 +138,7 @@ signals:
 
 private slots:
     void logout();
-    void removeRoom(const QString &room_id);
-    void changeRoom(const QString &room_id);
+    void removeRoom(const std::string &room_id);
     void dropToLoginPage(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 

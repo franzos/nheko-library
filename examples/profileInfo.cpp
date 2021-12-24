@@ -32,17 +32,17 @@ int main(int argc, char *argv[]){
         eventLoop.exec();
     }
 
-    auto client = px::mtx_client::chat();
-    QObject::connect(client, &Chat::userDisplayNameReady,[](const std::string &name){
+    auto chat = px::mtx_client::chat();
+    QObject::connect(chat, &Chat::userDisplayNameReady,[](const std::string &name){
         qInfo() << "User Display Name: " << QString::fromStdString(name);
     });
 
-    QObject::connect(client, &Chat::userAvatarReady,[](const std::string &avatar){
+    QObject::connect(chat, &Chat::userAvatarReady,[](const std::string &avatar){
         qInfo() << "User avatar      : " << QString::fromStdString(avatar);
     });
 
-    QObject::connect(client, &Chat::roomListReady,[client](){
-        auto rooms = client->joinedRoomList();
+    QObject::connect(chat, &Chat::roomListReady,[chat](){
+        auto rooms = chat->joinedRoomList();
         for(auto const room: rooms){
             auto info = room.second;
             qDebug() << " + "   << room.first 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
                                 << QString::fromStdString(info.version) << info.member_count;
         }
     });
-    client->initialize(loginInfo.user_id.to_string(),
+    chat->initialize(loginInfo.user_id.to_string(),
                         "https://matrix.pantherx.org",
                         loginInfo.access_token);
     return app.exec();     

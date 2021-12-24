@@ -2,8 +2,7 @@
 #include <QEventLoop>
 #include <iostream>
 
-#include "../src/Authentication.h"
-#include "../src/Chat.h"
+#include "../src/PXMatrixClient.h"
 
 class ProfileInfoTest: public QObject
 {
@@ -17,8 +16,8 @@ private:
     QEventLoop eventLoop;
 private slots:
     void initTestCase(){
-        Authentication *loginTest = new Authentication;
-        QEventLoop eventLoop;
+        px::mtx_client::init();
+        auto loginTest = px::mtx_client::authentication();
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
             loginInfo = res;
             eventLoop.quit();
@@ -36,19 +35,19 @@ private slots:
             eventLoop.exec();
         }
     }
-    void test(){
-        auto client = new Chat();
-        QObject::connect(client, &Chat::userDisplayNameReady,[&](const std::string &name){
+    void displayNameAndAvatar(){
+        auto chat = px::mtx_client::chat();
+        QObject::connect(chat, &Chat::userDisplayNameReady,[&](const std::string &name){
             qDebug() << QString::fromStdString(name);
             eventLoop.quit();
         });
 
-        QObject::connect(client, &Chat::userAvatarReady,[&](const std::string &avatar){
+        QObject::connect(chat, &Chat::userAvatarReady,[&](const std::string &avatar){
             qDebug() << QString::fromStdString(avatar);
             eventLoop.quit();
         });
         
-        client->initialize( loginInfo.user_id.to_string(),
+        chat->initialize( loginInfo.user_id.to_string(),
                             serverAddress,
                             loginInfo.access_token);
         eventLoop.exec();
