@@ -14,11 +14,13 @@ public:
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
     bool hasValidUser();
     mtx::responses::Login userInformation();
+    void logout();
+    std::string serverDiscovery(std::string userId);
 
 signals:
     void loginOk(const mtx::responses::Login &res);
     void errorOccurred(std::string &msg);
-    
+    void logoutOk();    
 };
 
 
