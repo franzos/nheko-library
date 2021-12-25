@@ -14,24 +14,25 @@ private:
     std::string password = "pQn3mDGsYR";
     std::string serverAddress = "https://matrix.pantherx.org";   
     QEventLoop eventLoop;
+    Authentication *auth;
 private slots:
     void initTestCase(){
         px::mtx_client::init();
-        auto loginTest = px::mtx_client::authentication();
-        QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
+        auth = px::mtx_client::authentication();
+        QObject::connect(auth,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
             loginInfo = res;
             eventLoop.quit();
         });
-        QObject::connect(loginTest,  &Authentication::loginErrorOccurred, [&](const std::string &out){
+        QObject::connect(auth,  &Authentication::loginErrorOccurred, [&](const std::string &out){
             qCritical() << QString::fromStdString(out);
             eventLoop.quit();
         });
 
-        if(loginTest->hasValidUser()){
-            loginInfo = loginTest->userInformation();
+        if(auth->hasValidUser()){
+            loginInfo = auth->userInformation();
             qDebug() << "has valid";
         } else {
-            loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
+            auth->loginWithPassword(deviceName, userId, password, serverAddress); 
             eventLoop.exec();
         }
     }
@@ -50,6 +51,18 @@ private slots:
         chat->initialize( loginInfo.user_id.to_string(),
                             serverAddress,
                             loginInfo.access_token);
+        eventLoop.exec();
+    }
+
+    void cleanupTestCase(){
+        connect(auth, &Authentication::logoutOk,[&](){
+            eventLoop.quit();
+        });
+        connect(auth, &Authentication::logoutErrorOccurred,[&](const std::string &err){
+            QFAIL(err.c_str());
+            eventLoop.quit();
+        });
+        auth->logout();
         eventLoop.exec();
     }
 };

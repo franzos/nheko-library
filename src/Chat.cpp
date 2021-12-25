@@ -18,7 +18,8 @@
 #include "UserSettingsPage.h"
 #include "encryption/Olm.h"
 
-Chat *Chat::instance_             = nullptr;
+Chat *Chat::instance_  = nullptr;
+Authentication *Chat::_authentication = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
 constexpr int RETRY_TIMEOUT               = 5'000;
 constexpr size_t MAX_ONETIME_KEYS         = 50;
@@ -36,12 +37,16 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
 {
     setObjectName("px_matrix_client");
     instance_ = this;
+    _authentication = new Authentication();
 
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
     qRegisterMetaType<std::optional<RelatedInfo>>();
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
+    connect(_authentication, &Authentication::logoutOk,[&](){
+        logout();
+    });
 
     connect(this,
             &Chat::downloadedSecrets,
@@ -81,8 +86,6 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
                   emit connectionRestored();
           });
     });
-
-    connect(this, &Chat::loggedOut, this, &Chat::logout);
 
     // connect(
     //   view_manager_,
@@ -178,6 +181,7 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
 void
 Chat::logout()
 {
+    nhlog::net()->info("Logged out");
     deleteConfigs();
     connectivityTimer_.stop();
 }
@@ -196,7 +200,6 @@ void
 Chat::deleteConfigs()
 {
     auto settings = UserSettings::instance()->qsettings();
-
     if (UserSettings::instance()->profile() != "") {
         settings->beginGroup("profile");
         settings->beginGroup(UserSettings::instance()->profile());
@@ -896,23 +899,6 @@ Chat::getBackupVersion()
               }
           });
       });
-}
-
-void
-Chat::initiateLogout()
-{
-    http::client()->logout([this](const mtx::responses::Logout &, mtx::http::RequestErr err) {
-        if (err) {
-            // TODO: handle special errors
-            // emit contentLoaded();
-            nhlog::net()->warn("failed to logout: {} - {}",
-                               mtx::errors::to_string(err->matrix_error.errcode),
-                               err->matrix_error.error);
-            return;
-        }
-
-        emit loggedOut();
-    });
 }
 
 void

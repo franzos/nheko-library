@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QDebug>
 #include <QEventLoop>
+#include <QThread>
 #include "../src/PXMatrixClient.h"
 
 mtx::responses::Login loginInfo;
@@ -10,25 +11,29 @@ int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
     px::mtx_client::init();
-    auto loginTest = px::mtx_client::authentication();
+    auto authentication = px::mtx_client::authentication();
     QEventLoop eventLoop;
-    QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
+    QObject::connect(authentication,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
         loginInfo = res;
         eventLoop.quit();
     });
-    QObject::connect(loginTest,  &Authentication::loginErrorOccurred, [&](const std::string &out){
+    QObject::connect(authentication,  &Authentication::loginErrorOccurred, [&](const std::string &out){
         qCritical() << QString::fromStdString(out);
         eventLoop.quit();
     });
 
-    if(loginTest->hasValidUser()){
-        loginInfo = loginTest->userInformation();
+    QObject::connect(authentication, &Authentication::logoutOk,[](){
+        qInfo() << "Logged out";
+    });
+
+    if(authentication->hasValidUser()){
+        loginInfo = authentication->userInformation();
     } else {
         std::string deviceName = "test";
         std::string userId = "@hamzeh_test01:pantherx.org";
         std::string password = "pQn3mDGsYR";
         std::string serverAddress = "https://matrix.pantherx.org";   
-        loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
+        authentication->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();
     }
 
@@ -52,8 +57,12 @@ int main(int argc, char *argv[]){
                                 << QString::fromStdString(info.version) << info.member_count;
         }
     });
+    
+
     chat->initialize(loginInfo.user_id.to_string(),
                         "https://matrix.pantherx.org",
                         loginInfo.access_token);
+    QThread::sleep(2);
+    authentication->logout();
     return app.exec();     
 }

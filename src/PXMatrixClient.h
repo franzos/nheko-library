@@ -12,7 +12,6 @@ namespace px {
     namespace mtx_client {
         Authentication* authentication();
         Chat * chat();
-
         bool init();
     }
 }

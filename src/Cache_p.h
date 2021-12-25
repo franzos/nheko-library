@@ -129,7 +129,6 @@ public:
 
     cache::CacheVersion formatVersion();
     void setCurrentFormat();
-    bool runMigrations();
 
     std::vector<QString> roomIds();
     QMap<QString, mtx::responses::Notifications> getTimelineMentions();

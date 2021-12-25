@@ -23,6 +23,7 @@
 #include <QTimer>
 #include <QWidget>
 
+#include "Authentication.h"
 #include "UserSettingsPage.h"
 #include "Cache.h"
 #include "CacheCryptoStructs.h"
@@ -51,9 +52,9 @@ public:
     Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
     void initialize(std::string userid, std::string homeserver, std::string token);
     static Chat *instance() { return instance_; }
+    static Authentication *authentication() { return _authentication;};
     QSharedPointer<UserSettings> userSettings() { return userSettings_; }
     void deleteConfigs();
-    void initiateLogout();
     QString status() const;
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
@@ -91,7 +92,6 @@ signals:
 
     void userDisplayNameReady(const std::string &name);
     void userAvatarReady(const std::string &avatar);
-    void loggedOut();
 
     void trySyncCb();
     void tryDelayedSyncCb();
@@ -144,6 +144,7 @@ private slots:
 
 private:
     static Chat *instance_;
+    static Authentication *_authentication;
     void startInitialSync();
     void tryInitialSync();
     void trySync();
