@@ -6,7 +6,6 @@
 #include <QUrl>
 #include <mtx/responses.hpp>
 #include <QDebug>
-#include "AvatarProvider.h"
 #include "Cache.h"
 #include "Cache_p.h"
 #include "Chat.h"
