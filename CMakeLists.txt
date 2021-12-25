@@ -145,7 +145,7 @@ IF(BUILD_TESTS)
 	set(CMAKE_AUTOMOC ON)
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
-					tests/LoginTest.h
+					tests/AuthenticationTest.h
 					tests/ProfileInfoTest.h
 					tests/RoomTest.h)
 	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library)

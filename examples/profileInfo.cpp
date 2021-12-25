@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
         loginInfo = res;
         eventLoop.quit();
     });
-    QObject::connect(loginTest,  &Authentication::errorOccurred, [&](const std::string &out){
+    QObject::connect(loginTest,  &Authentication::loginErrorOccurred, [&](const std::string &out){
         qCritical() << QString::fromStdString(out);
         eventLoop.quit();
     });
