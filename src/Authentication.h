@@ -19,7 +19,8 @@ public:
 
 signals:
     void loginOk(const mtx::responses::Login &res);
-    void errorOccurred(std::string &msg);
+    void loginErrorOccurred(std::string &msg);
+    void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
 };
 

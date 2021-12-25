@@ -5,7 +5,7 @@
 
 
 
-class LoginTest: public QObject
+class AuthenticationTest: public QObject
 {
     Q_OBJECT
     Authentication *loginTest;
@@ -18,21 +18,31 @@ private slots:
             QCOMPARE(res.user_id.localpart(),"fakhri_test01");            
             eventLoop.quit();
         });
-        QObject::connect(loginTest,  &Authentication::errorOccurred, [&](const std::string &out){
+        QObject::connect(loginTest,  &Authentication::loginErrorOccurred, [&](const std::string &out){
             QFAIL(out.c_str());
             eventLoop.quit();
-        });        
+        });      
+         
+        QObject::connect(loginTest,  &Authentication::logoutErrorOccurred, [&](const std::string &out){
+            QFAIL(out.c_str());
+            eventLoop.quit();
+        });      
 
 
         std::string deviceName = "test";
         std::string userId = "@fakhri_test01:pantherx.org";
         std::string password = "a2bqy9iHU8";
         std::string serverAddress = "https://matrix.pantherx.org";   
-        loginTest->serverDiscovery(userId);
+        // loginTest->serverDiscovery(userId);
         loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
-     void logout(){        
+    void discovery(){        
+        std::string server = loginTest->serverDiscovery("@fakhri_test01:pantherx.org");
+        QCOMPARE(server,"https://matrix.pantherx.org");  
+        eventLoop.quit();     
+    }
+    void logout(){        
         loginTest->logout(); 
         QObject::connect(loginTest,  &Authentication::logoutOk, [&](){
             QVERIFY(1 == 1);
@@ -48,8 +58,9 @@ private slots:
             QFAIL("Logined in invalid user");
             eventLoop.quit();
         });
-        QObject::connect(loginTestWrong,  &Authentication::errorOccurred, [&](const std::string &out){            
-            QCOMPARE(out,"Invalid password");
+        QObject::connect(loginTestWrong,  &Authentication::loginErrorOccurred, [&](const std::string &out){            
+           QCOMPARE(out,"Invalid password");
+        //    QVERIFY(1 == 1);
             eventLoop.quit();
         });
 
@@ -57,7 +68,7 @@ private slots:
         std::string userId = "@fakhri_test01:pantherx.org";
         std::string password = "a2bqy9iHU888";
         std::string serverAddress = "https://matrix.pantherx.org";   
-        loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
+        loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
     

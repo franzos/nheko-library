@@ -19,7 +19,7 @@ void Authentication::loginWithPassword(std::string deviceName, std::string userI
                         error = err->parse_error;
                   }
                   std::string s = std::string (error);
-                  emit errorOccurred(s);
+                  emit loginErrorOccurred(s);
                   return;
               }
               if (res.well_known) {
@@ -55,8 +55,13 @@ void Authentication::loginWithPassword(std::string deviceName, std::string userI
         if (err) {
             // TODO: handle special errors
            // nhlog::net()->warn("failed to logout: {}", err);
-           std::string msg = "failed to logout ";
-           emit errorOccurred(msg);
+           
+            auto error = err->matrix_error.error;
+            if (error.empty()){            
+                error = err->parse_error;
+            }
+            std::string s = std::string (error);            
+           emit logoutErrorOccurred(s);
             return;
         }
         //TODO Delete account from DB via deviceId
@@ -107,6 +112,6 @@ std::string Authentication::serverDiscovery(std::string userId){
         std::cout<<"Test: "<< res.homeserver.base_url<<std::endl;
         //homeServer = res.homeserver.base_url;
     });
-   return homeServer;
+   return homeServer.toStdString();
 
 }
