@@ -117,3 +117,4 @@ struct ImagePackInfo
     std::string source_room;
     std::string state_key;
 };
+ 

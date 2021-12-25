@@ -2,8 +2,7 @@
 #include <QEventLoop>
 #include <iostream>
 
-#include "../src/Authentication.h"
-#include "../src/Chat.h"
+#include "../src/PXMatrixClient.h"
 
 class ProfileInfoTest: public QObject
 {
@@ -15,42 +14,55 @@ private:
     std::string password = "pQn3mDGsYR";
     std::string serverAddress = "https://matrix.pantherx.org";   
     QEventLoop eventLoop;
+    Authentication *auth;
 private slots:
     void initTestCase(){
-        Authentication *loginTest = new Authentication;
-        QEventLoop eventLoop;
-        QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
+        px::mtx_client::init(false);
+        auth = px::mtx_client::authentication();
+        QObject::connect(auth,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
             loginInfo = res;
             eventLoop.quit();
         });
-        QObject::connect(loginTest,  &Authentication::loginErrorOccurred, [&](const std::string &out){
+        QObject::connect(auth,  &Authentication::loginErrorOccurred, [&](const std::string &out){
             qCritical() << QString::fromStdString(out);
             eventLoop.quit();
         });
 
-        if(loginTest->hasValidUser()){
-            loginInfo = loginTest->userInformation();
+        if(auth->hasValidUser()){
+            loginInfo = auth->userInformation();
             qDebug() << "has valid";
         } else {
-            loginTest->loginWithPassword(deviceName, userId, password, serverAddress); 
+            auth->loginWithPassword(deviceName, userId, password, serverAddress); 
             eventLoop.exec();
         }
     }
-    void test(){
-        auto client = new Chat();
-        QObject::connect(client, &Chat::userDisplayNameReady,[&](const std::string &name){
+    void displayNameAndAvatar(){
+        auto chat = px::mtx_client::chat();
+        QObject::connect(chat, &Chat::userDisplayNameReady,[&](const std::string &name){
             qDebug() << QString::fromStdString(name);
             eventLoop.quit();
         });
 
-        QObject::connect(client, &Chat::userAvatarReady,[&](const std::string &avatar){
+        QObject::connect(chat, &Chat::userAvatarReady,[&](const std::string &avatar){
             qDebug() << QString::fromStdString(avatar);
             eventLoop.quit();
         });
         
-        client->initialize( loginInfo.user_id.to_string(),
+        chat->initialize( loginInfo.user_id.to_string(),
                             serverAddress,
                             loginInfo.access_token);
+        eventLoop.exec();
+    }
+
+    void cleanupTestCase(){
+        connect(auth, &Authentication::logoutOk,[&](){
+            eventLoop.quit();
+        });
+        connect(auth, &Authentication::logoutErrorOccurred,[&](const std::string &err){
+            QFAIL(err.c_str());
+            eventLoop.quit();
+        });
+        auth->logout();
         eventLoop.exec();
     }
 };

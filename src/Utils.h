@@ -6,7 +6,6 @@
 
 #include <variant>
 
-#include <QCoreApplication>
 #include <QDateTime>
 #include <QPixmap>
 #include <QRegularExpression>
@@ -110,86 +109,77 @@ messageDescription(const QString &username = "",
 
     if (std::is_same<T, Audio>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:",
-                                               "You sent an audio clip");
+            return "message-description sent: You sent an audio clip";
         else
-            return QCoreApplication::translate("message-description sent:", "%1 sent an audio clip")
+            return QString("message-description sent: %1 sent an audio clip")
               .arg(username);
     } else if (std::is_same<T, Image>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You sent an image");
+            return ("message-description sent: You sent an image");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 sent an image")
+            return QString("message-description sent: %1 sent an image")
               .arg(username);
     } else if (std::is_same<T, File>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You sent a file");
+            return ("message-description sent: You sent a file");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 sent a file")
+            return QString("message-description sent: %1 sent a file")
               .arg(username);
     } else if (std::is_same<T, Video>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You sent a video");
+            return ("message-description sent: You sent a video");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 sent a video")
+            return QString("message-description sent: %1 sent a video")
               .arg(username);
     } else if (std::is_same<T, Sticker>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You sent a sticker");
+            return ("message-description sent: You sent a sticker");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 sent a sticker")
+            return QString("message-description sent: %1 sent a sticker")
               .arg(username);
     } else if (std::is_same<T, Notice>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:",
-                                               "You sent a notification");
+            return ("message-description sent: You sent a notification");
         else
-            return QCoreApplication::translate("message-description sent:",
-                                               "%1 sent a notification")
+            return QString("message-description sent: %1 sent a notification")
               .arg(username);
     } else if (std::is_same<T, Text>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You: %1").arg(body);
+            return QString("message-description sent: You: %1").arg(body);
         else
-            return QCoreApplication::translate("message-description sent:", "%1: %2")
+            return QString("message-description sent: %1: %2")
               .arg(username)
               .arg(body);
     } else if (std::is_same<T, Emote>::value) {
         return QString("* %1 %2").arg(username).arg(body);
     } else if (std::is_same<T, Encrypted>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:",
-                                               "You sent an encrypted message");
+            return ("message-description sent: You sent an encrypted message");
         else
-            return QCoreApplication::translate("message-description sent:",
-                                               "%1 sent an encrypted message")
+            return QString("message-description sent: %1 sent an encrypted message")
               .arg(username);
     } else if (std::is_same<T, CallInvite>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You placed a call");
+            return ("message-description sent: You placed a call");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 placed a call")
+            return QString("message-description sent: %1 placed a call")
               .arg(username);
     } else if (std::is_same<T, CallAnswer>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You answered a call");
+            return ("message-description sent: You answered a call");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 answered a call")
+            return QString("message-description sent: %1 answered a call")
               .arg(username);
     } else if (std::is_same<T, CallHangUp>::value) {
         if (isLocal)
-            return QCoreApplication::translate("message-description sent:", "You ended a call");
+            return ("message-description sent: You ended a call");
         else
-            return QCoreApplication::translate("message-description sent:", "%1 ended a call")
+            return QString("message-description sent: %1 ended a call")
               .arg(username);
     } else {
-        return QCoreApplication::translate("utils", "Unknown Message Type");
+        return ("utils - Unknown Message Type");
     }
 }
-
-//! Scale down an image to fit to the given width & height limitations.
-QPixmap
-scaleDown(uint64_t maxWidth, uint64_t maxHeight, const QPixmap &source);
 
 //! Delete items in a container based on a predicate.
 template<typename ContainerT, typename PredicateT>
@@ -214,9 +204,6 @@ message_body(const mtx::events::collections::TimelineEvents &event)
 //! Calculate the Levenshtein distance between two strings with character skipping.
 int
 levenshtein_distance(const std::string &s1, const std::string &s2);
-
-QPixmap
-scaleImageToPixmap(const QImage &img, int size);
 
 //! Convert a Content Matrix URI to an HTTP link.
 QString
@@ -284,10 +271,6 @@ computeContrast(const qreal &one, const qreal &two);
 //! Compute the luminance of a single color.  Based on https://stackoverflow.com/a/9733420
 qreal
 luminance(const QColor &col);
-
-//! Center a widget in relation to another widget.
-void
-centerWidget(QWidget *widget, QWidget *parent);
 
 //! Read image respecting exif orientation
 QImage

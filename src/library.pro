@@ -11,8 +11,7 @@ message(" * Building the px-matrix-client-library")
 
 
 
-HEADERS =   AvatarProvider.h \
-            Cache_p.h \
+HEADERS =   Cache_p.h \
             Cache.h \
             CacheCryptoStructs.h \
             CacheStructs.h \
@@ -21,21 +20,18 @@ HEADERS =   AvatarProvider.h \
             Login.h \
             Logging.h \
             MatrixClient.h \
-            MxcImageProvider.h \
             UserSettingsPage.h \
             Utils.h \
             encryption/Olm.h \
             timeline/EventStore.h \
             timeline/Reaction.h
 
-SOURCES =   AvatarProvider.cpp \
-            Cache.cpp \
+SOURCES =   Cache.cpp \
             Chat.cpp \
             EventAccessors.cpp \
             Login.cpp \
             Logging.cpp \
             MatrixClient.cpp \
-            MxcImageProvider.h \
             UserSettingsPage.cpp \
             Utils.cpp \
             encryption/Olm.cpp \

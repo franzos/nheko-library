@@ -16,7 +16,7 @@ pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Core Widgets QuickControls2 REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Widgets QuickControls2 REQUIRED)
 find_package(Qt5QuickCompiler)
 find_package(Qt5Test)
 find_package(Qt5DBus)
@@ -40,14 +40,6 @@ if (NOT CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wshadow")
 endif()
 
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DSPDLOG_DEBUG_ON)	
-	message("Build in Debug Mode (Debug Log is Active)")
-else()
-	message("Build in Release Mode (Debug Log is Disable)")
-endif()
-
 #
 # Declare source and header files.
 #
@@ -56,13 +48,11 @@ set(SRC_FILES
 	src/timeline/EventStore.cpp
 	src/timeline/Reaction.cpp
 	src/encryption/Olm.cpp
-	src/AvatarProvider.cpp
 	src/Cache.cpp
 	src/Chat.cpp
 	src/EventAccessors.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
-	src/MxcImageProvider.cpp
 	src/PXMatrixClient.cpp
 	src/UserSettingsPage.cpp
 	src/Utils.cpp
@@ -96,7 +86,6 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/timeline/EventStore.h
 	src/timeline/Reaction.h
 	src/encryption/Olm.h
-	src/AvatarProvider.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/Chat.h
@@ -109,8 +98,13 @@ set(PX_MATRIX_LIB_DEPS
 	${SRC_FILES}
 	${MOC_HEADERS})
 
-
-add_library (px-matrix-client-library ${PX_MATRIX_LIB_DEPS})
+IF(SHARED_LIB)
+	add_library (px-matrix-client-library SHARED ${PX_MATRIX_LIB_DEPS})
+	message(" + Build as shared library.")
+ELSE()
+	add_library (px-matrix-client-library ${PX_MATRIX_LIB_DEPS})
+	message(" + Build as static library.")
+ENDIF()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
 	set_target_properties(px-matrix-client-library PROPERTIES ENABLE_EXPORTS ON)
@@ -121,7 +115,6 @@ set(DEP_LIBS
 	MatrixClient::MatrixClient
 	cmark::cmark
 	spdlog::spdlog
-	Qt5::Widgets
 	Qt5::QuickControls2
 	qt5keychain
 	nlohmann_json::nlohmann_json
@@ -131,9 +124,17 @@ set(DEP_LIBS
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DSPDLOG_DEBUG_ON)	
+	message(" + Build in Debug Mode (Debug Log is Active)")
+else()
+	message(" + Build in Release Mode (Debug Log is Disable)")
+endif()
+
 IF(BUILD_EXAMPLES)
 	add_executable(profileInfo examples/profileInfo.cpp)
-	target_link_libraries(profileInfo px-matrix-client-library)
+	target_link_libraries(profileInfo px-matrix-client-library Qt5::Widgets)
+	message(" + \"examples\" will be built.")
 ENDIF()
 
 IF(BUILD_TESTS)
@@ -141,6 +142,8 @@ IF(BUILD_TESTS)
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
 					tests/AuthenticationTest.h
-					tests/ProfileInfoTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library)
+					tests/ProfileInfoTest.h
+					tests/RoomTest.h)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library Qt5::Widgets)
+	message(" + \"tests\" will be built.")
 ENDIF()

@@ -9,7 +9,7 @@
 
 namespace nhlog {
 void
-init(const std::string &file);
+init(const std::string &file, bool disableLogger);
 
 std::shared_ptr<spdlog::logger>
 ui();
