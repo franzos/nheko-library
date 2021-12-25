@@ -64,7 +64,7 @@ bool enable_debug_log_from_commandline = false;
 #endif
 
 void
-init(const std::string &file_path)
+init(const std::string &file_path, bool enable_logger = true)
 {
     auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
       file_path, MAX_FILE_SIZE, MAX_LOG_FILES);
@@ -81,7 +81,13 @@ init(const std::string &file_path)
     crypto_logger = std::make_shared<spdlog::logger>("crypto", std::begin(sinks), std::end(sinks));
     dev_logger    = std::make_shared<spdlog::logger>("dev", std::begin(sinks), std::end(sinks));
 
-    if (enable_debug_log_from_commandline) {
+    if(!enable_logger){
+        db_logger->set_level(spdlog::level::off);
+        ui_logger->set_level(spdlog::level::off);
+        crypto_logger->set_level(spdlog::level::off);
+        net_logger->set_level(spdlog::level::off);
+        dev_logger->set_level(spdlog::level::off);
+    } else if (enable_debug_log_from_commandline) {
         db_logger->set_level(spdlog::level::trace);
         ui_logger->set_level(spdlog::level::trace);
         crypto_logger->set_level(spdlog::level::trace);

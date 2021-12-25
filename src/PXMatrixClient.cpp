@@ -17,9 +17,9 @@ namespace px {
             return _chat.get();
         }
 
-        bool init(){
+        bool init(bool enable_logger){
             http::init();
-            nhlog::init("px-matrix-client-library");
+            nhlog::init("px-matrix-client-library", enable_logger);
             chat();
             return true;
         }

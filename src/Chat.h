@@ -21,7 +21,6 @@
 #include <QMap>
 #include <QPoint>
 #include <QTimer>
-#include <QWidget>
 
 #include "Authentication.h"
 #include "UserSettingsPage.h"
@@ -44,12 +43,12 @@ struct Rooms;
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
 
-class Chat : public QWidget
+class Chat : public QObject
 {
     Q_OBJECT
 
 public:
-    Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt), QWidget *parent = nullptr);
+    Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void initialize(std::string userid, std::string homeserver, std::string token);
     static Chat *instance() { return instance_; }
     static Authentication *authentication() { return _authentication;};
@@ -58,8 +57,6 @@ public:
     QString status() const;
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
-    // TODO(Nico): Get rid of this!
-    QString currentRoom() const;
     void getProfileInfo(std::string userid = utils::localUser().toStdString());
 
 public slots:
@@ -69,12 +66,11 @@ public slots:
     void createRoom(const mtx::requests::CreateRoom &req);
     void joinRoom(const std::string &room);
     void joinRoomVia(const std::string &room_id,
-                     const std::vector<std::string> &via,
-                     bool promptForConfirmation = true);
+                     const std::vector<std::string> &via);
     void inviteUser(const std::string &roomid, const std::string &userid, const std::string & reason);
-    void kickUser(QString userid, QString reason);
-    void banUser(QString userid, QString reason);
-    void unbanUser(QString userid, QString reason);
+    void kickUser(const std::string & roomid, const std::string & userid, const std::string &reason);
+    void banUser(const std::string & roomid, const std::string & userid, const std::string & reason);
+    void unbanUser(const std::string & roomid, const std::string &userid, const std::string & reason);
     void receivedSessionKey(const std::string &room_id, const std::string &session_id);
     void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
@@ -151,9 +147,6 @@ private:
     void verifyOneTimeKeyCountAfterStartup();
     void ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts);
     void getBackupVersion();
-
-    //! Check if the given room is currently open.
-    bool isRoomActive(const QString &room_id);
 
     using UserID      = QString;
     using Membership  = mtx::events::StateEvent<mtx::events::state::Member>;

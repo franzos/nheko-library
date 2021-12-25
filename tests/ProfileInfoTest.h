@@ -17,7 +17,7 @@ private:
     Authentication *auth;
 private slots:
     void initTestCase(){
-        px::mtx_client::init();
+        px::mtx_client::init(false);
         auth = px::mtx_client::authentication();
         QObject::connect(auth,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
             loginInfo = res;

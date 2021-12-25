@@ -4,10 +4,7 @@
 
 #include "Utils.h"
 
-#include <QApplication>
 #include <QBuffer>
-#include <QDesktopWidget>
-#include <QGuiApplication>
 #include <QImageReader>
 #include <QProcessEnvironment>
 #include <QScreen>
@@ -122,7 +119,7 @@ QString
 utils::replaceEmoji(const QString &body)
 {
     QString fmtBody;
-    // fmtBody.reserve(body.size());
+    fmtBody.reserve(body.size());
 
     // QVector<uint> utf32_string = body.toUcs4();
 
@@ -182,7 +179,7 @@ utils::descriptiveTime(const QDateTime &then)
     if (days == 0)
         return QLocale::system().toString(then.time(), QLocale::ShortFormat);
     else if (days < 2)
-        return QString(QCoreApplication::translate("descriptiveTime", "Yesterday"));
+        return "Yesterday";
     else if (days < 7)
         return then.toString("dddd");
 
@@ -326,43 +323,6 @@ utils::event_body(const mtx::events::collections::TimelineEvents &e)
         return QString::fromStdString(ev->content.body);
 
     return "";
-}
-
-QPixmap
-utils::scaleImageToPixmap(const QImage &img, int size)
-{
-    if (img.isNull())
-        return QPixmap();
-
-    // Deprecated in 5.13: const double sz =
-    //  std::ceil(QApplication::desktop()->screen()->devicePixelRatioF() * (double)size);
-    const double sz =
-      std::ceil(QGuiApplication::primaryScreen()->devicePixelRatio() * (double)size);
-    return QPixmap::fromImage(img.scaled(sz, sz, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-}
-
-QPixmap
-utils::scaleDown(uint64_t maxWidth, uint64_t maxHeight, const QPixmap &source)
-{
-    if (source.isNull())
-        return QPixmap();
-
-    const double widthRatio     = (double)maxWidth / (double)source.width();
-    const double heightRatio    = (double)maxHeight / (double)source.height();
-    const double minAspectRatio = std::min(widthRatio, heightRatio);
-
-    // Size of the output image.
-    int w, h = 0;
-
-    if (minAspectRatio > 1) {
-        w = source.width();
-        h = source.height();
-    } else {
-        w = source.width() * minAspectRatio;
-        h = source.height() * minAspectRatio;
-    }
-
-    return source.scaled(w, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
 QString
@@ -760,24 +720,6 @@ utils::luminance(const QColor &col)
     auto lum = lumRgb[0] * 0.2126 + lumRgb[1] * 0.7152 + lumRgb[2] * 0.0722;
 
     return lum;
-}
-
-void
-utils::centerWidget(QWidget *widget, QWidget *parent)
-{
-    auto findCenter = [childRect = widget->rect()](QRect hostRect) -> QPoint {
-        return QPoint(hostRect.center().x() - (childRect.width() * 0.5),
-                      hostRect.center().y() - (childRect.height() * 0.5));
-    };
-
-    if (parent) {
-        widget->move(parent->window()->frameGeometry().topLeft() +
-                     parent->window()->rect().center() - widget->rect().center());
-        return;
-    }
-
-    // Deprecated in 5.13: widget->move(findCenter(QApplication::desktop()->screenGeometry()));
-    widget->move(findCenter(QGuiApplication::primaryScreen()->geometry()));
 }
 
 QImage

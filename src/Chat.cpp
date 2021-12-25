@@ -3,8 +3,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <QApplication>
-#include <QInputDialog>
 #include <QUrl>
 #include <mtx/responses.hpp>
 #include <QDebug>
@@ -30,9 +28,8 @@ Q_DECLARE_METATYPE(mtx::presence::PresenceState)
 Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
-Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
-  : QWidget(parent)
-  , isConnected_(true)
+Chat::Chat(QSharedPointer<UserSettings> userSettings)
+  : isConnected_(true)
   , userSettings_{userSettings}
 {
     setObjectName("px_matrix_client");
@@ -124,12 +121,13 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
                 }
             });
     connect(this, &Chat::syncUI, this, [this](const mtx::responses::Rooms &rooms) {
+        nhlog::ui()->warn("TODO: rooms should be used in this signal handler ({})", rooms.join.size());
         // view_manager_->sync(rooms);
-        static unsigned int prevNotificationCount = 0;
-        unsigned int notificationCount            = 0;
-        for (const auto &room : rooms.join) {
-            notificationCount += room.second.unread_notifications.notification_count;
-        }
+        // static unsigned int prevNotificationCount = 0;
+        // unsigned int notificationCount            = 0;
+        // for (const auto &room : rooms.join) {
+        //     notificationCount += room.second.unread_notifications.notification_count;
+        // }
 
         // HACK: If we had less notifications last time we checked, send an alert if the
         // user wanted one. Technically, this may cause an alert to be missed if new ones
@@ -140,26 +138,26 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings, QWidget *parent)
         //     if (userSettings_->hasAlertOnNotification())
         //         QApplication::alert(this);
         // }
-        prevNotificationCount = notificationCount;
+        // prevNotificationCount = notificationCount;
 
         // No need to check amounts for this section, as this function internally checks for
         // duplicates.
         // if (notificationCount && userSettings_->hasNotifications()) //TODO
-        if (notificationCount)
-            http::client()->notifications(
-              5,
-              "",
-              "",
-              [this](const mtx::responses::Notifications &res, mtx::http::RequestErr err) {
-                  if (err) {
-                      nhlog::net()->warn("failed to retrieve notifications: {} ({})",
-                                         err->matrix_error.error,
-                                         static_cast<int>(err->status_code));
-                      return;
-                  }
+        // if (notificationCount)
+        //     http::client()->notifications(
+        //       5,
+        //       "",
+        //       "",
+        //       [this](const mtx::responses::Notifications &res, mtx::http::RequestErr err) {
+        //           if (err) {
+        //               nhlog::net()->warn("failed to retrieve notifications: {} ({})",
+        //                                  err->matrix_error.error,
+        //                                  static_cast<int>(err->status_code));
+        //               return;
+        //           }
 
-                  emit notificationsRetrieved(std::move(res));
-              });
+        //           emit notificationsRetrieved(std::move(res));
+        //       });
     });
 
     connect(
@@ -367,8 +365,8 @@ Chat::sendNotifications(const mtx::responses::Notifications &res)
                 cache::markSentNotification(event_id);
 
                 // Don't send a notification when the current room is opened.
-                if (isRoomActive(room_id))
-                    continue;
+                // if (isRoomActive(room_id))
+                //     continue;
 
                 // if (userSettings_->hasDesktopNotifications()) {
                     // auto info = cache::singleRoomInfo(item.room_id);
@@ -584,14 +582,12 @@ Chat::trySync()
 void
 Chat::joinRoom(const std::string &room_id)
 {
-    joinRoomVia(room_id, {}, false);
+    joinRoomVia(room_id, {});
 }
 
 void
 Chat::joinRoomVia(const std::string &room_id,
-                      const std::vector<std::string> &via,
-                      bool promptForConfirmation)
-{
+                      const std::vector<std::string> &via) {
     http::client()->join_room(
       room_id, via, [this, room_id](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
           if (err) {
@@ -660,63 +656,70 @@ Chat::inviteUser(const std::string &roomid,const std::string &userid, const std:
       QString::fromStdString(reason).trimmed().toStdString());
 }
 void
-Chat::kickUser(QString userid, QString reason)
+Chat::kickUser(const std::string & roomid,const std::string & userid, const std::string & reason)
 {
-    auto room = currentRoom();
     http::client()->kick_user(
-      room.toStdString(),
-      userid.toStdString(),
-      [this, userid, room](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+      roomid,
+      userid,
+      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
-              emit showNotification(tr("Failed to kick %1 from %2: %3")
-                                      .arg(userid)
-                                      .arg(room)
-                                      .arg(QString::fromStdString(err->matrix_error.error)));
-          } else
-              emit showNotification(tr("Kicked user: %1").arg(userid));
+            // TODO emit error
+            //   emit showNotification(tr("Failed to kick %1 from %2: %3")
+            //                           .arg(userid)
+            //                           .arg(roomid)
+            //                           .arg(QString::fromStdString(err->matrix_error.error)));
+          } else {
+            // TODO emit done
+            //   emit showNotification(tr("Kicked user: %1").arg(userid));
+          }
       },
-      reason.trimmed().toStdString());
+      QString::fromStdString(reason).trimmed().toStdString());
 }
 void
-Chat::banUser(QString userid, QString reason)
+Chat::banUser(const std::string &roomid, const std::string & userid, const std::string & reason)
 {
-    auto room = currentRoom();
     http::client()->ban_user(
-      room.toStdString(),
-      userid.toStdString(),
-      [this, userid, room](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+      roomid,
+      userid,
+      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
-              emit showNotification(tr("Failed to ban %1 in %2: %3")
-                                      .arg(userid)
-                                      .arg(room)
-                                      .arg(QString::fromStdString(err->matrix_error.error)));
-          } else
-              emit showNotification(tr("Banned user: %1").arg(userid));
+            // TODO emit error
+            //   emit showNotification(tr("Failed to ban %1 in %2: %3")
+            //                           .arg(userid)
+            //                           .arg(room)
+            //                           .arg(QString::fromStdString(err->matrix_error.error)));
+          } else {
+            // TODO emit done
+            //   emit showNotification(tr("Banned user: %1").arg(userid));
+          }
       },
-      reason.trimmed().toStdString());
+      QString::fromStdString(reason).trimmed().toStdString());
 }
 void
-Chat::unbanUser(QString userid, QString reason)
+Chat::unbanUser(const std::string &roomid, const std::string & userid, const std::string & reason)
 {
-    auto room = currentRoom();
     http::client()->unban_user(
-      room.toStdString(),
-      userid.toStdString(),
-      [this, userid, room](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+      roomid,
+      userid,
+      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
-              emit showNotification(tr("Failed to unban %1 in %2: %3")
-                                      .arg(userid)
-                                      .arg(room)
-                                      .arg(QString::fromStdString(err->matrix_error.error)));
-          } else
-              emit showNotification(tr("Unbanned user: %1").arg(userid));
+            // TODO emit erro
+            //   emit showNotification(tr("Failed to unban %1 in %2: %3")
+            //                           .arg(userid)
+            //                           .arg(room)
+            //                           .arg(QString::fromStdString(err->matrix_error.error)));
+          } else{
+            // TODO emit done
+            //   emit showNotification(tr("Unbanned user: %1").arg(userid));
+          }
       },
-      reason.trimmed().toStdString());
+      QString::fromStdString(reason).trimmed().toStdString());
 }
 
 void
 Chat::receivedSessionKey(const std::string &room_id, const std::string &session_id)
 {
+    nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
     // view_manager_->receivedSessionKey(room_id, session_id);
 }
 
@@ -905,17 +908,19 @@ void
 Chat::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                    const SecretsToDecrypt &secrets)
 {
-    QString text = QInputDialog::getText(
-      Chat::instance(),
-      QCoreApplication::translate("CrossSigningSecrets", "Decrypt secrets"),
-      keyDesc.name.empty()
-        ? QCoreApplication::translate(
-            "CrossSigningSecrets", "Enter your recovery key or passphrase to decrypt your secrets:")
-        : QCoreApplication::translate(
-            "CrossSigningSecrets",
-            "Enter your recovery key or passphrase called %1 to decrypt your secrets:")
-            .arg(QString::fromStdString(keyDesc.name)),
-      QLineEdit::Password);
+    QString text = "TODO";
+    nhlog::ui()->warn("getText for CrossSigningSecrets: TODO");
+    // QString text = QInputDialog::getText(
+    //   Chat::instance(),
+    //   QCoreApplication::translate("CrossSigningSecrets", "Decrypt secrets"),
+    //   keyDesc.name.empty()
+    //     ? QCoreApplication::translate(
+    //         "CrossSigningSecrets", "Enter your recovery key or passphrase to decrypt your secrets:")
+    //     : QCoreApplication::translate(
+    //         "CrossSigningSecrets",
+    //         "Enter your recovery key or passphrase called %1 to decrypt your secrets:")
+    //         .arg(QString::fromStdString(keyDesc.name)),
+    //   QLineEdit::Password);
 
     if (text.isEmpty())
         return;
@@ -1032,40 +1037,4 @@ Chat::startChat(QString userid)
         req.is_direct = true;
     }
     emit Chat::instance()->createRoom(req);
-}
-
-static QString
-mxidFromSegments(QStringRef sigil, QStringRef mxid)
-{
-    if (mxid.isEmpty())
-        return "";
-
-    auto mxid_ = QUrl::fromPercentEncoding(mxid.toUtf8());
-
-    if (sigil == "u") {
-        return "@" + mxid_;
-    } else if (sigil == "roomid") {
-        return "!" + mxid_;
-    } else if (sigil == "r") {
-        return "#" + mxid_;
-        //} else if (sigil == "group") {
-        //        return "+" + mxid_;
-    } else {
-        return "";
-    }
-}
-
-bool
-Chat::isRoomActive(const QString &room_id)
-{
-    return isActiveWindow() && currentRoom() == room_id;
-}
-
-QString
-Chat::currentRoom() const
-{
-    // if (view_manager_->rooms()->currentRoom())
-    //     return view_manager_->rooms()->currentRoom()->roomId();
-    // else
-        return "";
 }

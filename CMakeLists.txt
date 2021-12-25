@@ -16,7 +16,7 @@ pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Core Widgets QuickControls2 REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Widgets QuickControls2 REQUIRED)
 find_package(Qt5QuickCompiler)
 find_package(Qt5Test)
 find_package(Qt5DBus)
@@ -118,7 +118,6 @@ set(DEP_LIBS
 	MatrixClient::MatrixClient
 	cmark::cmark
 	spdlog::spdlog
-	Qt5::Widgets
 	Qt5::QuickControls2
 	qt5keychain
 	nlohmann_json::nlohmann_json
@@ -137,7 +136,7 @@ endif()
 
 IF(BUILD_EXAMPLES)
 	add_executable(profileInfo examples/profileInfo.cpp)
-	target_link_libraries(profileInfo px-matrix-client-library)
+	target_link_libraries(profileInfo px-matrix-client-library Qt5::Widgets)
 	message(" + \"examples\" will be built.")
 ENDIF()
 
@@ -148,6 +147,6 @@ IF(BUILD_TESTS)
 					tests/AuthenticationTest.h
 					tests/ProfileInfoTest.h
 					tests/RoomTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library Qt5::Widgets)
 	message(" + \"tests\" will be built.")
 ENDIF()

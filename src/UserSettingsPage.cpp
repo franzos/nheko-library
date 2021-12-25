@@ -3,8 +3,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <QApplication>
-#include <QCoreApplication>
 #include <QStandardPaths>
 #include <QString>
 #include <QTextStream>
@@ -19,8 +17,7 @@ QSharedPointer<UserSettings> UserSettings::instance_;
 
 UserSettings::UserSettings()
 {
-    connect(
-      QCoreApplication::instance(), &QCoreApplication::aboutToQuit, []() { instance_.clear(); });
+    
 }
 
 QSharedPointer<UserSettings>
