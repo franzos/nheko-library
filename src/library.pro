@@ -1,23 +1,32 @@
 CONFIG += release
 CONFIG += c++17
 
-QT += core gui widgets quick
-LIBS  = -lQMatrixClient
-LIBS += -lSQLiteCpp
+SHARED_LIB{
+    CONFIG += shared
+    message(" + Build as shared library.")
+} else {
+    CONFIG += static
+    message(" + Build as static library.")
+}
+
+QT += dbus 
+LIBS +=-L $$(LIBRARY_PATH) -lQMatrixClient
 LIBS += -lolm
 LIBS += -lspdlog
+LIBS += -llmdb
+LIBS += -lqt5keychain
+LIBS += -lcrypto -lssl
 
+INCLUDEPATH += src
 message(" * Building the matrix-client-library")
-
-
-
-HEADERS =   Cache_p.h \
+message($$LIBS)
+HEADERS =   Authentication.h \
+            Cache_p.h \
             Cache.h \
             CacheCryptoStructs.h \
             CacheStructs.h \
             Client.h \
             EventAccessors.h \
-            Login.h \
             Logging.h \
             MatrixClient.h \
             UserSettingsPage.h \
@@ -26,10 +35,10 @@ HEADERS =   Cache_p.h \
             timeline/EventStore.h \
             timeline/Reaction.h
 
-SOURCES =   Cache.cpp \
+SOURCES =   Authentication.cpp \
+            Cache.cpp \
             Client.cpp \
             EventAccessors.cpp \
-            Login.cpp \
             Logging.cpp \
             MatrixClient.cpp \
             UserSettingsPage.cpp \
