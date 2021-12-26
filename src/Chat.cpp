@@ -121,45 +121,6 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings)
                     nhlog::db()->error("failed to save mentions: {}", e.what());
                 }
             });
-    connect(this, &Chat::syncUI, this, [this](const mtx::responses::Rooms &rooms) {
-        nhlog::ui()->warn("TODO: rooms should be used in this signal handler ({})", rooms.join.size());
-        // view_manager_->sync(rooms);
-        // static unsigned int prevNotificationCount = 0;
-        // unsigned int notificationCount            = 0;
-        // for (const auto &room : rooms.join) {
-        //     notificationCount += room.second.unread_notifications.notification_count;
-        // }
-
-        // HACK: If we had less notifications last time we checked, send an alert if the
-        // user wanted one. Technically, this may cause an alert to be missed if new ones
-        // come in while you are reading old ones. Since the window is almost certainly open
-        // in this edge case, that's probably a non-issue.
-        // TODO: Replace this once we have proper pushrules support. This is a horrible hack
-        // if (prevNotificationCount < notificationCount) {
-        //     if (userSettings_->hasAlertOnNotification())
-        //         QApplication::alert(this);
-        // }
-        // prevNotificationCount = notificationCount;
-
-        // No need to check amounts for this section, as this function internally checks for
-        // duplicates.
-        // if (notificationCount && userSettings_->hasNotifications()) //TODO
-        // if (notificationCount)
-        //     http::client()->notifications(
-        //       5,
-        //       "",
-        //       "",
-        //       [this](const mtx::responses::Notifications &res, mtx::http::RequestErr err) {
-        //           if (err) {
-        //               nhlog::net()->warn("failed to retrieve notifications: {} ({})",
-        //                                  err->matrix_error.error,
-        //                                  static_cast<int>(err->status_code));
-        //               return;
-        //           }
-
-        //           emit notificationsRetrieved(std::move(res));
-        //       });
-    });
 
     connect(
       this, &Chat::tryInitialSyncCb, this, &Chat::tryInitialSync, Qt::QueuedConnection);
@@ -292,9 +253,17 @@ Chat::initialize(std::string userid, std::string homeserver, std::string token)
     }
 }
 
+QHash<QString, RoomInfo> Chat::inviteRoomList(){
+    return cache::invites();
+}    
+
 std::map<QString, RoomInfo> Chat::joinedRoomList(){
     return cache::getRoomInfo(cache::joinedRooms());
 }    
+
+RoomInfo Chat::roomInfo(const std::string &room_id){
+    return cache::singleRoomInfo(room_id);
+}
 
 void
 Chat::loadStateFromCache()
@@ -303,7 +272,6 @@ Chat::loadStateFromCache()
 
     try {
         olm::client()->load(cache::restoreOlmAccount(), cache::client()->pickleSecret());
-        emit roomListReady();
         cache::calculateRoomReadStatus();
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());
@@ -479,7 +447,6 @@ Chat::startInitialSync()
         try {
             cache::client()->saveState(res);
             olm::handle_to_device_messages(res.to_device.events);
-            emit roomListReady();
             cache::calculateRoomReadStatus();
         } catch (const lmdb::error &e) {
             nhlog::db()->error("failed to save state after initial sync: {}", e.what());
@@ -516,8 +483,9 @@ Chat::handleSyncResponse(const mtx::responses::Sync &res, const std::string &pre
 
         auto updates = cache::getRoomInfo(cache::client()->roomsWithStateUpdates(res));
 
-        emit syncUI(res.rooms);
-
+        if( res.rooms.join.size() || res.rooms.invite.size() || res.rooms.leave.size()) {
+            emit roomListUpdated(res.rooms);
+        }
         // if we process a lot of syncs (1 every 200ms), this means we clean the
         // db every 100s
         static int syncCounter = 0;

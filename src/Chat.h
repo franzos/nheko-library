@@ -65,6 +65,8 @@ public:
 
 public slots:
     std::map<QString, RoomInfo> joinedRoomList();
+    QHash<QString, RoomInfo> inviteRoomList();
+    RoomInfo roomInfo(const std::string &room_id);
     void startChat(QString userid);
     void leaveRoom(const std::string &room_id);
     void createRoom(const mtx::requests::CreateRoom &req);
@@ -106,8 +108,7 @@ signals:
     void userInvited(const std::string &room_id, const std::string user_id);
     void userInvitationFailed(const std::string &room_id, const std::string user_id, const std::string &error);
 
-    void roomListReady();
-    void syncUI(const mtx::responses::Rooms &rooms);
+    void roomListUpdated(const mtx::responses::Rooms &rooms);
     void dropToLoginPageCb(const QString &msg);
 
     void notifyMessage(const QString &roomid,
