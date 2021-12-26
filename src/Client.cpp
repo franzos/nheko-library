@@ -148,9 +148,9 @@ Client::logoutCb()
 }
 
 void
-Client::dropToLoginPage(const QString &msg)
+Client::dropToLoginPage(const std::string &msg)
 {
-    nhlog::ui()->info("dropping to the login page: {}", msg.toStdString());
+    nhlog::ui()->info("dropping to the login page: {}", msg);
     http::client()->shutdown();
     connectivityTimer_.stop();
     deleteConfigs();
@@ -226,11 +226,11 @@ Client::initialize(std::string userid, std::string homeserver, std::string token
                 cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
             } catch (const lmdb::error &e) {
                 nhlog::crypto()->critical("failed to save olm account {}", e.what());
-                emit dropToLoginPageCb(QString::fromStdString(e.what()));
+                emit dropToLoginPageCb(e.what());
                 return;
             } catch (const mtx::crypto::olm_exception &e) {
                 nhlog::crypto()->critical("failed to create new olm account {}", e.what());
-                emit dropToLoginPageCb(QString::fromStdString(e.what()));
+                emit dropToLoginPageCb(e.what());
                 return;
             }
             getProfileInfo();
@@ -250,7 +250,7 @@ Client::initialize(std::string userid, std::string homeserver, std::string token
 
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failure during boot: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to open database, logging out!"));
+        emit dropToLoginPageCb("Failed to open database, logging out!");
     }
 }
 
@@ -276,19 +276,19 @@ Client::loadStateFromCache()
         cache::calculateRoomReadStatus();
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore OLM account. Please login again."));
+        emit dropToLoginPageCb("Failed to restore OLM account. Please login again.");
         return;
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failed to restore cache: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore save data. Please login again."));
+        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
         return;
     } catch (const json::exception &e) {
         nhlog::db()->critical("failed to parse cache data: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore save data. Please login again."));
+        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
         return;
     } catch (const std::exception &e) {
         nhlog::db()->critical("failed to load cache data: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore save data. Please login again."));
+        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
         return;
     }
 
@@ -384,7 +384,7 @@ Client::tryInitialSync()
                                  .arg(QString::fromStdString(err->matrix_error.error))
                                  .arg(status_code));
 
-              emit dropToLoginPageCb(errorMsg);
+              emit dropToLoginPageCb(errorMsg.toStdString());
               return;
           }
 
@@ -437,7 +437,7 @@ Client::startInitialSync()
                 return;
             }
             default: {
-                emit dropToLoginPageCb(msg);
+                emit dropToLoginPageCb(msg.toStdString());
                 return;
             }
             }
@@ -532,7 +532,7 @@ Client::trySync()
                    (err->matrix_error.errcode == mtx::errors::ErrorCode::M_UNKNOWN_TOKEN ||
                     err->matrix_error.errcode == mtx::errors::ErrorCode::M_MISSING_TOKEN)) ||
                   !http::is_logged_in()) {
-                  emit dropToLoginPageCb(msg);
+                  emit dropToLoginPageCb(msg.toStdString());
                   return;
               }
 
