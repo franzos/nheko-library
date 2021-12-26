@@ -49,7 +49,7 @@ private slots:
             eventLoop.quit();
         });
         
-        client->initialize( loginInfo.user_id.to_string(),
+        client->bootstrap( loginInfo.user_id.to_string(),
                             serverAddress,
                             loginInfo.access_token);
         eventLoop.exec();

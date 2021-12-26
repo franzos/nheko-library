@@ -48,7 +48,7 @@ class Client : public QObject
     Q_OBJECT
 
 public:
-    void initialize(std::string userid, std::string homeserver, std::string token);
+    void bootstrap(std::string userid, std::string homeserver, std::string token);
     static Client *instance() { 
         if(instance_ == nullptr){
             http::init();
@@ -83,7 +83,7 @@ public slots:
     void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
     // Authentication
-    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
+    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress, bool synced = true);
     bool hasValidUser();
     mtx::responses::Login userInformation();
     void logout();
@@ -92,7 +92,7 @@ public slots:
 
 signals:
     // Authentication signals - TODO Fakhri (naming)
-    void loginOk(const mtx::responses::Login &res);
+    void loginReady(const mtx::responses::Login &res);
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
@@ -149,6 +149,7 @@ signals:
 
 private slots:
     void logoutCb();
+    void loginCb(const mtx::responses::Login &res);
     void removeRoom(const std::string &room_id);
     void dropToLoginPage(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
@@ -181,6 +182,7 @@ private:
 
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;
+    bool _loginWithSync;
 };
 
 template<class Collection>

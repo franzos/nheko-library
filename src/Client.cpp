@@ -45,6 +45,15 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             this,
             &Client::logoutCb,
             Qt::QueuedConnection);
+    connect(_authentication,
+            &Authentication::loginOk,
+            this,
+            &Client::loginCb,
+            Qt::QueuedConnection);
+    connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
+        nhlog::net()->info("login failed");
+        emit loginErrorOccurred(msg);
+    });
     // TODO Fakhri (connect to signals)
 
     connect(this,
@@ -145,6 +154,25 @@ Client::logoutCb()
     nhlog::net()->info("Logged out");
     deleteConfigs();
     connectivityTimer_.stop();
+    emit logoutOk();
+}
+void
+Client::loginCb(const mtx::responses::Login &res)
+{
+    http::client()->set_user(res.user_id);
+    auto userid     = QString::fromStdString(http::client()->user_id().to_string());
+    auto device_id  = QString::fromStdString(http::client()->device_id());
+    auto homeserver = QString::fromStdString(http::client()->server() + ":" +
+                                            std::to_string(http::client()->port()));
+    auto token      = QString::fromStdString(http::client()->access_token());
+
+    userSettings_.data()->setUserId(userid);
+    userSettings_.data()->setAccessToken(token);
+    userSettings_.data()->setDeviceId(device_id);
+    userSettings_.data()->setHomeserver(homeserver);
+    bootstrap( userid.toStdString(), homeserver.toStdString(),token.toStdString());
+    if(_loginWithSync)
+        emit loginReady(res);
 }
 
 void
@@ -174,7 +202,7 @@ Client::deleteConfigs()
 }
 
 void
-Client::initialize(std::string userid, std::string homeserver, std::string token)
+Client::bootstrap(std::string userid, std::string homeserver, std::string token)
 {
     using namespace mtx::identifiers;
     try {
@@ -1009,8 +1037,9 @@ Client::startChat(QString userid)
     emit Client::instance()->createRoom(req);
 }
 
-void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
-    // TODO Fakhri
+void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress, bool synced ){
+    _authentication->loginWithPassword(deviceName, userId, password, serverAddress);
+    _loginWithSync = synced;
 }
 
 bool Client::hasValidUser(){
@@ -1022,9 +1051,11 @@ mtx::responses::Login Client::userInformation(){
 }
 
 void Client::logout(){
-    // TODO Fakhri
+    _authentication->logout();
+   
 }
 
 std::string Client::serverDiscovery(std::string userId){
     // TODO Fakhri
 }
+
