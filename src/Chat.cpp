@@ -40,10 +40,13 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
-    connect(_authentication, &Authentication::logoutOk,[&](){
-        logout();
-    });
 
+    connect(_authentication,
+            &Authentication::logoutOk,
+            this,
+            &Chat::logout,
+            Qt::QueuedConnection);
+            
     connect(this,
             &Chat::downloadedSecrets,
             this,
