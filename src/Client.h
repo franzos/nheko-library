@@ -43,26 +43,28 @@ struct Rooms;
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
 
-class Chat : public QObject
+class Client : public QObject
 {
     Q_OBJECT
 
 public:
     void initialize(std::string userid, std::string homeserver, std::string token);
-    static Chat *instance() { 
+    static Client *instance() { 
         if(instance_ == nullptr){
-            instance_ = new Chat();
+            http::init();
+            instance_ = new Client();
         }
         return instance_; 
     }
-    static Authentication *authentication() { return _authentication;};
     QSharedPointer<UserSettings> userSettings() { return userSettings_; }
     void deleteConfigs();
     QString status() const;
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
     void getProfileInfo(std::string userid = utils::localUser().toStdString());
-
+    void enableLogger(bool enable){
+        nhlog::init("matrix-client-library", enable);
+    }
 public slots:
     std::map<QString, RoomInfo> joinedRoomList();
     QHash<QString, RoomInfo> inviteRoomList();
@@ -80,7 +82,21 @@ public slots:
     void receivedSessionKey(const std::string &room_id, const std::string &session_id);
     void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
+    // Authentication
+    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
+    bool hasValidUser();
+    mtx::responses::Login userInformation();
+    void logout();
+    std::string serverDiscovery(std::string userId);
+
+
 signals:
+    // Authentication signals - TODO Fakhri (naming)
+    void loginOk(const mtx::responses::Login &res);
+    void loginErrorOccurred(std::string &msg);
+    void logoutErrorOccurred(std::string &msg);
+    void logoutOk();    
+    //
     void connectionLost();
     void connectionRestored();
 
@@ -99,6 +115,7 @@ signals:
     void tryDelayedSyncCb();
     void tryInitialSyncCb();
     void newSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
+    // room signals
     void leftRoom(const std::string &room_id);
     void roomLeaveFailed(const std::string &error);
     void roomCreated(const std::string &room_id);
@@ -107,16 +124,9 @@ signals:
     void joinRoomFailed(const std::string &error);
     void userInvited(const std::string &room_id, const std::string user_id);
     void userInvitationFailed(const std::string &room_id, const std::string user_id, const std::string &error);
-
     void roomListUpdated(const mtx::responses::Rooms &rooms);
-    void dropToLoginPageCb(const QString &msg);
 
-    void notifyMessage(const QString &roomid,
-                       const QString &eventid,
-                       const QString &roomname,
-                       const QString &sender,
-                       const QString &message,
-                       const QImage &icon);
+    void dropToLoginPageCb(const QString &msg);
 
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
     void decryptSidebarChanged();
@@ -138,15 +148,15 @@ signals:
                            const SecretsToDecrypt &secrets);
 
 private slots:
-    void logout();
+    void logoutCb();
     void removeRoom(const std::string &room_id);
     void dropToLoginPage(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 
 private:
-    static Chat *instance_;
-    static Authentication *_authentication;
-    Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
+    static Client *instance_;
+    Authentication *_authentication;
+    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
     void tryInitialSync();
     void trySync();
@@ -175,7 +185,7 @@ private:
 
 template<class Collection>
 std::map<std::string, mtx::events::StateEvent<mtx::events::state::Member>>
-Chat::getMemberships(const std::vector<Collection> &collection) const
+Client::getMemberships(const std::vector<Collection> &collection) const
 {
     std::map<std::string, mtx::events::StateEvent<mtx::events::state::Member>> memberships;
 

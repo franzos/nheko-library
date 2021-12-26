@@ -26,7 +26,7 @@
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "Chat.h"
+#include "Client.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
@@ -300,7 +300,7 @@ static void
 fatalSecretError()
 {
     // QMessageBox::critical(
-    //   Chat::instance(),
+    //   Client::instance(),
     //   QCoreApplication::translate("SecretStorage", "Failed to connect to secret storage"),
     //   QCoreApplication::translate(
     //     "SecretStorage",
@@ -318,7 +318,7 @@ static QString
 secretName(std::string name, bool internal)
 {
     auto settings = UserSettings::instance();
-    return (internal ? "px_mtx_lib." : "matrix.") +
+    return (internal ? "mtx_lib." : "matrix.") +
            QString(
              QCryptographicHash::hash(settings->profile().toUtf8(), QCryptographicHash::Sha256)
                .toBase64()) +
@@ -561,7 +561,7 @@ Cache::importSessionKeys(const mtx::crypto::ExportedSessionKeys &keys)
         auto exported_session = mtx::crypto::import_session(s.session_key);
 
         saveInboundMegolmSession(index, std::move(exported_session), data);
-        Chat::instance()->receivedSessionKey(index.room_id, index.session_id);
+        Client::instance()->receivedSessionKey(index.room_id, index.session_id);
     }
 }
 

@@ -15,8 +15,7 @@
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "Chat.h"
-// #include "DeviceVerificationFlow.h"
+#include "Client.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
@@ -159,36 +158,36 @@ handle_to_device_messages(const std::vector<mtx::events::collections::DeviceEven
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationAccept)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationAccept>>(msg);
-            Chat::instance()->receivedDeviceVerificationAccept(message.content);
+            Client::instance()->receivedDeviceVerificationAccept(message.content);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationRequest)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationRequest>>(msg);
-            Chat::instance()->receivedDeviceVerificationRequest(message.content,
+            Client::instance()->receivedDeviceVerificationRequest(message.content,
                                                                     message.sender);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationCancel)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationCancel>>(msg);
-            Chat::instance()->receivedDeviceVerificationCancel(message.content);
+            Client::instance()->receivedDeviceVerificationCancel(message.content);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationKey)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationKey>>(msg);
-            Chat::instance()->receivedDeviceVerificationKey(message.content);
+            Client::instance()->receivedDeviceVerificationKey(message.content);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationMac)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationMac>>(msg);
-            Chat::instance()->receivedDeviceVerificationMac(message.content);
+            Client::instance()->receivedDeviceVerificationMac(message.content);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationStart)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationStart>>(msg);
-            Chat::instance()->receivedDeviceVerificationStart(message.content, message.sender);
+            Client::instance()->receivedDeviceVerificationStart(message.content, message.sender);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationReady)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationReady>>(msg);
-            Chat::instance()->receivedDeviceVerificationReady(message.content);
+            Client::instance()->receivedDeviceVerificationReady(message.content);
         } else if (msg_type == to_string(mtx::events::EventType::KeyVerificationDone)) {
             auto message =
               std::get<mtx::events::DeviceEvent<mtx::events::msg::KeyVerificationDone>>(msg);
-            Chat::instance()->receivedDeviceVerificationDone(message.content);
+            Client::instance()->receivedDeviceVerificationDone(message.content);
         } else if (auto e =
                      std::get_if<mtx::events::DeviceEvent<mtx::events::msg::SecretRequest>>(&msg)) {
             handle_secret_request(e, e->sender);
@@ -308,26 +307,26 @@ handle_olm_message(const OlmMessage &msg, const UserKeyCache &otherUserDeviceKey
 
             using namespace mtx::events;
             if (auto e1 = std::get_if<DeviceEvent<msg::KeyVerificationAccept>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationAccept(e1->content);
+                Client::instance()->receivedDeviceVerificationAccept(e1->content);
             } else if (auto e2 =
                          std::get_if<DeviceEvent<msg::KeyVerificationRequest>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationRequest(e2->content, e2->sender);
+                Client::instance()->receivedDeviceVerificationRequest(e2->content, e2->sender);
             } else if (auto e3 =
                          std::get_if<DeviceEvent<msg::KeyVerificationCancel>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationCancel(e3->content);
+                Client::instance()->receivedDeviceVerificationCancel(e3->content);
             } else if (auto e4 = std::get_if<DeviceEvent<msg::KeyVerificationKey>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationKey(e4->content);
+                Client::instance()->receivedDeviceVerificationKey(e4->content);
             } else if (auto e5 = std::get_if<DeviceEvent<msg::KeyVerificationMac>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationMac(e5->content);
+                Client::instance()->receivedDeviceVerificationMac(e5->content);
             } else if (auto e6 =
                          std::get_if<DeviceEvent<msg::KeyVerificationStart>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationStart(e6->content, e6->sender);
+                Client::instance()->receivedDeviceVerificationStart(e6->content, e6->sender);
             } else if (auto e7 =
                          std::get_if<DeviceEvent<msg::KeyVerificationReady>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationReady(e7->content);
+                Client::instance()->receivedDeviceVerificationReady(e7->content);
             } else if (auto e8 =
                          std::get_if<DeviceEvent<msg::KeyVerificationDone>>(&device_event)) {
-                Chat::instance()->receivedDeviceVerificationDone(e8->content);
+                Client::instance()->receivedDeviceVerificationDone(e8->content);
             } else if (auto roomKey = std::get_if<DeviceEvent<msg::RoomKey>>(&device_event)) {
                 create_inbound_megolm_session(*roomKey, msg.sender_key, sender_ed25519);
             } else if (auto forwardedRoomKey =
@@ -743,7 +742,7 @@ create_inbound_megolm_session(const mtx::events::DeviceEvent<mtx::events::msg::R
     nhlog::crypto()->info(
       "established inbound megolm session ({}, {})", roomKey.content.room_id, roomKey.sender);
 
-    Chat::instance()->receivedSessionKey(index.room_id, index.session_id);
+    Client::instance()->receivedSessionKey(index.room_id, index.session_id);
 }
 
 void
@@ -784,7 +783,7 @@ import_inbound_megolm_session(
     nhlog::crypto()->info(
       "established inbound megolm session ({}, {})", roomKey.content.room_id, roomKey.sender);
 
-    Chat::instance()->receivedSessionKey(index.room_id, index.session_id);
+    Client::instance()->receivedSessionKey(index.room_id, index.session_id);
 }
 
 void
@@ -930,8 +929,8 @@ lookup_keybackup(const std::string room, const std::string session_id)
                                         session_id);
 
                   // call on UI thread
-                  QTimer::singleShot(0, Chat::instance(), [index] {
-                      Chat::instance()->receivedSessionKey(index.room_id, index.session_id);
+                  QTimer::singleShot(0, Client::instance(), [index] {
+                      Client::instance()->receivedSessionKey(index.room_id, index.session_id);
                   });
               }
           } catch (const lmdb::error &e) {
@@ -1042,7 +1041,7 @@ handle_key_request_message(const mtx::events::DeviceEvent<mtx::events::msg::KeyR
     bool verifiedDevice     = false;
     if (verificationStatus &&
         // Share keys, if the option to share with trusted users is enabled or with yourself
-        (Chat::instance()->userSettings()->shareKeysWithTrustedUsers() || 
+        (Client::instance()->userSettings()->shareKeysWithTrustedUsers() || 
          req.sender == http::client()->user_id().to_string())) {
         for (const auto &dev : verificationStatus->verified_devices) {
             if (dev == req.content.requesting_device_id) {
@@ -1558,7 +1557,7 @@ unlock_secrets(const std::string &key,
               return;
           }
 
-          emit Chat::instance()->downloadedSecrets(keyDesc, secrets);
+          emit Client::instance()->downloadedSecrets(keyDesc, secrets);
       });
 }
 }

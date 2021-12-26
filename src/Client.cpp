@@ -8,15 +8,14 @@
 #include <QDebug>
 #include "Cache.h"
 #include "Cache_p.h"
-#include "Chat.h"
+#include "Client.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "UserSettingsPage.h"
 #include "encryption/Olm.h"
 
-Chat *Chat::instance_  = nullptr;
-Authentication *Chat::_authentication = nullptr;
+Client *Client::instance_  = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
 constexpr int RETRY_TIMEOUT               = 5'000;
 constexpr size_t MAX_ONETIME_KEYS         = 50;
@@ -27,37 +26,39 @@ Q_DECLARE_METATYPE(mtx::presence::PresenceState)
 Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
-Chat::Chat(QSharedPointer<UserSettings> userSettings)
+Client::Client(QSharedPointer<UserSettings> userSettings)
   : isConnected_(true)
   , userSettings_{userSettings}
 {
-    setObjectName("px_matrix_client");
-    _authentication = new Authentication();
-
+    setObjectName("matrix_client");
+    instance_->enableLogger(true);
+  
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
     qRegisterMetaType<std::optional<RelatedInfo>>();
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
 
+    _authentication = new Authentication();
     connect(_authentication,
             &Authentication::logoutOk,
             this,
-            &Chat::logout,
+            &Client::logoutCb,
             Qt::QueuedConnection);
-            
+    // TODO Fakhri (connect to signals)
+
     connect(this,
-            &Chat::downloadedSecrets,
+            &Client::downloadedSecrets,
             this,
-            &Chat::decryptDownloadedSecrets,
+            &Client::decryptDownloadedSecrets,
             Qt::QueuedConnection);
 
-    connect(this, &Chat::connectionLost, this, [this]() {
+    connect(this, &Client::connectionLost, this, [this]() {
         nhlog::net()->info("connectivity lost");
         isConnected_ = false;
         http::client()->shutdown();
     });
-    connect(this, &Chat::connectionRestored, this, [this]() {
+    connect(this, &Client::connectionRestored, this, [this]() {
         nhlog::net()->info("trying to re-connect");
         isConnected_ = true;
 
@@ -109,10 +110,10 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings)
     //       }
     //   });
 
-    connect(this, &Chat::leftRoom, this, &Chat::removeRoom);
-    connect(this, &Chat::notificationsRetrieved, this, &Chat::sendNotifications);
+    connect(this, &Client::leftRoom, this, &Client::removeRoom);
+    connect(this, &Client::notificationsRetrieved, this, &Client::sendNotifications);
     connect(this,
-            &Chat::highlightedNotifsRetrieved,
+            &Client::highlightedNotifsRetrieved,
             this,
             [](const mtx::responses::Notifications &notif) {
                 try {
@@ -123,23 +124,23 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings)
             });
 
     connect(
-      this, &Chat::tryInitialSyncCb, this, &Chat::tryInitialSync, Qt::QueuedConnection);
-    connect(this, &Chat::trySyncCb, this, &Chat::trySync, Qt::QueuedConnection);
+      this, &Client::tryInitialSyncCb, this, &Client::tryInitialSync, Qt::QueuedConnection);
+    connect(this, &Client::trySyncCb, this, &Client::trySync, Qt::QueuedConnection);
     connect(
       this,
-      &Chat::tryDelayedSyncCb,
+      &Client::tryDelayedSyncCb,
       this,
-      [this]() { QTimer::singleShot(RETRY_TIMEOUT, this, &Chat::trySync); },
+      [this]() { QTimer::singleShot(RETRY_TIMEOUT, this, &Client::trySync); },
       Qt::QueuedConnection);
 
     connect(
-      this, &Chat::newSyncResponse, this, &Chat::handleSyncResponse, Qt::QueuedConnection);
+      this, &Client::newSyncResponse, this, &Client::handleSyncResponse, Qt::QueuedConnection);
 
-    connect(this, &Chat::dropToLoginPageCb, this, &Chat::dropToLoginPage);
+    connect(this, &Client::dropToLoginPageCb, this, &Client::dropToLoginPage);
 }
 
 void
-Chat::logout()
+Client::logoutCb()
 {
     nhlog::net()->info("Logged out");
     deleteConfigs();
@@ -147,7 +148,7 @@ Chat::logout()
 }
 
 void
-Chat::dropToLoginPage(const QString &msg)
+Client::dropToLoginPage(const QString &msg)
 {
     nhlog::ui()->info("dropping to the login page: {}", msg.toStdString());
     http::client()->shutdown();
@@ -157,7 +158,7 @@ Chat::dropToLoginPage(const QString &msg)
 }
 
 void
-Chat::deleteConfigs()
+Client::deleteConfigs()
 {
     auto settings = UserSettings::instance()->qsettings();
     if (UserSettings::instance()->profile() != "") {
@@ -173,7 +174,7 @@ Chat::deleteConfigs()
 }
 
 void
-Chat::initialize(std::string userid, std::string homeserver, std::string token)
+Client::initialize(std::string userid, std::string homeserver, std::string token)
 {
     using namespace mtx::identifiers;
     try {
@@ -253,20 +254,20 @@ Chat::initialize(std::string userid, std::string homeserver, std::string token)
     }
 }
 
-QHash<QString, RoomInfo> Chat::inviteRoomList(){
+QHash<QString, RoomInfo> Client::inviteRoomList(){
     return cache::invites();
 }    
 
-std::map<QString, RoomInfo> Chat::joinedRoomList(){
+std::map<QString, RoomInfo> Client::joinedRoomList(){
     return cache::getRoomInfo(cache::joinedRooms());
 }    
 
-RoomInfo Chat::roomInfo(const std::string &room_id){
+RoomInfo Client::roomInfo(const std::string &room_id){
     return cache::singleRoomInfo(room_id);
 }
 
 void
-Chat::loadStateFromCache()
+Client::loadStateFromCache()
 {
     nhlog::db()->info("restoring state from cache");
 
@@ -304,7 +305,7 @@ Chat::loadStateFromCache()
 }
 
 void
-Chat::removeRoom(const std::string &room_id)
+Client::removeRoom(const std::string &room_id)
 {
     try {
         cache::removeRoom(room_id);
@@ -316,7 +317,7 @@ Chat::removeRoom(const std::string &room_id)
 }
 
 void
-Chat::sendNotifications(const mtx::responses::Notifications &res)
+Client::sendNotifications(const mtx::responses::Notifications &res)
 {
     for (const auto &item : res.notifications) {
         const auto event_id = mtx::accessors::event_id(item.event);
@@ -356,7 +357,7 @@ Chat::sendNotifications(const mtx::responses::Notifications &res)
 }
 
 void
-Chat::tryInitialSync()
+Client::tryInitialSync()
 {
     nhlog::crypto()->info("ed25519   : {}", olm::client()->identity_keys().ed25519);
     nhlog::crypto()->info("curve25519: {}", olm::client()->identity_keys().curve25519);
@@ -399,7 +400,7 @@ Chat::tryInitialSync()
 }
 
 void
-Chat::startInitialSync()
+Client::startInitialSync()
 {
     nhlog::net()->info("trying initial sync");
 
@@ -460,7 +461,7 @@ Chat::startInitialSync()
 }
 
 void
-Chat::handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token)
+Client::handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token)
 {
     try {
         if (prev_batch_token != cache::nextBatchToken()) {
@@ -504,7 +505,7 @@ Chat::handleSyncResponse(const mtx::responses::Sync &res, const std::string &pre
 }
 
 void
-Chat::trySync()
+Client::trySync()
 {
     mtx::http::SyncOpts opts;
     opts.set_presence = currentPresence();
@@ -549,13 +550,13 @@ Chat::trySync()
 }
 
 void
-Chat::joinRoom(const std::string &room_id)
+Client::joinRoom(const std::string &room_id)
 {
     joinRoomVia(room_id, {});
 }
 
 void
-Chat::joinRoomVia(const std::string &room_id,
+Client::joinRoomVia(const std::string &room_id,
                       const std::vector<std::string> &via) {
     http::client()->join_room(
       room_id, via, [this, room_id](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
@@ -576,7 +577,7 @@ Chat::joinRoomVia(const std::string &room_id,
 }
 
 void
-Chat::createRoom(const mtx::requests::CreateRoom &req)
+Client::createRoom(const mtx::requests::CreateRoom &req)
 {
     http::client()->create_room(
       req, [this](const mtx::responses::CreateRoom &res, mtx::http::RequestErr err) {
@@ -595,7 +596,7 @@ Chat::createRoom(const mtx::requests::CreateRoom &req)
 }
 
 void
-Chat::leaveRoom(const std::string &room_id)
+Client::leaveRoom(const std::string &room_id)
 {
     http::client()->leave_room(
       room_id,
@@ -609,7 +610,7 @@ Chat::leaveRoom(const std::string &room_id)
 }
 
 void
-Chat::inviteUser(const std::string &roomid,const std::string &userid, const std::string &reason)
+Client::inviteUser(const std::string &roomid,const std::string &userid, const std::string &reason)
 {
     http::client()->invite_user(
       roomid,
@@ -625,7 +626,7 @@ Chat::inviteUser(const std::string &roomid,const std::string &userid, const std:
       QString::fromStdString(reason).trimmed().toStdString());
 }
 void
-Chat::kickUser(const std::string & roomid,const std::string & userid, const std::string & reason)
+Client::kickUser(const std::string & roomid,const std::string & userid, const std::string & reason)
 {
     http::client()->kick_user(
       roomid,
@@ -645,7 +646,7 @@ Chat::kickUser(const std::string & roomid,const std::string & userid, const std:
       QString::fromStdString(reason).trimmed().toStdString());
 }
 void
-Chat::banUser(const std::string &roomid, const std::string & userid, const std::string & reason)
+Client::banUser(const std::string &roomid, const std::string & userid, const std::string & reason)
 {
     http::client()->ban_user(
       roomid,
@@ -665,7 +666,7 @@ Chat::banUser(const std::string &roomid, const std::string & userid, const std::
       QString::fromStdString(reason).trimmed().toStdString());
 }
 void
-Chat::unbanUser(const std::string &roomid, const std::string & userid, const std::string & reason)
+Client::unbanUser(const std::string &roomid, const std::string & userid, const std::string & reason)
 {
     http::client()->unban_user(
       roomid,
@@ -686,20 +687,20 @@ Chat::unbanUser(const std::string &roomid, const std::string & userid, const std
 }
 
 void
-Chat::receivedSessionKey(const std::string &room_id, const std::string &session_id)
+Client::receivedSessionKey(const std::string &room_id, const std::string &session_id)
 {
     nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
     // view_manager_->receivedSessionKey(room_id, session_id);
 }
 
 QString
-Chat::status() const
+Client::status() const
 {
     return QString::fromStdString(cache::statusMessage(utils::localUser().toStdString()));
 }
 
 void
-Chat::setStatus(const QString &status)
+Client::setStatus(const QString &status)
 {
     http::client()->put_presence_status(
       currentPresence(), status.toStdString(), [](mtx::http::RequestErr err) {
@@ -710,7 +711,7 @@ Chat::setStatus(const QString &status)
 }
 
 mtx::presence::PresenceState
-Chat::currentPresence() const
+Client::currentPresence() const
 {
     switch (userSettings_->presence()) {
     case UserSettings::Presence::Online:
@@ -725,7 +726,7 @@ Chat::currentPresence() const
 }
 
 void
-Chat::verifyOneTimeKeyCountAfterStartup()
+Client::verifyOneTimeKeyCountAfterStartup()
 {
     http::client()->upload_keys(
       olm::client()->create_upload_keys_request(),
@@ -758,7 +759,7 @@ Chat::verifyOneTimeKeyCountAfterStartup()
 }
 
 void
-Chat::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
+Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
 {
     if (auto count = counts.find(mtx::crypto::SIGNED_CURVE25519); count != counts.end()) {
         nhlog::crypto()->debug(
@@ -806,7 +807,7 @@ Chat::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
 }
 
 void
-Chat::getProfileInfo(std::string userid)
+Client::getProfileInfo(std::string userid)
 {
     http::client()->get_profile(
       userid, [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
@@ -820,7 +821,7 @@ Chat::getProfileInfo(std::string userid)
 }
 
 void
-Chat::getBackupVersion()
+Client::getBackupVersion()
 {
     if (!UserSettings::instance()->useOnlineKeyBackup()) {
         nhlog::crypto()->info("Online key backup disabled.");
@@ -874,13 +875,13 @@ Chat::getBackupVersion()
 }
 
 void
-Chat::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
+Client::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                    const SecretsToDecrypt &secrets)
 {
     QString text = "TODO";
     nhlog::ui()->warn("getText for CrossSigningSecrets: TODO");
     // QString text = QInputDialog::getText(
-    //   Chat::instance(),
+    //   Client::instance(),
     //   QCoreApplication::translate("CrossSigningSecrets", "Decrypt secrets"),
     //   keyDesc.name.empty()
     //     ? QCoreApplication::translate(
@@ -906,7 +907,7 @@ Chat::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription ke
 
     // if (!decryptionKey) {
     //     QMessageBox::information(
-    //       Chat::instance(),
+    //       Client::instance(),
     //       QCoreApplication::translate("CrossSigningSecrets", "Decryption failed"),
     //       QCoreApplication::translate("CrossSigningSecrets",
     //                                   "Failed to decrypt secrets with the "
@@ -982,7 +983,7 @@ Chat::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription ke
 }
 
 void
-Chat::startChat(QString userid)
+Client::startChat(QString userid)
 {
     auto joined_rooms = cache::joinedRooms();
     auto room_infos   = cache::getRoomInfo(joined_rooms);
@@ -1005,5 +1006,25 @@ Chat::startChat(QString userid)
         req.invite    = {userid.toStdString()};
         req.is_direct = true;
     }
-    emit Chat::instance()->createRoom(req);
+    emit Client::instance()->createRoom(req);
+}
+
+void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
+    // TODO Fakhri
+}
+
+bool Client::hasValidUser(){
+    // TODO Fakhri
+}
+
+mtx::responses::Login Client::userInformation(){
+    // TODO Fakhri
+}
+
+void Client::logout(){
+    // TODO Fakhri
+}
+
+std::string Client::serverDiscovery(std::string userId){
+    // TODO Fakhri
 }

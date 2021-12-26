@@ -14,5 +14,5 @@ CONFIG += c++14
 CONFIG += cmdline
 
 TEMPLATE = app
-message(" * Building the px-matrix-client-library tests")
+message(" * Building the matrix-client-library tests")
 TARGET = run-all-tests

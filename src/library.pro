@@ -7,7 +7,7 @@ LIBS += -lSQLiteCpp
 LIBS += -lolm
 LIBS += -lspdlog
 
-message(" * Building the px-matrix-client-library")
+message(" * Building the matrix-client-library")
 
 
 
@@ -15,7 +15,7 @@ HEADERS =   Cache_p.h \
             Cache.h \
             CacheCryptoStructs.h \
             CacheStructs.h \
-            Chat.h \
+            Client.h \
             EventAccessors.h \
             Login.h \
             Logging.h \
@@ -27,7 +27,7 @@ HEADERS =   Cache_p.h \
             timeline/Reaction.h
 
 SOURCES =   Cache.cpp \
-            Chat.cpp \
+            Client.cpp \
             EventAccessors.cpp \
             Login.cpp \
             Logging.cpp \
@@ -39,4 +39,4 @@ SOURCES =   Cache.cpp \
             timeline/Reaction.cpp
 
 TEMPLATE = lib
-TARGET = px-matrix-client-library
+TARGET = matrix-client-library
