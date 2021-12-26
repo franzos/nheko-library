@@ -48,7 +48,7 @@ class Client : public QObject
     Q_OBJECT
 
 public:
-    void initialize(std::string userid, std::string homeserver, std::string token);
+    void bootstrap(std::string userid, std::string homeserver, std::string token);
     static Client *instance() { 
         if(instance_ == nullptr){
             http::init();
@@ -91,8 +91,8 @@ public slots:
 
 
 signals:
-    // Authentication signals - TODO Fakhri (naming)
-    void loginOk(const mtx::responses::Login &res);
+    // Authentication signals
+    void loginReady(const mtx::responses::Login &res);
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
@@ -104,9 +104,7 @@ signals:
     void highlightedNotifsRetrieved(const mtx::responses::Notifications &, const QPoint widgetPos);
 
     void initiateFinished();
-    void unreadMessages(int count);
-    void showNotification(const QString &msg);
-    void showLoginPage(const QString &msg);
+    void showLoginPage(const std::string &msg);
 
     void userDisplayNameReady(const std::string &name);
     void userAvatarReady(const std::string &avatar);
@@ -126,11 +124,10 @@ signals:
     void userInvitationFailed(const std::string &room_id, const std::string user_id, const std::string &error);
     void roomListUpdated(const mtx::responses::Rooms &rooms);
 
-    void dropToLoginPageCb(const QString &msg);
+    void dropToLoginPageCb(const std::string &msg);
 
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
     void decryptSidebarChanged();
-    void chatFocusChanged(const bool focused);
 
     //! Signals for device verificaiton
     void receivedDeviceVerificationAccept(const mtx::events::msg::KeyVerificationAccept &message);
@@ -149,14 +146,15 @@ signals:
 
 private slots:
     void logoutCb();
+    void loginCb(const mtx::responses::Login &res);
     void removeRoom(const std::string &room_id);
-    void dropToLoginPage(const QString &msg);
+    void dropToLoginPage(const std::string &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 
 private:
     static Client *instance_;
     Authentication *_authentication;
-    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
+    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize("matrix-client-lib"));
     void startInitialSync();
     void tryInitialSync();
     void trySync();

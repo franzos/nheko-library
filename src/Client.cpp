@@ -30,9 +30,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
   : isConnected_(true)
   , userSettings_{userSettings}
 {
-    setObjectName("matrix_client");
     instance_->enableLogger(true);
-  
+    setObjectName("matrix_client");
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
     qRegisterMetaType<std::optional<RelatedInfo>>();
     qRegisterMetaType<mtx::presence::PresenceState>();
@@ -45,7 +44,15 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             this,
             &Client::logoutCb,
             Qt::QueuedConnection);
-    // TODO Fakhri (connect to signals)
+    connect(_authentication,
+            &Authentication::loginOk,
+            this,
+            &Client::loginCb,
+            Qt::QueuedConnection);
+    connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
+        nhlog::net()->info("login failed");
+        emit loginErrorOccurred(msg);
+    });
 
     connect(this,
             &Client::downloadedSecrets,
@@ -145,12 +152,28 @@ Client::logoutCb()
     nhlog::net()->info("Logged out");
     deleteConfigs();
     connectivityTimer_.stop();
+    emit logoutOk();
+}
+void
+Client::loginCb(const mtx::responses::Login &res)
+{
+    auto userid     = QString::fromStdString(http::client()->user_id().to_string());
+    auto device_id  = QString::fromStdString(http::client()->device_id());
+    auto homeserver = QString::fromStdString(http::client()->server() + ":" +
+                                            std::to_string(http::client()->port()));
+    auto token      = QString::fromStdString(http::client()->access_token());
+
+    userSettings_.data()->setUserId(userid);
+    userSettings_.data()->setAccessToken(token);
+    userSettings_.data()->setDeviceId(device_id);
+    userSettings_.data()->setHomeserver(homeserver);
+    emit loginReady(res);
 }
 
 void
-Client::dropToLoginPage(const QString &msg)
+Client::dropToLoginPage(const std::string &msg)
 {
-    nhlog::ui()->info("dropping to the login page: {}", msg.toStdString());
+    nhlog::ui()->info("dropping to the login page: {}", msg);
     http::client()->shutdown();
     connectivityTimer_.stop();
     deleteConfigs();
@@ -174,7 +197,7 @@ Client::deleteConfigs()
 }
 
 void
-Client::initialize(std::string userid, std::string homeserver, std::string token)
+Client::bootstrap(std::string userid, std::string homeserver, std::string token)
 {
     using namespace mtx::identifiers;
     try {
@@ -226,11 +249,11 @@ Client::initialize(std::string userid, std::string homeserver, std::string token
                 cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
             } catch (const lmdb::error &e) {
                 nhlog::crypto()->critical("failed to save olm account {}", e.what());
-                emit dropToLoginPageCb(QString::fromStdString(e.what()));
+                emit dropToLoginPageCb(e.what());
                 return;
             } catch (const mtx::crypto::olm_exception &e) {
                 nhlog::crypto()->critical("failed to create new olm account {}", e.what());
-                emit dropToLoginPageCb(QString::fromStdString(e.what()));
+                emit dropToLoginPageCb(e.what());
                 return;
             }
             getProfileInfo();
@@ -250,7 +273,7 @@ Client::initialize(std::string userid, std::string homeserver, std::string token
 
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failure during boot: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to open database, logging out!"));
+        emit dropToLoginPageCb("Failed to open database, logging out!");
     }
 }
 
@@ -276,19 +299,19 @@ Client::loadStateFromCache()
         cache::calculateRoomReadStatus();
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore OLM account. Please login again."));
+        emit dropToLoginPageCb("Failed to restore OLM account. Please login again.");
         return;
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failed to restore cache: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore save data. Please login again."));
+        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
         return;
     } catch (const json::exception &e) {
         nhlog::db()->critical("failed to parse cache data: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore save data. Please login again."));
+        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
         return;
     } catch (const std::exception &e) {
         nhlog::db()->critical("failed to load cache data: {}", e.what());
-        emit dropToLoginPageCb(tr("Failed to restore save data. Please login again."));
+        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
         return;
     }
 
@@ -384,7 +407,7 @@ Client::tryInitialSync()
                                  .arg(QString::fromStdString(err->matrix_error.error))
                                  .arg(status_code));
 
-              emit dropToLoginPageCb(errorMsg);
+              emit dropToLoginPageCb(errorMsg.toStdString());
               return;
           }
 
@@ -437,7 +460,7 @@ Client::startInitialSync()
                 return;
             }
             default: {
-                emit dropToLoginPageCb(msg);
+                emit dropToLoginPageCb(msg.toStdString());
                 return;
             }
             }
@@ -532,7 +555,7 @@ Client::trySync()
                    (err->matrix_error.errcode == mtx::errors::ErrorCode::M_UNKNOWN_TOKEN ||
                     err->matrix_error.errcode == mtx::errors::ErrorCode::M_MISSING_TOKEN)) ||
                   !http::is_logged_in()) {
-                  emit dropToLoginPageCb(msg);
+                  emit dropToLoginPageCb(msg.toStdString());
                   return;
               }
 
@@ -1010,21 +1033,27 @@ Client::startChat(QString userid)
 }
 
 void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
-    // TODO Fakhri
+    _authentication->loginWithPassword(deviceName, userId, password, serverAddress);
 }
 
 bool Client::hasValidUser(){
     // TODO Fakhri
+    return false;
 }
 
 mtx::responses::Login Client::userInformation(){
     // TODO Fakhri
+    mtx::responses::Login res;
+    return res;
 }
 
 void Client::logout(){
-    // TODO Fakhri
+    _authentication->logout();
 }
 
 std::string Client::serverDiscovery(std::string userId){
     // TODO Fakhri
+    std::string res;
+    return res;
 }
+

@@ -14,27 +14,25 @@ private:
     std::string password = "pQn3mDGsYR";
     std::string serverAddress = "https://matrix.pantherx.org";   
     QEventLoop eventLoop;
-    Authentication *auth;
     Client *client;
 private slots:
     void initTestCase(){
         client = Client::instance();
         client->enableLogger(false);
-        auth = new Authentication();
-        QObject::connect(auth,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
+        QObject::connect(client,  &Client::loginReady, [&](const mtx::responses::Login &res){
             loginInfo = res;
             eventLoop.quit();
         });
-        QObject::connect(auth,  &Authentication::loginErrorOccurred, [&](const std::string &out){
+        QObject::connect(client,  &Client::loginErrorOccurred, [&](const std::string &out){
             qCritical() << QString::fromStdString(out);
             eventLoop.quit();
         });
 
-        if(auth->hasValidUser()){
-            loginInfo = auth->userInformation();
+        if(client->hasValidUser()){
+            loginInfo = client->userInformation();
             qDebug() << "has valid";
         } else {
-            auth->loginWithPassword(deviceName, userId, password, serverAddress); 
+            client->loginWithPassword(deviceName, userId, password, serverAddress); 
             eventLoop.exec();
         }
     }
@@ -49,7 +47,7 @@ private slots:
             eventLoop.quit();
         });
         
-        client->initialize( loginInfo.user_id.to_string(),
+        client->bootstrap( loginInfo.user_id.to_string(),
                             serverAddress,
                             loginInfo.access_token);
         eventLoop.exec();

@@ -12,7 +12,7 @@ int main(int argc, char *argv[]){
 
     auto client = Client::instance();
     QEventLoop eventLoop;
-    QObject::connect(client,  &Client::loginOk, [&](const mtx::responses::Login &res){
+    QObject::connect(client,  &Client::loginReady, [&](const mtx::responses::Login &res){
         loginInfo = res;
         eventLoop.quit();
     });
@@ -24,17 +24,6 @@ int main(int argc, char *argv[]){
     QObject::connect(client, &Client::logoutOk,[](){
         qInfo() << "Logged out";
     });
-
-    if(client->hasValidUser()){
-        loginInfo = client->userInformation();
-    } else {
-        std::string deviceName = "test";
-        std::string userId = "@hamzeh_test01:pantherx.org";
-        std::string password = "pQn3mDGsYR";
-        std::string serverAddress = "https://matrix.pantherx.org";   
-        client->loginWithPassword(deviceName, userId, password, serverAddress); 
-        eventLoop.exec();
-    }
 
     QObject::connect(client, &Client::userDisplayNameReady,[](const std::string &name){
         qInfo() << "User Display Name: " << QString::fromStdString(name);
@@ -60,7 +49,19 @@ int main(int argc, char *argv[]){
         }
     });
     
-    client->initialize(loginInfo.user_id.to_string(),
+
+    if(client->hasValidUser()){
+        loginInfo = client->userInformation();
+    } else {
+        std::string deviceName = "test";
+        std::string userId = "@hamzeh_test01:pantherx.org";
+        std::string password = "pQn3mDGsYR";
+        std::string serverAddress = "https://matrix.pantherx.org";   
+        client->loginWithPassword(deviceName, userId, password, serverAddress); 
+        eventLoop.exec();
+    }
+    
+    client->bootstrap(loginInfo.user_id.to_string(),
                         "https://matrix.pantherx.org",
                         loginInfo.access_token);
     auto rooms = client->joinedRoomList();
