@@ -49,11 +49,10 @@ set(SRC_FILES
 	src/timeline/Reaction.cpp
 	src/encryption/Olm.cpp
 	src/Cache.cpp
-	src/Chat.cpp
+	src/Client.cpp
 	src/EventAccessors.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
-	src/PXMatrixClient.cpp
 	src/UserSettingsPage.cpp
 	src/Utils.cpp
 	)
@@ -88,26 +87,26 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/Olm.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
-	src/Chat.h
+	src/Client.h
 	src/UserSettingsPage.h	
 	src/Authentication.h
 )
 
 
-set(PX_MATRIX_LIB_DEPS
+set(MATRIX_LIB_DEPS
 	${SRC_FILES}
 	${MOC_HEADERS})
 
 IF(SHARED_LIB)
-	add_library (px-matrix-client-library SHARED ${PX_MATRIX_LIB_DEPS})
+	add_library (matrix-client-library SHARED ${MATRIX_LIB_DEPS})
 	message(" + Build as shared library.")
 ELSE()
-	add_library (px-matrix-client-library ${PX_MATRIX_LIB_DEPS})
+	add_library (matrix-client-library ${MATRIX_LIB_DEPS})
 	message(" + Build as static library.")
 ENDIF()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-	set_target_properties(px-matrix-client-library PROPERTIES ENABLE_EXPORTS ON)
+	set_target_properties(matrix-client-library PROPERTIES ENABLE_EXPORTS ON)
 endif()
 
 set(DEP_LIBS 
@@ -122,7 +121,7 @@ set(DEP_LIBS
 	liblmdb::lmdb)
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
-target_link_libraries(px-matrix-client-library PUBLIC ${DEP_LIBS})
+target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DSPDLOG_DEBUG_ON)	
@@ -133,7 +132,7 @@ endif()
 
 IF(BUILD_EXAMPLES)
 	add_executable(profileInfo examples/profileInfo.cpp)
-	target_link_libraries(profileInfo px-matrix-client-library Qt5::Widgets)
+	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets)
 	message(" + \"examples\" will be built.")
 ENDIF()
 
@@ -144,6 +143,6 @@ IF(BUILD_TESTS)
 					tests/AuthenticationTest.h
 					tests/ProfileInfoTest.h
 					tests/RoomTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test px-matrix-client-library Qt5::Widgets)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Widgets)
 	message(" + \"tests\" will be built.")
 ENDIF()
