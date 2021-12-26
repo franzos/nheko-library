@@ -30,9 +30,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
   : isConnected_(true)
   , userSettings_{userSettings}
 {
-    setObjectName("matrix_client");
     instance_->enableLogger(true);
-  
+    setObjectName("matrix_client");
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
     qRegisterMetaType<std::optional<RelatedInfo>>();
     qRegisterMetaType<mtx::presence::PresenceState>();
@@ -54,7 +53,6 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         nhlog::net()->info("login failed");
         emit loginErrorOccurred(msg);
     });
-    // TODO Fakhri (connect to signals)
 
     connect(this,
             &Client::downloadedSecrets,
@@ -159,7 +157,6 @@ Client::logoutCb()
 void
 Client::loginCb(const mtx::responses::Login &res)
 {
-    http::client()->set_user(res.user_id);
     auto userid     = QString::fromStdString(http::client()->user_id().to_string());
     auto device_id  = QString::fromStdString(http::client()->device_id());
     auto homeserver = QString::fromStdString(http::client()->server() + ":" +
@@ -170,9 +167,7 @@ Client::loginCb(const mtx::responses::Login &res)
     userSettings_.data()->setAccessToken(token);
     userSettings_.data()->setDeviceId(device_id);
     userSettings_.data()->setHomeserver(homeserver);
-    bootstrap( userid.toStdString(), homeserver.toStdString(),token.toStdString());
-    if(_loginWithSync)
-        emit loginReady(res);
+    emit loginReady(res);
 }
 
 void
@@ -1037,25 +1032,28 @@ Client::startChat(QString userid)
     emit Client::instance()->createRoom(req);
 }
 
-void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress, bool synced ){
+void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
     _authentication->loginWithPassword(deviceName, userId, password, serverAddress);
-    _loginWithSync = synced;
 }
 
 bool Client::hasValidUser(){
     // TODO Fakhri
+    return false;
 }
 
 mtx::responses::Login Client::userInformation(){
     // TODO Fakhri
+    mtx::responses::Login res;
+    return res;
 }
 
 void Client::logout(){
     _authentication->logout();
-   
 }
 
 std::string Client::serverDiscovery(std::string userId){
     // TODO Fakhri
+    std::string res;
+    return res;
 }
 

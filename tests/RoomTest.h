@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 #include <QEventLoop>
 #include <iostream>
+#include <QTimer>
 
 #include "../src/Client.h"
 
@@ -18,7 +19,6 @@ private:
     
     QEventLoop eventLoop;
     Client        *client = nullptr;
-    Authentication *authUser1;
     std::string inviteRoomId;
     std::string joinRoomId = "!fCNlplLEJIMZawGUdE:pantherx.org";
 
@@ -38,7 +38,6 @@ private:
 
 private slots:
     void initTestCase(){
-        authUser1 = new Authentication();
         client = Client::instance();
         client->enableLogger(false);
     }
@@ -149,14 +148,19 @@ private slots:
     }
 
     void cleanupTestCase(){
-        connect(authUser1, &Authentication::logoutOk,[&](){
+        connect(client, &Client::logoutOk,[&](){
             eventLoop.quit();
         });
-        connect(authUser1, &Authentication::logoutErrorOccurred,[&](const std::string error){
+        connect(client, &Client::logoutErrorOccurred,[&](const std::string error){
             QFAIL(error.c_str());
             eventLoop.quit();
         });
-        authUser1->logout();
+        client->logout();
+        eventLoop.exec();
+
+        QTimer::singleShot(2 * 1000, this, [&] {
+            eventLoop.quit();
+        });
         eventLoop.exec();
     }
 };

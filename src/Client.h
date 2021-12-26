@@ -83,7 +83,7 @@ public slots:
     void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
     // Authentication
-    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress, bool synced = true);
+    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
     bool hasValidUser();
     mtx::responses::Login userInformation();
     void logout();
@@ -91,7 +91,7 @@ public slots:
 
 
 signals:
-    // Authentication signals - TODO Fakhri (naming)
+    // Authentication signals
     void loginReady(const mtx::responses::Login &res);
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
@@ -154,7 +154,7 @@ private slots:
 private:
     static Client *instance_;
     Authentication *_authentication;
-    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
+    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize("matrix-client-lib"));
     void startInitialSync();
     void tryInitialSync();
     void trySync();
@@ -179,7 +179,6 @@ private:
 
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;
-    bool _loginWithSync;
 };
 
 template<class Collection>

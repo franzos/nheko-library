@@ -25,17 +25,6 @@ int main(int argc, char *argv[]){
         qInfo() << "Logged out";
     });
 
-    if(client->hasValidUser()){
-        loginInfo = client->userInformation();
-    } else {
-        std::string deviceName = "test";
-        std::string userId = "@hamzeh_test01:pantherx.org";
-        std::string password = "pQn3mDGsYR";
-        std::string serverAddress = "https://matrix.pantherx.org";   
-        client->loginWithPassword(deviceName, userId, password, serverAddress); 
-        eventLoop.exec();
-    }
-
     QObject::connect(client, &Client::userDisplayNameReady,[](const std::string &name){
         qInfo() << "User Display Name: " << QString::fromStdString(name);
     });
@@ -59,6 +48,18 @@ int main(int argc, char *argv[]){
             qDebug() << "LEFT: " << QString::fromStdString(room.first);
         }
     });
+    
+
+    if(client->hasValidUser()){
+        loginInfo = client->userInformation();
+    } else {
+        std::string deviceName = "test";
+        std::string userId = "@hamzeh_test01:pantherx.org";
+        std::string password = "pQn3mDGsYR";
+        std::string serverAddress = "https://matrix.pantherx.org";   
+        client->loginWithPassword(deviceName, userId, password, serverAddress); 
+        eventLoop.exec();
+    }
     
     client->bootstrap(loginInfo.user_id.to_string(),
                         "https://matrix.pantherx.org",
