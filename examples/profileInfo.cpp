@@ -58,7 +58,6 @@ int main(int argc, char *argv[]){
         }
     });
     
-
     chat->initialize(loginInfo.user_id.to_string(),
                         "https://matrix.pantherx.org",
                         loginInfo.access_token);

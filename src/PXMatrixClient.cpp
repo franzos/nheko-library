@@ -7,20 +7,17 @@
 
 namespace px {
     namespace mtx_client {
-        static std::shared_ptr<Chat> _chat;
         Authentication *authentication(){
-            return _chat->authentication();
+            return Chat::instance()->authentication();
         }
 
         Chat *chat(){
-            _chat = std::make_shared<Chat>();
-            return _chat.get();
+            return Chat::instance();
         }
 
         bool init(bool enable_logger){
             http::init();
             nhlog::init("px-matrix-client-library", enable_logger);
-            chat();
             return true;
         }
     }

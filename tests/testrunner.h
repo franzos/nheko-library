@@ -8,7 +8,7 @@ void runTests(int argc, char* argv[], int* status)
 {
     QTEST_DISABLE_KEYPAD_NAVIGATION TestClass tc;
     *status |= QTest::qExec(&tc, argc, argv);
-    qDebug() << "________________________________________________________________________________\n\n";
+    qDebug() << "========================================================================================\n";
     QThread::sleep(1);
 }
 

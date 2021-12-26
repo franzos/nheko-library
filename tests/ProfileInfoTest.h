@@ -53,16 +53,4 @@ private slots:
                             loginInfo.access_token);
         eventLoop.exec();
     }
-
-    void cleanupTestCase(){
-        connect(auth, &Authentication::logoutOk,[&](){
-            eventLoop.quit();
-        });
-        connect(auth, &Authentication::logoutErrorOccurred,[&](const std::string &err){
-            QFAIL(err.c_str());
-            eventLoop.quit();
-        });
-        auth->logout();
-        eventLoop.exec();
-    }
 };

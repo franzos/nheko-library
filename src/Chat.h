@@ -48,9 +48,13 @@ class Chat : public QObject
     Q_OBJECT
 
 public:
-    Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void initialize(std::string userid, std::string homeserver, std::string token);
-    static Chat *instance() { return instance_; }
+    static Chat *instance() { 
+        if(instance_ == nullptr){
+            instance_ = new Chat();
+        }
+        return instance_; 
+    }
     static Authentication *authentication() { return _authentication;};
     QSharedPointer<UserSettings> userSettings() { return userSettings_; }
     void deleteConfigs();
@@ -141,6 +145,7 @@ private slots:
 private:
     static Chat *instance_;
     static Authentication *_authentication;
+    Chat(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
     void tryInitialSync();
     void trySync();

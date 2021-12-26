@@ -32,7 +32,6 @@ Chat::Chat(QSharedPointer<UserSettings> userSettings)
   , userSettings_{userSettings}
 {
     setObjectName("px_matrix_client");
-    instance_ = this;
     _authentication = new Authentication();
 
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
