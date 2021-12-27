@@ -53,6 +53,10 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         nhlog::net()->info("login failed");
         emit loginErrorOccurred(msg);
     });
+    connect(_authentication, &Authentication::logoutErrorOccurred, [&](std::string &msg) {
+        nhlog::net()->info("logout failed");
+        emit logoutErrorOccurred(msg);
+    });
 
     connect(this,
             &Client::downloadedSecrets,
@@ -1037,13 +1041,23 @@ void Client::loginWithPassword(std::string deviceName, std::string userId, std::
 }
 
 bool Client::hasValidUser(){
-    // TODO Fakhri
+     if (UserSettings::instance()->profile() != "") {
+        return true;
+    }
     return false;
 }
 
 mtx::responses::Login Client::userInformation(){
-    // TODO Fakhri
-    mtx::responses::Login res;
+    using namespace mtx::identifiers;
+    mtx::responses::Login res;    
+    res.user_id    = parse<User>(http::client()->user_id().to_string());
+    res.device_id = http::client()->device_id();
+
+    auto homeserver = QString::fromStdString(http::client()->server() + ":" +
+                                            std::to_string(http::client()->port()));
+
+    res.access_token = http::client()->access_token();
+
     return res;
 }
 
@@ -1052,8 +1066,6 @@ void Client::logout(){
 }
 
 std::string Client::serverDiscovery(std::string userId){
-    // TODO Fakhri
-    std::string res;
-    return res;
+    return _authentication->serverDiscovery(userId);
 }
 
