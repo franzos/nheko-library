@@ -7,12 +7,10 @@
 #include <QBuffer>
 #include <QImageReader>
 #include <QProcessEnvironment>
-#include <QScreen>
 #include <QSettings>
 #include <QStringBuilder>
 #include <QTextBoundaryFinder>
 #include <QXmlStreamReader>
-
 #include <array>
 #include <cmath>
 #include <variant>

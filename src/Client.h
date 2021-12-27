@@ -19,7 +19,7 @@
 #include <mtx/secret_storage.hpp>
 #include <mtx/responses/sync.hpp>
 
-
+#include <QCoreApplication>
 #include <QMap>
 #include <QPoint>
 #include <QTimer>
@@ -54,6 +54,9 @@ public:
     static Client *instance() { 
         if(instance_ == nullptr){
             http::init();
+            // requirement of UserSettings
+            if(QCoreApplication::organizationName().isEmpty())
+                QCoreApplication::setOrganizationName("matrix-client-library");
             instance_ = new Client();
         }
         return instance_; 
@@ -65,8 +68,9 @@ public:
     mtx::presence::PresenceState currentPresence() const;
     void getProfileInfo(std::string userid = utils::localUser().toStdString());
     void enableLogger(bool enable){
-        nhlog::init("matrix-client-library", enable);
+        nhlog::init("matrix-client-library", enable);    
     }
+
 public slots:
     std::map<QString, RoomInfo> joinedRoomList();
     QHash<QString, RoomInfo> inviteRoomList();
@@ -156,7 +160,8 @@ private slots:
 private:
     static Client *instance_;
     Authentication *_authentication;
-    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize("matrix-client-lib"));
+    QString _clientName;
+    Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
     void tryInitialSync();
     void trySync();

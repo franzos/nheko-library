@@ -18,7 +18,7 @@ private:
 private slots:
     void initTestCase(){
         client = Client::instance();
-        client->enableLogger(true);
+        client->enableLogger(false);
         QObject::connect(client,  &Client::loginReady, [&](const mtx::responses::Login &res){
             loginInfo = res;
             eventLoop.quit();
