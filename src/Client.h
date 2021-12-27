@@ -12,11 +12,13 @@
 
 #include <mtx/common.hpp>
 #include <mtx/events.hpp>
+#include <mtx/identifiers.hpp>
 #include <mtx/events/encrypted.hpp>
 #include <mtx/events/member.hpp>
 #include <mtx/events/presence.hpp>
 #include <mtx/secret_storage.hpp>
 #include <mtx/responses/sync.hpp>
+
 
 #include <QMap>
 #include <QPoint>
