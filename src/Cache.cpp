@@ -16,12 +16,6 @@
 #include <QStandardPaths>
 #include <QDebug>
 
-#if __has_include(<keychain.h>)
-#include <keychain.h>
-#else
-#include <qt5keychain/keychain.h>
-#endif
-
 #include <mtx/responses/common.hpp>
 
 #include "Cache.h"
