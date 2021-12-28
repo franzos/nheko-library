@@ -10,7 +10,7 @@
 #include <QDebug>
 #include "Cache.h"
 #include "MatrixClient.h"
-#include "UserSettingsPage.h"
+#include "UserSettings.h"
 #include "Utils.h"
 #include "encryption/Olm.h"
 

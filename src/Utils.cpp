@@ -18,10 +18,9 @@
 #include <cmark.h>
 
 #include "Cache.h"
-// #include "Config.h"
 #include "EventAccessors.h"
 #include "MatrixClient.h"
-#include "UserSettingsPage.h"
+#include "UserSettings.h"
 
 using TimelineEvent = mtx::events::collections::TimelineEvents;
 

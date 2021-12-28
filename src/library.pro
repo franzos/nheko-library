@@ -28,7 +28,7 @@ HEADERS =   Authentication.h \
             EventAccessors.h \
             Logging.h \
             MatrixClient.h \
-            UserSettingsPage.h \
+            UserSettings.h \
             Utils.h \
             encryption/Olm.h \
             timeline/EventStore.h \
@@ -40,7 +40,7 @@ SOURCES =   Authentication.cpp \
             EventAccessors.cpp \
             Logging.cpp \
             MatrixClient.cpp \
-            UserSettingsPage.cpp \
+            UserSettings.cpp \
             Utils.cpp \
             encryption/Olm.cpp \
             timeline/EventStore.cpp \
