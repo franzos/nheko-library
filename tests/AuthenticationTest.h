@@ -1,7 +1,7 @@
 #include <QtTest/QtTest>
 #include <QEventLoop>
 #include "../src/Authentication.h"
-#include <iostream>
+#include "../src/Logging.h"
 
 
 
@@ -10,8 +10,10 @@ class AuthenticationTest: public QObject
     Q_OBJECT
     Authentication *loginTest;
     QEventLoop eventLoop;
+    
 private slots:
     void loginWithCorrectPassword(){
+        nhlog::init(" ",false);
          loginTest = new Authentication();
         //QEventLoop eventLoop;
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
@@ -55,7 +57,7 @@ private slots:
         Authentication *loginTestWrong = new Authentication();
         QEventLoop eventLoop;
         QObject::connect(loginTestWrong,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
-            QFAIL("Logined in invalid user");
+            QFAIL(("Logined in invalid user "+res.user_id.localpart()).c_str() );
             eventLoop.quit();
         });
 

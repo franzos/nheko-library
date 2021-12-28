@@ -11,9 +11,7 @@ class Authentication: public QObject{
  Q_OBJECT
 
 public:
-    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
-    bool hasValidUser();
-    mtx::responses::Login userInformation();
+    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
     std::string serverDiscovery(std::string userId);
 
