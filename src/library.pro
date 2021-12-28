@@ -14,7 +14,6 @@ LIBS +=-L $$(LIBRARY_PATH) -lQMatrixClient
 LIBS += -lolm
 LIBS += -lspdlog
 LIBS += -llmdb
-LIBS += -lqt5keychain
 LIBS += -lcrypto -lssl
 
 INCLUDEPATH += src

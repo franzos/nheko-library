@@ -20,7 +20,6 @@ find_package(Qt5 5.15 COMPONENTS Widgets QuickControls2 REQUIRED)
 find_package(Qt5QuickCompiler)
 find_package(Qt5Test)
 find_package(Qt5DBus)
-find_package(Qt5Keychain REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -115,7 +114,6 @@ set(DEP_LIBS
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::QuickControls2
-	qt5keychain
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)

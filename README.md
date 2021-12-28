@@ -7,7 +7,6 @@
  * `lmdb` & `lmdbxx`    : __TODO__ - Should be replaced
  * `cmark`              : To convert markdown to html
  * `spdlog`             : Logger
- * `qt5keychain`        : Secret Storage - __TODO__ : Should be removed
  * `nlohmann_json`      : JSON library - __TODO__ : Maybe we have to replace it with Qt Built-in Json library 
 
 #### How to build
