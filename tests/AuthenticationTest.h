@@ -14,7 +14,7 @@ class AuthenticationTest: public QObject
 private slots:
     void loginWithCorrectPassword(){
         nhlog::init(" ",false);
-         loginTest = new Authentication();
+        loginTest = new Authentication();
         //QEventLoop eventLoop;
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
             QCOMPARE(res.user_id.localpart(),"fakhri_test01");            

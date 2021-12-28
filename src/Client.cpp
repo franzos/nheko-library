@@ -172,7 +172,7 @@ Client::loginCb(const mtx::responses::Login &res)
     userSettings_.data()->setAccessToken(token);
     userSettings_.data()->setDeviceId(device_id);
     userSettings_.data()->setHomeserver(homeserver);
-    emit loginReady(res);
+    emit loginOk(res);
 }
 
 void

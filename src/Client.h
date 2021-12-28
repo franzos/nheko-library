@@ -94,7 +94,7 @@ public slots:
 
 signals:
     // Authentication signals
-    void loginReady(const mtx::responses::Login &res);
+    void loginOk(const mtx::responses::Login &res);
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
