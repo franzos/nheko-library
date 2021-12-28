@@ -6,6 +6,7 @@
 #include <QUrl>
 #include <mtx/responses.hpp>
 #include <QDebug>
+#include <QThread>
 #include "Cache.h"
 #include "Cache_p.h"
 #include "Client.h"
@@ -50,11 +51,11 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             &Client::loginCb,
             Qt::QueuedConnection);
     connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
-        nhlog::net()->info("login failed");
+        nhlog::net()->info("login failed: {}", msg);
         emit loginErrorOccurred(msg);
     });
     connect(_authentication, &Authentication::logoutErrorOccurred, [&](std::string &msg) {
-        nhlog::net()->info("logout failed");
+        nhlog::net()->info("logout failed: {}" ,msg);
         emit logoutErrorOccurred(msg);
     });
 
@@ -187,15 +188,7 @@ Client::dropToLoginPage(const std::string &msg)
 void
 Client::deleteConfigs()
 {
-    auto settings = UserSettings::instance()->qsettings();
-    if (UserSettings::instance()->profile() != "") {
-        settings->beginGroup("profile");
-        settings->beginGroup(UserSettings::instance()->profile());
-    }
-    settings->beginGroup("auth");
-    settings->remove("");
-    settings->endGroup(); // auth
-
+    UserSettings::instance()->clear();
     http::client()->shutdown();
     cache::deleteData();
 }
@@ -222,48 +215,92 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
     try {
         cache::init(QString::fromStdString(userid));
         auto p = cache::client();
-        connect(p, &Cache::databaseReady, this, [this]() {
-            nhlog::db()->info("database ready");
+        while(!p->isDatabaseReady()){
+            QThread::sleep(2);
+            nhlog::db()->debug("Database is not ready. waiting ...");
+        }
+        nhlog::db()->info("database ready");
 
-            const bool isInitialized = cache::isInitialized();
-            const auto cacheVersion  = cache::formatVersion();
-            try {
-                if (!isInitialized) {
-                    cache::setCurrentFormat();
-                } else {
-                    if (cacheVersion == cache::CacheVersion::Current) {
-                        loadStateFromCache();
-                        return;
-                    } else if (cacheVersion == cache::CacheVersion::Newer) {
-                        // TODO
-                        // QMessageBox::critical(
-                        //   this,
-                        //   tr("Incompatible cache version"),
-                        //   tr("The cache on your disk is newer than this version of Nheko "
-                        //      "supports. Please update Nheko or clear your cache."));
-                        // QCoreApplication::quit();
-                        return;
-                    }
+        const bool isInitialized = cache::isInitialized();
+        const auto cacheVersion  = cache::formatVersion();
+        try {
+            if (!isInitialized) {
+                cache::setCurrentFormat();
+            } else {
+                if (cacheVersion == cache::CacheVersion::Current) {
+                    loadStateFromCache();
+                    return;
+                } else if (cacheVersion == cache::CacheVersion::Newer) {
+                    // TODO
+                    // QMessageBox::critical(
+                    //   this,
+                    //   tr("Incompatible cache version"),
+                    //   tr("The cache on your disk is newer than this version of Nheko "
+                    //      "supports. Please update Nheko or clear your cache."));
+                    // QCoreApplication::quit();
+                    return;
                 }
-
-                // It's the first time syncing with this device
-                // There isn't a saved olm account to restore.
-                nhlog::crypto()->info("creating new olm account");
-                olm::client()->create_new_account();
-                cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
-            } catch (const lmdb::error &e) {
-                nhlog::crypto()->critical("failed to save olm account {}", e.what());
-                emit dropToLoginPageCb(e.what());
-                return;
-            } catch (const mtx::crypto::olm_exception &e) {
-                nhlog::crypto()->critical("failed to create new olm account {}", e.what());
-                emit dropToLoginPageCb(e.what());
-                return;
             }
-            getProfileInfo();
-            getBackupVersion();
-            tryInitialSync();
-        });
+
+            // It's the first time syncing with this device
+            // There isn't a saved olm account to restore.
+            nhlog::crypto()->info("creating new olm account");
+            olm::client()->create_new_account();
+            cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
+        } catch (const lmdb::error &e) {
+            nhlog::crypto()->critical("failed to save olm account {}", e.what());
+            emit dropToLoginPageCb(e.what());
+            return;
+        } catch (const mtx::crypto::olm_exception &e) {
+            nhlog::crypto()->critical("failed to create new olm account {}", e.what());
+            emit dropToLoginPageCb(e.what());
+            return;
+        }
+        getProfileInfo();
+        getBackupVersion();
+        tryInitialSync();
+        // connect(p, &Cache::databaseReady, this, [this]() {
+        //     nhlog::db()->info("database ready");
+
+        //     const bool isInitialized = cache::isInitialized();
+        //     const auto cacheVersion  = cache::formatVersion();
+        //     try {
+        //         if (!isInitialized) {
+        //             cache::setCurrentFormat();
+        //         } else {
+        //             if (cacheVersion == cache::CacheVersion::Current) {
+        //                 loadStateFromCache();
+        //                 return;
+        //             } else if (cacheVersion == cache::CacheVersion::Newer) {
+        //                 // TODO
+        //                 // QMessageBox::critical(
+        //                 //   this,
+        //                 //   tr("Incompatible cache version"),
+        //                 //   tr("The cache on your disk is newer than this version of Nheko "
+        //                 //      "supports. Please update Nheko or clear your cache."));
+        //                 // QCoreApplication::quit();
+        //                 return;
+        //             }
+        //         }
+
+        //         // It's the first time syncing with this device
+        //         // There isn't a saved olm account to restore.
+        //         nhlog::crypto()->info("creating new olm account");
+        //         olm::client()->create_new_account();
+        //         cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
+        //     } catch (const lmdb::error &e) {
+        //         nhlog::crypto()->critical("failed to save olm account {}", e.what());
+        //         emit dropToLoginPageCb(e.what());
+        //         return;
+        //     } catch (const mtx::crypto::olm_exception &e) {
+        //         nhlog::crypto()->critical("failed to create new olm account {}", e.what());
+        //         emit dropToLoginPageCb(e.what());
+        //         return;
+        //     }
+        //     getProfileInfo();
+        //     getBackupVersion();
+        //     tryInitialSync();
+        // });
 
         // connect(cache::client(),
         //         &Cache::newReadReceipts,
@@ -1041,7 +1078,7 @@ void Client::loginWithPassword(std::string deviceName, std::string userId, std::
 }
 
 bool Client::hasValidUser(){
-     if (UserSettings::instance()->profile() != "") {
+     if (UserSettings::instance()->accessToken() != "") {
         return true;
     }
     return false;
@@ -1050,13 +1087,10 @@ bool Client::hasValidUser(){
 mtx::responses::Login Client::userInformation(){
     using namespace mtx::identifiers;
     mtx::responses::Login res;    
-    res.user_id    = parse<User>(http::client()->user_id().to_string());
-    res.device_id = http::client()->device_id();
-
-    auto homeserver = QString::fromStdString(http::client()->server() + ":" +
-                                            std::to_string(http::client()->port()));
-
-    res.access_token = http::client()->access_token();
+    // res.user_id    = parse<User>(http::client()->user_id().to_string());
+    res.user_id         = parse<User>(UserSettings::instance()->userId().toStdString());
+    res.device_id       = UserSettings::instance()->deviceId().toStdString();
+    res.access_token    = UserSettings::instance()->accessToken().toStdString();
 
     return res;
 }

@@ -69,6 +69,14 @@ public:
     QString deviceId() const { return deviceId_; }
     QString homeserver() const { return homeserver_; }
     bool disableCertificateValidation() const { return disableCertificateValidation_; }
+    QString secret(const QString &key){
+        return secretsMap_[key];
+    }
+    void storeSecret(const QString &key, const QString &value);
+    void deleteSecret(const QString &key);
+    void clear(){
+        settings.clear();
+    }
 
 signals:
     void presenceChanged(Presence state);
@@ -94,6 +102,6 @@ private:
     QString deviceId_;
     QString homeserver_;
     QSettings settings;
-
+    QMap<QString, QString> secretsMap_;
     static QSharedPointer<UserSettings> instance_;
 };
