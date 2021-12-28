@@ -19,7 +19,6 @@
 #include <mtx/secret_storage.hpp>
 #include <mtx/responses/sync.hpp>
 
-#include <QCoreApplication>
 #include <QMap>
 #include <QPoint>
 #include <QTimer>
@@ -54,9 +53,6 @@ public:
     static Client *instance() { 
         if(instance_ == nullptr){
             http::init();
-            // requirement of UserSettings
-            if(QCoreApplication::organizationName().isEmpty())
-                QCoreApplication::setOrganizationName("matrix-client-library");
             instance_ = new Client();
         }
         return instance_; 

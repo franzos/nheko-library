@@ -6,6 +6,8 @@
 #include <QStandardPaths>
 #include <QString>
 #include <QTextStream>
+#include <QCoreApplication>
+#include <QDebug>
 #include "Cache.h"
 #include "MatrixClient.h"
 #include "UserSettingsPage.h"
@@ -29,6 +31,9 @@ UserSettings::instance()
 QSharedPointer<UserSettings>
 UserSettings::initialize(std::optional<QString> profile)
 {
+    // requirement of UserSettings
+    if(QCoreApplication::organizationName().isEmpty())
+        QCoreApplication::setOrganizationName("matrix-client-library");
     instance_.reset(new UserSettings());
     instance_->load(profile);
     return instance_;
@@ -61,6 +66,12 @@ UserSettings::load(std::optional<QString> profile)
 
     disableCertificateValidation_ =
       settings.value("disable_certificate_validation", false).toBool();
+    
+    settings.beginGroup("secrets");
+    QStringList secretKeys = settings.allKeys();
+    for(auto const &s: secretKeys)
+        secretsMap_[s] = settings.value(s,"").toString();
+    settings.endGroup();
 }
 
 void
@@ -187,5 +198,22 @@ UserSettings::save()
 
     settings.setValue("disable_certificate_validation", disableCertificateValidation_);
 
+    QMap<QString, QString>::iterator i;
+    for (i = secretsMap_.begin(); i != secretsMap_.end(); ++i) {
+        settings.setValue("secrets/" + i.key(), i.value());
+    }
     settings.sync();
+}
+    
+void UserSettings::storeSecret(const QString &key, const QString &value){
+    if (secretsMap_[key] == value)
+        return;
+    secretsMap_[key] = value;
+    save();
+}
+
+void UserSettings::deleteSecret(const QString &key){
+    secretsMap_.remove(key);
+    settings.remove("secrets/" + key);
+    save();
 }

@@ -296,33 +296,11 @@ Cache::setup()
     });
 }
 
-static void
-fatalSecretError()
-{
-    // QMessageBox::critical(
-    //   Client::instance(),
-    //   QCoreApplication::translate("SecretStorage", "Failed to connect to secret storage"),
-    //   QCoreApplication::translate(
-    //     "SecretStorage",
-    //     "Nheko could not connect to the secure storage to save encryption secrets to. This can "
-    //     "have multiple reasons. Check if your D-Bus service is running and you have configured a "
-    //     "service like KWallet, Gnome Keyring, KeePassXC or the equivalent for your platform. If "
-    //     "you are having trouble, feel free to open an issue here: "
-    //     "https://github.com/Nheko-Reborn/nheko/issues"));
-
-    QCoreApplication::exit(1);
-    exit(1);
-}
-
 static QString
 secretName(std::string name, bool internal)
 {
     auto settings = UserSettings::instance();
-    return (internal ? "mtx_lib." : "matrix.") +
-           QString(
-             QCryptographicHash::hash(settings->profile().toUtf8(), QCryptographicHash::Sha256)
-               .toBase64()) +
-           "." + QString::fromStdString(name);
+    return (internal ? "mtx_lib." : "matrix.") + QString::fromStdString(name);
 }
 
 void
@@ -330,45 +308,22 @@ Cache::loadSecrets(std::vector<std::pair<std::string, bool>> toLoad)
 {
     if (toLoad.empty()) {
         this->databaseReady_ = true;
-        emit databaseReady();
         return;
     }
     auto [name_, internal] = toLoad.front();
 
-    auto job = new QKeychain::ReadPasswordJob(QCoreApplication::applicationName());
-    job->setAutoDelete(true);
-    job->setInsecureFallback(true);
-    job->setSettings(UserSettings::instance()->qsettings());
     auto name = secretName(name_, internal);
-    job->setKey(name);
+    auto secret = UserSettings::instance()->secret(name);
+    if(secret.isEmpty()){
+        nhlog::db()->debug("Restored empty secret '{}'.", name.toStdString());
+    } else {
+        std::unique_lock lock(secret_storage.mtx);
+        secret_storage.secrets[name.toStdString()] = secret.toStdString();
+    }
 
-    connect(job,
-            &QKeychain::ReadPasswordJob::finished,
-            this,
-            [this, name, toLoad, job](QKeychain::Job *) mutable {
-                const QString secret = job->textData();
-                if (job->error() && job->error() != QKeychain::Error::EntryNotFound) {
-                    nhlog::db()->error("Restoring secret '{}' failed ({}): {}",
-                                       name.toStdString(),
-                                       job->error(),
-                                       job->errorString().toStdString());
-
-                    fatalSecretError();
-                }
-                if (secret.isEmpty()) {
-                    nhlog::db()->debug("Restored empty secret '{}'.", name.toStdString());
-                } else {
-                    std::unique_lock lock(secret_storage.mtx);
-                    secret_storage.secrets[name.toStdString()] = secret.toStdString();
-                }
-
-                // load next secret
-                toLoad.erase(toLoad.begin());
-
-                // You can't start a job from the finish signal of a job.
-                QTimer::singleShot(0, [this, toLoad] { loadSecrets(toLoad); });
-            });
-    job->start();
+    // load next secret
+    toLoad.erase(toLoad.begin());
+    loadSecrets(toLoad);
 }
 
 std::optional<std::string>
@@ -392,34 +347,10 @@ Cache::storeSecret(const std::string name_, const std::string secret, bool inter
         secret_storage.secrets[name.toStdString()] = secret;
     }
 
-    auto settings = UserSettings::instance();
-    auto job      = new QKeychain::WritePasswordJob(QCoreApplication::applicationName());
-    job->setAutoDelete(true);
-    job->setInsecureFallback(true);
-    job->setSettings(UserSettings::instance()->qsettings());
+    UserSettings::instance()->storeSecret(name,QString::fromStdString(secret));
 
-    job->setKey(name);
-
-    job->setTextData(QString::fromStdString(secret));
-
-    QObject::connect(
-      job,
-      &QKeychain::WritePasswordJob::finished,
-      this,
-      [name_, this](QKeychain::Job *job) {
-          if (job->error()) {
-              nhlog::db()->warn(
-                "Storing secret '{}' failed: {}", name_, job->errorString().toStdString());
-              fatalSecretError();
-          } else {
-              // if we emit the signal directly, qtkeychain breaks and won't execute new
-              // jobs. You can't start a job from the finish signal of a job.
-              QTimer::singleShot(0, [this, name_] { emit secretChanged(name_); });
-              nhlog::db()->info("Storing secret '{}' successful", name_);
-          }
-      },
-      Qt::ConnectionType::DirectConnection);
-    job->start();
+    nhlog::db()->info("Storing secret '{}' successful", name_);
+    emit secretChanged(name_);
 }
 
 void
@@ -431,17 +362,8 @@ Cache::deleteSecret(const std::string name, bool internal)
         secret_storage.secrets.erase(name_.toStdString());
     }
 
-    auto settings = UserSettings::instance();
-    auto job      = new QKeychain::DeletePasswordJob(QCoreApplication::applicationName());
-    job->setAutoDelete(true);
-    job->setInsecureFallback(true);
-    job->setSettings(UserSettings::instance()->qsettings());
-
-    job->setKey(name_);
-
-    job->connect(
-      job, &QKeychain::Job::finished, this, [this, name]() { emit secretChanged(name); });
-    job->start();
+    UserSettings::instance()->deleteSecret(name_);
+    emit secretChanged(name);
 }
 
 std::string

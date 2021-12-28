@@ -115,7 +115,7 @@ public:
 
     void saveState(const mtx::responses::Sync &res);
     bool isInitialized();
-    bool isDatabaseReady() { return databaseReady_ && isInitialized(); }
+    bool isDatabaseReady() { return databaseReady_ ; }
 
     std::string nextBatchToken();
 
@@ -313,7 +313,6 @@ signals:
     void verificationStatusChanged(const std::string &userid);
     void selfVerificationStatusChanged();
     void secretChanged(const std::string name);
-    void databaseReady();
 
 private:
     void loadSecrets(std::vector<std::pair<std::string, bool>> toLoad);

@@ -40,6 +40,7 @@ private slots:
     void initTestCase(){
         client = Client::instance();
         client->enableLogger(false);
+        QThread::sleep(2);
     }
 
     void createRoom(){
@@ -158,7 +159,7 @@ private slots:
         client->logout();
         eventLoop.exec();
 
-        QTimer::singleShot(2 * 1000, this, [&] {
+        QTimer::singleShot(4 * 1000, this, [&] {
             eventLoop.quit();
         });
         eventLoop.exec();
