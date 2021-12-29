@@ -34,17 +34,17 @@ int main(int argc, char *argv[]){
     });
 
     QObject::connect(client, &Client::roomListUpdated,[client](const mtx::responses::Rooms &rooms){
-        for(auto const room: rooms.join) {
+        for(auto const &room: rooms.join) {
             auto info = client->roomInfo(room.first);
             qDebug() << "JOIN: " << QString::fromStdString(room.first) << QString::fromStdString(info.name);
         }
 
-        for(auto const room: rooms.invite) {
+        for(auto const &room: rooms.invite) {
             auto info = client->roomInfo(room.first);
             qDebug() << "INV : " << QString::fromStdString(room.first) << QString::fromStdString(info.name);
         }
 
-        for(auto const room: rooms.leave) {
+        for(auto const &room: rooms.leave) {
             qDebug() << "LEFT: " << QString::fromStdString(room.first);
         }
     });

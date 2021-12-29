@@ -19,7 +19,6 @@ find_package(LMDB REQUIRED)
 find_package(Qt5 5.15 COMPONENTS Widgets QuickControls2 REQUIRED)
 find_package(Qt5QuickCompiler)
 find_package(Qt5Test)
-find_package(Qt5DBus)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -109,7 +108,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 set(DEP_LIBS 
-	Qt5::DBus
 	MatrixClient::MatrixClient
 	cmark::cmark
 	spdlog::spdlog
