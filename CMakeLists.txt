@@ -139,8 +139,7 @@ IF(BUILD_TESTS)
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
 					tests/AuthenticationTest.h
-					tests/ProfileInfoTest.h
-					tests/RoomTest.h
+					tests/ClientTest.h
 					tests/UserSettingsTest.h)
 	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Widgets)
 	message(" + \"tests\" will be built.")

@@ -1,24 +1,22 @@
 #include <QtTest/QtTest>
 #include <QEventLoop>
 #include <iostream>
-#include <QTimer>
 
 #include "../src/Client.h"
 
-class RoomTest: public QObject
+class ClientTest: public QObject
 {
     Q_OBJECT
 private:
-    mtx::responses::Login loginInfoUser1;
+    mtx::responses::Login loginInfo;
     std::string deviceName = "test";
-    std::string userId1 = "@hamzeh_test01:pantherx.org";
-    std::string password1 = "pQn3mDGsYR";
+    std::string userId = "@hamzeh_test01:pantherx.org";
+    std::string password = "pQn3mDGsYR";
     std::string userId2 = "@hamzeh_test02:pantherx.org";
     std::string password2 = "5wn685g7mN";
     std::string serverAddress = "https://matrix.pantherx.org";   
-    
     QEventLoop eventLoop;
-    Client        *client = nullptr;
+    Client *client;
     std::string inviteRoomId;
     std::string joinRoomId = "!fCNlplLEJIMZawGUdE:pantherx.org";
 
@@ -40,7 +38,56 @@ private slots:
     void initTestCase(){
         client = Client::instance();
         client->enableLogger(false);
-        QThread::sleep(2);
+        
+    }
+
+    void clientLogin(){
+        QObject::connect(client,  &Client::loginOk, [&](const mtx::responses::Login &res){
+            loginInfo = res;
+            QCOMPARE(res.user_id.localpart(),"hamzeh_test01");
+            eventLoop.quit();
+        });
+
+        QObject::connect(client,  &Client::loginErrorOccurred, [&](const std::string &out){
+            qCritical() << QString::fromStdString(out);
+            eventLoop.quit();
+        });      
+       client->loginWithPassword(deviceName, userId, password, serverAddress); 
+       eventLoop.exec();        
+        //eventLoop.quit();
+    }
+
+    void checkValidation(){
+        if(client->hasValidUser()){
+            QVERIFY(1==1);
+        }else{
+            QFAIL("Validation failed");
+        }
+        eventLoop.quit();
+    }
+
+    void getUserInfo(){
+        auto info = client->userInformation();
+        QCOMPARE(info.userId,"@hamzeh_test01:pantherx.org");
+        eventLoop.quit();
+    }
+    
+
+    void displayNameAndAvatar(){
+        QObject::connect(client, &Client::userDisplayNameReady,[&](const std::string &name){
+            qDebug() << QString::fromStdString(name);
+            eventLoop.quit();
+        });
+
+        QObject::connect(client, &Client::userAvatarReady,[&](const std::string &avatar){
+            qDebug() << QString::fromStdString(avatar);
+            eventLoop.quit();
+        });
+        
+        client->bootstrap( loginInfo.user_id.to_string(),
+                            serverAddress,
+                            loginInfo.access_token);
+        eventLoop.exec();
     }
 
     void createRoom(){
@@ -82,7 +129,8 @@ private slots:
         }
     }
 
-    void roomList(){
+
+   void roomList(){
         auto rooms = client->joinedRoomList();
         for(auto const room: rooms){
             if(room.first.toStdString() == inviteRoomId) {
@@ -148,7 +196,7 @@ private slots:
         }
     }
 
-    void cleanupTestCase(){
+    void clientLogout(){
         connect(client, &Client::logoutOk,[&](){
             eventLoop.quit();
         });
@@ -158,10 +206,13 @@ private slots:
         });
         client->logout();
         eventLoop.exec();
+    }
 
+    void cleanupTestCase(){
         QTimer::singleShot(4 * 1000, this, [&] {
             eventLoop.quit();
         });
         eventLoop.exec();
     }
+
 };
