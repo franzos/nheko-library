@@ -2,7 +2,7 @@
 #include <QEventLoop>
 #include <iostream>
 
-#include "../src/UserSettingsPage.h"
+#include "../src/UserSettings.h"
 
 
 class UserSettingsTest: public QObject

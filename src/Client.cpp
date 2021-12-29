@@ -13,7 +13,7 @@
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
-#include "UserSettingsPage.h"
+#include "UserSettings.h"
 #include "encryption/Olm.h"
 
 Client *Client::instance_  = nullptr;
@@ -148,7 +148,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     connect(
       this, &Client::newSyncResponse, this, &Client::handleSyncResponse, Qt::QueuedConnection);
 
-    connect(this, &Client::dropToLoginPageCb, this, &Client::dropToLoginPage);
+    connect(this, &Client::dropToLogin, this, &Client::dropToLoginCb);
 }
 
 void
@@ -176,13 +176,12 @@ Client::loginCb(const mtx::responses::Login &res)
 }
 
 void
-Client::dropToLoginPage(const std::string &msg)
+Client::dropToLoginCb(const std::string &msg)
 {
     nhlog::ui()->info("dropping to the login page: {}", msg);
     http::client()->shutdown();
     connectivityTimer_.stop();
     deleteConfigs();
-    emit showLoginPage(msg);
 }
 
 void
@@ -249,59 +248,16 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
             cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
         } catch (const lmdb::error &e) {
             nhlog::crypto()->critical("failed to save olm account {}", e.what());
-            emit dropToLoginPageCb(e.what());
+            emit dropToLogin(e.what());
             return;
         } catch (const mtx::crypto::olm_exception &e) {
             nhlog::crypto()->critical("failed to create new olm account {}", e.what());
-            emit dropToLoginPageCb(e.what());
+            emit dropToLogin(e.what());
             return;
         }
         getProfileInfo();
         getBackupVersion();
         tryInitialSync();
-        // connect(p, &Cache::databaseReady, this, [this]() {
-        //     nhlog::db()->info("database ready");
-
-        //     const bool isInitialized = cache::isInitialized();
-        //     const auto cacheVersion  = cache::formatVersion();
-        //     try {
-        //         if (!isInitialized) {
-        //             cache::setCurrentFormat();
-        //         } else {
-        //             if (cacheVersion == cache::CacheVersion::Current) {
-        //                 loadStateFromCache();
-        //                 return;
-        //             } else if (cacheVersion == cache::CacheVersion::Newer) {
-        //                 // TODO
-        //                 // QMessageBox::critical(
-        //                 //   this,
-        //                 //   tr("Incompatible cache version"),
-        //                 //   tr("The cache on your disk is newer than this version of Nheko "
-        //                 //      "supports. Please update Nheko or clear your cache."));
-        //                 // QCoreApplication::quit();
-        //                 return;
-        //             }
-        //         }
-
-        //         // It's the first time syncing with this device
-        //         // There isn't a saved olm account to restore.
-        //         nhlog::crypto()->info("creating new olm account");
-        //         olm::client()->create_new_account();
-        //         cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
-        //     } catch (const lmdb::error &e) {
-        //         nhlog::crypto()->critical("failed to save olm account {}", e.what());
-        //         emit dropToLoginPageCb(e.what());
-        //         return;
-        //     } catch (const mtx::crypto::olm_exception &e) {
-        //         nhlog::crypto()->critical("failed to create new olm account {}", e.what());
-        //         emit dropToLoginPageCb(e.what());
-        //         return;
-        //     }
-        //     getProfileInfo();
-        //     getBackupVersion();
-        //     tryInitialSync();
-        // });
-
         // connect(cache::client(),
         //         &Cache::newReadReceipts,
         //         view_manager_,
@@ -314,7 +270,7 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
 
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failure during boot: {}", e.what());
-        emit dropToLoginPageCb("Failed to open database, logging out!");
+        emit dropToLogin("Failed to open database, logging out!");
     }
 }
 
@@ -340,19 +296,19 @@ Client::loadStateFromCache()
         cache::calculateRoomReadStatus();
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());
-        emit dropToLoginPageCb("Failed to restore OLM account. Please login again.");
+        emit dropToLogin("Failed to restore OLM account. Please login again.");
         return;
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failed to restore cache: {}", e.what());
-        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
+        emit dropToLogin("Failed to restore save data. Please login again.");
         return;
     } catch (const json::exception &e) {
         nhlog::db()->critical("failed to parse cache data: {}", e.what());
-        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
+        emit dropToLogin("Failed to restore save data. Please login again.");
         return;
     } catch (const std::exception &e) {
         nhlog::db()->critical("failed to load cache data: {}", e.what());
-        emit dropToLoginPageCb("Failed to restore save data. Please login again.");
+        emit dropToLogin("Failed to restore save data. Please login again.");
         return;
     }
 
@@ -448,7 +404,7 @@ Client::tryInitialSync()
                                  .arg(QString::fromStdString(err->matrix_error.error))
                                  .arg(status_code));
 
-              emit dropToLoginPageCb(errorMsg.toStdString());
+              emit dropToLogin(errorMsg.toStdString());
               return;
           }
 
@@ -501,7 +457,7 @@ Client::startInitialSync()
                 return;
             }
             default: {
-                emit dropToLoginPageCb(msg.toStdString());
+                emit dropToLogin(msg.toStdString());
                 return;
             }
             }
@@ -596,7 +552,7 @@ Client::trySync()
                    (err->matrix_error.errcode == mtx::errors::ErrorCode::M_UNKNOWN_TOKEN ||
                     err->matrix_error.errcode == mtx::errors::ErrorCode::M_MISSING_TOKEN)) ||
                   !http::is_logged_in()) {
-                  emit dropToLoginPageCb(msg.toStdString());
+                  emit dropToLogin(msg.toStdString());
                   return;
               }
 

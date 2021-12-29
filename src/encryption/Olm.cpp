@@ -19,7 +19,7 @@
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
-#include "UserSettingsPage.h"
+#include "UserSettings.h"
 #include "Utils.h"
 
 namespace {

@@ -24,7 +24,7 @@
 #include <QTimer>
 
 #include "Authentication.h"
-#include "UserSettingsPage.h"
+#include "UserSettings.h"
 #include "Cache.h"
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
@@ -106,11 +106,11 @@ signals:
     void highlightedNotifsRetrieved(const mtx::responses::Notifications &, const QPoint widgetPos);
 
     void initiateFinished();
-    void showLoginPage(const std::string &msg);
+    void dropToLogin(const std::string &msg);
 
     void userDisplayNameReady(const std::string &name);
     void userAvatarReady(const std::string &avatar);
-
+    // sync signals
     void trySyncCb();
     void tryDelayedSyncCb();
     void tryInitialSyncCb();
@@ -126,11 +126,8 @@ signals:
     void userInvitationFailed(const std::string &room_id, const std::string user_id, const std::string &error);
     void roomListUpdated(const mtx::responses::Rooms &rooms);
 
-    void dropToLoginPageCb(const std::string &msg);
-
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
     void decryptSidebarChanged();
-
     //! Signals for device verificaiton
     void receivedDeviceVerificationAccept(const mtx::events::msg::KeyVerificationAccept &message);
     void receivedDeviceVerificationRequest(const mtx::events::msg::KeyVerificationRequest &message,
@@ -150,7 +147,7 @@ private slots:
     void logoutCb();
     void loginCb(const mtx::responses::Login &res);
     void removeRoom(const std::string &room_id);
-    void dropToLoginPage(const std::string &msg);
+    void dropToLoginCb(const std::string &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
 
 private:
