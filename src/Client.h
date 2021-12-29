@@ -41,6 +41,12 @@ struct Sync;
 struct Timeline;
 struct Rooms;
 }
+struct UserInformation{
+    std::string userId;
+    std::string accessToken;
+    std::string deviceId;
+    std::string homeServer;
+} ;
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
 
@@ -63,6 +69,7 @@ public:
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
     void getProfileInfo(std::string userid = utils::localUser().toStdString());
+    void start(std::string userId, std::string homeServer, std::string token);
     void enableLogger(bool enable){
         nhlog::init("matrix-client-library", enable);    
     }
@@ -87,7 +94,7 @@ public slots:
     // Authentication
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
     bool hasValidUser();
-    mtx::responses::Login userInformation();
+    UserInformation userInformation();
     void logout();
     std::string serverDiscovery(std::string userId);
 

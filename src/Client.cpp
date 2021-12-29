@@ -1040,15 +1040,16 @@ bool Client::hasValidUser(){
     return false;
 }
 
-mtx::responses::Login Client::userInformation(){
+UserInformation Client::userInformation(){
     using namespace mtx::identifiers;
-    mtx::responses::Login res;    
+    UserInformation result;    
     // res.user_id    = parse<User>(http::client()->user_id().to_string());
-    res.user_id         = parse<User>(UserSettings::instance()->userId().toStdString());
-    res.device_id       = UserSettings::instance()->deviceId().toStdString();
-    res.access_token    = UserSettings::instance()->accessToken().toStdString();
+    result.userId         = UserSettings::instance()->userId().toStdString();
+    result.deviceId        = UserSettings::instance()->deviceId().toStdString();
+    result.accessToken    = UserSettings::instance()->accessToken().toStdString();
+    result.homeServer       = UserSettings::instance()->homeserver().toStdString();
 
-    return res;
+    return result;
 }
 
 void Client::logout(){
@@ -1057,5 +1058,20 @@ void Client::logout(){
 
 std::string Client::serverDiscovery(std::string userId){
     return _authentication->serverDiscovery(userId);
+}
+
+void Client::start(std::string userId = "", std::string homeServer = "", std::string token = ""){
+    if(userId.empty()){
+        if(hasValidUser()){
+          auto info = userInformation();
+          userId = info.userId;
+          homeServer = info.homeServer;
+          token = info.accessToken;            
+        }else{
+            emit dropToLogin("Need to loging in!");
+            return;
+        }
+    }
+    bootstrap(userId, homeServer, token);
 }
 

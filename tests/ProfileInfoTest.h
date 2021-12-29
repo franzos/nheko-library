@@ -29,7 +29,7 @@ private slots:
         });
 
         if(client->hasValidUser()){
-            loginInfo = client->userInformation();
+           // loginInfo = client->userInformation();
             qDebug() << "has valid";
         } else {
             client->loginWithPassword(deviceName, userId, password, serverAddress); 
