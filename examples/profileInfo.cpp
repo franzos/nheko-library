@@ -51,7 +51,7 @@ int main(int argc, char *argv[]){
     
 
     if(client->hasValidUser()){
-        loginInfo = client->userInformation();
+        //loginInfo = client->userInformation();
     } else {
         std::string deviceName = "test";
         std::string userId = "@hamzeh_test01:pantherx.org";

@@ -4,8 +4,7 @@
 #include "testrunner.h"
 
 #include "AuthenticationTest.h"
-#include "ProfileInfoTest.h"
-#include "RoomTest.h"
+#include "ClientTest.h"
 #include "UserSettingsTest.h"
 
 int main(int argc, char *argv[])
@@ -15,8 +14,7 @@ int main(int argc, char *argv[])
     // ------------------------------------------------------------------------------------ Add tests here
     runTests<UserSettingsTest>(argc, argv, &status);
     runTests<AuthenticationTest>(argc, argv, &status);
-    runTests<ProfileInfoTest>(argc, argv, &status);
-    runTests<RoomTest>(argc, argv, &status);
+    runTests<ClientTest>(argc, argv, &status);
     // --------------------------------------------------------------------------------------------------- 
     raise(SIGINT);
     return app.exec();     
