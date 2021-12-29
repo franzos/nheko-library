@@ -12,7 +12,7 @@ int main(int argc, char *argv[]){
 
     auto client = Client::instance();
     QEventLoop eventLoop;
-    QObject::connect(client,  &Client::loginReady, [&](const mtx::responses::Login &res){
+    QObject::connect(client,  &Client::loginOk, [&](const mtx::responses::Login &res){
         loginInfo = res;
         eventLoop.quit();
     });
