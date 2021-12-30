@@ -132,7 +132,7 @@ private slots:
 
    void roomList(){
         auto rooms = client->joinedRoomList();
-        for(auto const room: rooms){
+        for(auto const &room: rooms){
             if(room.first.toStdString() == inviteRoomId) {
                 return;
             }

@@ -9,11 +9,11 @@ SHARED_LIB{
     message(" + Build as static library.")
 }
 
-QT += dbus 
-LIBS +=-L $$(LIBRARY_PATH) -lQMatrixClient
+LIBS += -lQMatrixClient
 LIBS += -lolm
 LIBS += -lspdlog
 LIBS += -llmdb
+LIBS += -lcmark
 LIBS += -lcrypto -lssl
 
 INCLUDEPATH += src
@@ -32,7 +32,7 @@ HEADERS =   Authentication.h \
             Utils.h \
             encryption/Olm.h \
             timeline/EventStore.h \
-            timeline/Reaction.h
+            timeline/Reaction.h 
 
 SOURCES =   Authentication.cpp \
             Cache.cpp \
@@ -44,7 +44,7 @@ SOURCES =   Authentication.cpp \
             Utils.cpp \
             encryption/Olm.cpp \
             timeline/EventStore.cpp \
-            timeline/Reaction.cpp
+            timeline/Reaction.cpp 
 
 TEMPLATE = lib
 TARGET = matrix-client-library
