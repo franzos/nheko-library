@@ -37,14 +37,26 @@ private:
 private slots:
     void initTestCase(){
         client = Client::instance();
-        client->enableLogger(false);
+        UserSettings::instance()->clear();
+        client->enableLogger(true);
         
     }
 
+    void startProcess(){
+        QObject::connect(client,  &Client::dropToLogin, [&](const std::string &msg){
+            qDebug()<<"You are not logined yet";
+            QVERIFY(1==1);
+            eventLoop.quit();
+        });
+        client->start();
+        eventLoop.exec();        
+    }
+
     void clientLogin(){
-        QObject::connect(client,  &Client::loginOk, [&](const mtx::responses::Login &res){
-            loginInfo = res;
-            QCOMPARE(res.user_id.localpart(),"hamzeh_test01");
+        QObject::connect(client,  &Client::loginOk, [&](const  UserInformation &user){   
+            qDebug()<<QString::fromStdString(user.userId);       
+            QCOMPARE(user.userId,userId);
+            client->start();
             eventLoop.quit();
         });
 
@@ -54,7 +66,6 @@ private slots:
         });      
        client->loginWithPassword(deviceName, userId, password, serverAddress); 
        eventLoop.exec();        
-        //eventLoop.quit();
     }
 
     void checkValidation(){
@@ -63,31 +74,29 @@ private slots:
         }else{
             QFAIL("Validation failed");
         }
-        eventLoop.quit();
     }
 
     void getUserInfo(){
         auto info = client->userInformation();
         QCOMPARE(info.userId,"@hamzeh_test01:pantherx.org");
-        eventLoop.quit();
     }
     
 
     void displayNameAndAvatar(){
-        QObject::connect(client, &Client::userDisplayNameReady,[&](const std::string &name){
-            qDebug() << QString::fromStdString(name);
-            eventLoop.quit();
-        });
+        // QObject::connect(client, &Client::userDisplayNameReady,[&](const std::string &name){
+        //     qDebug() << QString::fromStdString(name);
+        //     eventLoop.quit();
+        // });
 
-        QObject::connect(client, &Client::userAvatarReady,[&](const std::string &avatar){
-            qDebug() << QString::fromStdString(avatar);
-            eventLoop.quit();
-        });
+        // QObject::connect(client, &Client::userAvatarReady,[&](const std::string &avatar){
+        //     qDebug() << QString::fromStdString(avatar);
+        //     eventLoop.quit();
+        // });
         
-        client->bootstrap( loginInfo.user_id.to_string(),
-                            serverAddress,
-                            loginInfo.access_token);
-        eventLoop.exec();
+        // client->bootstrap( loginInfo.user_id.to_string(),
+        //                     serverAddress,
+        //                     loginInfo.access_token);
+        // eventLoop.exec();
     }
 
     void createRoom(){
