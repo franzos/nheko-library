@@ -12,8 +12,8 @@ int main(int argc, char *argv[]){
 
     auto client = Client::instance();
     QEventLoop eventLoop;
-    QObject::connect(client,  &Client::loginOk, [&](const mtx::responses::Login &res){
-        loginInfo = res;
+    QObject::connect(client,  &Client::loginOk, [&](const UserInformation &res){
+        //loginInfo = res;
         eventLoop.quit();
     });
     QObject::connect(client,  &Client::loginErrorOccurred, [&](const std::string &out){
@@ -61,9 +61,9 @@ int main(int argc, char *argv[]){
         eventLoop.exec();
     }
     
-    client->bootstrap(loginInfo.user_id.to_string(),
-                        "https://matrix.pantherx.org",
-                        loginInfo.access_token);
+    // client->bootstrap(loginInfo.user_id.to_string(),
+    //                     "https://matrix.pantherx.org",
+    //                     loginInfo.access_token);
     auto rooms = client->joinedRoomList();
     // QThread::sleep(10);
     // authentication->logout();

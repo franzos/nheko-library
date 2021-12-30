@@ -172,14 +172,18 @@ Client::loginCb(const mtx::responses::Login &res)
     userSettings_.data()->setAccessToken(token);
     userSettings_.data()->setDeviceId(device_id);
     userSettings_.data()->setHomeserver(homeserver);
-    emit loginOk(res);
+    UserInformation user;
+    user.userId = userid.toStdString();
+    user.homeServer = homeserver.toStdString();
+    user.deviceId = device_id.toStdString();
+    user.accessToken = token.toStdString();
+    emit loginOk(user);
 }
 
 void
 Client::dropToLoginCb(const std::string &msg)
 {
     nhlog::ui()->info("dropping to the login page: {}", msg);
-    http::client()->shutdown();
     connectivityTimer_.stop();
     deleteConfigs();
 }
@@ -189,7 +193,8 @@ Client::deleteConfigs()
 {
     UserSettings::instance()->clear();
     http::client()->shutdown();
-    cache::deleteData();
+    if(cache::client())
+        cache::deleteData();
 }
 
 void
@@ -1060,7 +1065,7 @@ std::string Client::serverDiscovery(std::string userId){
     return _authentication->serverDiscovery(userId);
 }
 
-void Client::start(std::string userId = "", std::string homeServer = "", std::string token = ""){
+void Client::start(std::string userId, std::string homeServer, std::string token){
     if(userId.empty()){
         if(hasValidUser()){
           auto info = userInformation();
@@ -1068,7 +1073,10 @@ void Client::start(std::string userId = "", std::string homeServer = "", std::st
           homeServer = info.homeServer;
           token = info.accessToken;            
         }else{
-            emit dropToLogin("Need to loging in!");
+            //to make sure signal will recieved via reciever
+            QTimer::singleShot(500, this, [&] {
+                emit dropToLogin("Need to loging in!");
+            });            
             return;
         }
     }

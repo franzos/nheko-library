@@ -41,5 +41,54 @@ qmake -config BUILD_TESTS ..
 cmake -DBUILD_TESTS=ON ..
 ```
 
-#### Documents
-* [How-to-integrate](./docs/how-to-itegrate.md)
+#### STEPS
+### 1. create instatnce 
+```
+Client *client;
+client = Client::instance();
+```
+
+### 2. Client process should be start
+```cpp
+ client->start();
+```
+if client is not loged in already will recieve `Client::dropToLogin` signale 
+
+
+### 3. Login with password
+```cpp
+client->loginWithPassword(deviceName, userId, password, serverAddress); 
+
+```
+the result will be informed with 2 signal `Client::loginOk` and `Client::loginErrorOccurred`
+
+### 4. Get Room Lists
+```
+std::map<QString, RoomInfo> Client::joinedRoomList()
+```
+
+
+### Get Display Name and Avatar
+
+```cpp
+    #include "../src/Client.h"
+    ...
+    auto client = Client::instance();
+    QObject::connect(client, &Client::userDisplayNameReady,[](const std::string &name){
+        qInfo() << "User Display Name: " << QString::fromStdString(name);
+    });
+
+    QObject::connect(client, &Client::userAvatarReady,[](const std::string &avatar){
+        qInfo() << "User avatar      : " << QString::fromStdString(avatar);
+    });
+    client->init("USER_ID","HOME_SERVER","TOKEN");
+    client->getProfileInfo();    
+```
+
+
+
+
+
+
+
+

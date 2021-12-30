@@ -69,7 +69,7 @@ public:
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
     void getProfileInfo(std::string userid = utils::localUser().toStdString());
-    void start(std::string userId, std::string homeServer, std::string token);
+    void start(std::string userId = "", std::string homeServer = "", std::string token = "");
     void enableLogger(bool enable){
         nhlog::init("matrix-client-library", enable);    
     }
@@ -101,7 +101,7 @@ public slots:
 
 signals:
     // Authentication signals
-    void loginOk(const mtx::responses::Login &res);
+    void loginOk(const UserInformation &user);
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
