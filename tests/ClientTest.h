@@ -38,7 +38,7 @@ private slots:
     void initTestCase(){
         client = Client::instance();
         UserSettings::instance()->clear();
-        client->enableLogger(true);
+        client->enableLogger(false);
         
     }
 
@@ -65,7 +65,13 @@ private slots:
             eventLoop.quit();
         });      
        client->loginWithPassword(deviceName, userId, password, serverAddress); 
-       eventLoop.exec();        
+       eventLoop.exec();  
+
+       
+        QObject::connect(client, &Client::initiateFinished,[&](){
+            eventLoop.quit();
+        });
+        eventLoop.exec();      
     }
 
     void checkValidation(){
@@ -83,20 +89,18 @@ private slots:
     
 
     void displayNameAndAvatar(){
-        // QObject::connect(client, &Client::userDisplayNameReady,[&](const std::string &name){
-        //     qDebug() << QString::fromStdString(name);
-        //     eventLoop.quit();
-        // });
+        QObject::connect(client, &Client::userDisplayNameReady,[&](const std::string &name){
+            qInfo() << QString::fromStdString(name);
+            eventLoop.quit();
+        });
 
-        // QObject::connect(client, &Client::userAvatarReady,[&](const std::string &avatar){
-        //     qDebug() << QString::fromStdString(avatar);
-        //     eventLoop.quit();
-        // });
+        QObject::connect(client, &Client::userAvatarReady,[&](const std::string &avatar){
+            qInfo() << QString::fromStdString(avatar);
+            eventLoop.quit();
+        });
         
-        // client->bootstrap( loginInfo.user_id.to_string(),
-        //                     serverAddress,
-        //                     loginInfo.access_token);
-        // eventLoop.exec();
+        client->getProfileInfo();
+        eventLoop.exec();
     }
 
     void createRoom(){
