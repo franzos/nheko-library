@@ -19,26 +19,33 @@ make
 ```
 
 ##### Build Options
-**1.** Building with `examples`
-The `examples` won't be built as default, so you can run `qmake` as follow to build them:
+**1.** Building as `shared` or `static`  
+The library will be built as `shared` library, we can set `-DSTATIC_LIB=ON` and run `cmake` to build as `static`:
 
 ```bash
-qmake -config BUILD_EXAMPLES ..
+cmake -DSTATIC_LIB=ON ..
 ```
+
+**2.** Building with `examples`
+The `examples` won't be built as default, so you can run `qmake` as follow to build them:
 
 ```bash
 cmake -DBUILD_EXAMPLES=ON ..
 ```
 
-**2.** Building without `tests`
+```bash
+qmake -config BUILD_EXAMPLES ..
+```
+
+**3.** Building without `tests`
 The `tests` won't be built as default, so you can run `qmake` as follow to enable the building the tests:
 
 ```bash
-qmake -config BUILD_TESTS ..
+cmake -DBUILD_TESTS=ON ..
 ```
 
 ```bash
-cmake -DBUILD_TESTS=ON ..
+qmake -config BUILD_TESTS ..
 ```
 
 #### STEPS
