@@ -55,11 +55,6 @@ set(SRC_FILES
 	src/Utils.cpp
 	)
 
-set(HEADERS_TO_INSTALL
-	src/Client.h
-	src/CacheStructs.h
-	)
-
 include(FeatureSummary)
 
 find_package(OpenSSL 1.1.0 REQUIRED)
@@ -95,6 +90,22 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Authentication.h
 )
 
+set(HEADERS 
+	timeline/EventStore.h
+	timeline/Reaction.h
+	encryption/Olm.h
+	CacheCryptoStructs.h
+	CacheStructs.h
+	Cache_p.h
+	Client.h
+	UserSettings.h	
+	Authentication.h	
+	Cache.h	
+	EventAccessors.h
+	Logging.h
+	MatrixClient.h
+	Utils.h
+)
 
 set(MATRIX_LIB_DEPS
 	${SRC_FILES}
@@ -123,7 +134,10 @@ set(DEP_LIBS
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 install(TARGETS matrix-client-library DESTINATION lib)
-install(FILES ${HEADERS_TO_INSTALL} DESTINATION include)
+foreach(HEADER ${HEADERS})
+	string(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})
+	install(FILES src/${HEADER} DESTINATION include/matrix-client-library/${DIR})
+endforeach(HEADER {HEADERS})
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
