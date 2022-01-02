@@ -55,8 +55,8 @@ class Client : public QObject
     Q_OBJECT
 
 public:
-    void bootstrap(std::string userid, std::string homeserver, std::string token);
-    static Client *instance() { 
+    
+    Q_INVOKABLE static Client *instance() { 
         if(instance_ == nullptr){
             http::init();
             instance_ = new Client();
@@ -68,9 +68,9 @@ public:
     QString status() const;
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
-    void getProfileInfo(std::string userid = utils::localUser().toStdString());
-    void start(std::string userId = "", std::string homeServer = "", std::string token = "");
-    void enableLogger(bool enable){
+    Q_INVOKABLE void getProfileInfo(std::string userid = utils::localUser().toStdString());
+    Q_INVOKABLE void start(std::string userId = "", std::string homeServer = "", std::string token = "");
+    Q_INVOKABLE void enableLogger(bool enable){
         nhlog::init("matrix-client-library", enable);    
     }
 
@@ -168,6 +168,7 @@ private:
     void verifyOneTimeKeyCountAfterStartup();
     void ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts);
     void getBackupVersion();
+    void bootstrap(std::string userid, std::string homeserver, std::string token);
 
     using UserID      = QString;
     using Membership  = mtx::events::StateEvent<mtx::events::state::Member>;
