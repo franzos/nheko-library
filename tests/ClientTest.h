@@ -38,7 +38,7 @@ private slots:
     void initTestCase(){
         client = Client::instance();
         UserSettings::instance()->clear();
-        client->enableLogger(true);
+        client->enableLogger(false);
         
     }
 
