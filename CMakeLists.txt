@@ -55,6 +55,11 @@ set(SRC_FILES
 	src/Utils.cpp
 	)
 
+set(HEADERS_TO_INSTALL
+	src/Client.h
+	src/CacheStructs.h
+	)
+
 include(FeatureSummary)
 
 find_package(OpenSSL 1.1.0 REQUIRED)
