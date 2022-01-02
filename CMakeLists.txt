@@ -117,6 +117,8 @@ set(DEP_LIBS
 	liblmdb::lmdb)
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
+install(TARGETS matrix-client-library DESTINATION lib)
+install(FILES ${HEADERS_TO_INSTALL} DESTINATION include)
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
