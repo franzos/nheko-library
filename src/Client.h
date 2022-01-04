@@ -42,10 +42,10 @@ struct Timeline;
 struct Rooms;
 }
 struct UserInformation{
-    std::string userId;
-    std::string accessToken;
-    std::string deviceId;
-    std::string homeServer;
+    QString userId;
+    QString accessToken;
+    QString deviceId;
+    QString homeServer;
 } ;
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
@@ -68,8 +68,8 @@ public:
     QString status() const;
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
-    Q_INVOKABLE void getProfileInfo(std::string userid = utils::localUser().toStdString());
-    Q_INVOKABLE void start(std::string userId = "", std::string homeServer = "", std::string token = "");
+    Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
+    Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void enableLogger(bool enable){
         nhlog::init("matrix-client-library", enable);    
     }
@@ -77,33 +77,33 @@ public:
 public slots:
     std::map<QString, RoomInfo> joinedRoomList();
     QHash<QString, RoomInfo> inviteRoomList();
-    RoomInfo roomInfo(const std::string &room_id);
+    RoomInfo roomInfo(const QString &room_id);
     void startChat(QString userid);
-    void leaveRoom(const std::string &room_id);
+    void leaveRoom(const QString &room_id);
     void createRoom(const mtx::requests::CreateRoom &req);
-    void joinRoom(const std::string &room);
-    void joinRoomVia(const std::string &room_id,
+    void joinRoom(const QString &room);
+    void joinRoomVia(const QString &room_id,
                      const std::vector<std::string> &via);
-    void inviteUser(const std::string &roomid, const std::string &userid, const std::string & reason);
-    void kickUser(const std::string & roomid, const std::string & userid, const std::string &reason);
-    void banUser(const std::string & roomid, const std::string & userid, const std::string & reason);
-    void unbanUser(const std::string & roomid, const std::string &userid, const std::string & reason);
-    void receivedSessionKey(const std::string &room_id, const std::string &session_id);
+    void inviteUser(const QString &roomid, const QString &userid, const QString & reason);
+    void kickUser(const QString & roomid, const QString & userid, const QString &reason);
+    void banUser(const QString & roomid, const QString  & userid, const QString & reason);
+    void unbanUser(const QString & roomid, const QString &userid, const QString & reason);
+    void receivedSessionKey(const QString &room_id, const QString &session_id);
     void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
     // Authentication
-    void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);
+    void loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress);
     bool hasValidUser();
     UserInformation userInformation();
     void logout();
-    std::string serverDiscovery(std::string userId);
+    std::string serverDiscovery(QString userId);
 
 
 signals:
     // Authentication signals
     void loginOk(const UserInformation &user);
-    void loginErrorOccurred(std::string &msg);
-    void logoutErrorOccurred(std::string &msg);
+    void loginErrorOccurred(QString &msg);
+    void logoutErrorOccurred(QString &msg);
     void logoutOk();    
     //
     void connectionLost();
@@ -113,24 +113,24 @@ signals:
     void highlightedNotifsRetrieved(const mtx::responses::Notifications &, const QPoint widgetPos);
 
     void initiateFinished();
-    void dropToLogin(const std::string &msg);
+    void dropToLogin(const QString &msg);
 
-    void userDisplayNameReady(const std::string &name);
-    void userAvatarReady(const std::string &avatar);
+    void userDisplayNameReady(const QString &name);
+    void userAvatarReady(const QString &avatar);
     // sync signals
     void trySyncCb();
     void tryDelayedSyncCb();
     void tryInitialSyncCb();
-    void newSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
+    void newSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
     // room signals
-    void leftRoom(const std::string &room_id);
-    void roomLeaveFailed(const std::string &error);
-    void roomCreated(const std::string &room_id);
-    void roomCreationFailed(const std::string &error);
-    void joinedRoom(const std::string &room_id);
-    void joinRoomFailed(const std::string &error);
-    void userInvited(const std::string &room_id, const std::string user_id);
-    void userInvitationFailed(const std::string &room_id, const std::string user_id, const std::string &error);
+    void leftRoom(const QString &room_id);
+    void roomLeaveFailed(const QString &error);
+    void roomCreated(const QString &room_id);
+    void roomCreationFailed(const QString &error);
+    void joinedRoom(const QString &room_id);
+    void joinRoomFailed(const QString &error);
+    void userInvited(const QString &room_id, const QString user_id);
+    void userInvitationFailed(const QString &room_id, const QString user_id, const QString &error);
     void roomListUpdated(const mtx::responses::Rooms &rooms);
 
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
@@ -153,9 +153,9 @@ signals:
 private slots:
     void logoutCb();
     void loginCb(const mtx::responses::Login &res);
-    void removeRoom(const std::string &room_id);
-    void dropToLoginCb(const std::string &msg);
-    void handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token);
+    void removeRoom(const QString &room_id);
+    void dropToLoginCb(const QString &msg);
+    void handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
 
 private:
     static Client *instance_;

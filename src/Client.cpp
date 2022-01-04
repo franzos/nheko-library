@@ -52,11 +52,13 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             Qt::QueuedConnection);
     connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
         nhlog::net()->info("login failed: {}", msg);
-        emit loginErrorOccurred(msg);
+        QString err =QString::fromStdString(msg);
+        emit loginErrorOccurred(err);
     });
     connect(_authentication, &Authentication::logoutErrorOccurred, [&](std::string &msg) {
         nhlog::net()->info("logout failed: {}" ,msg);
-        emit logoutErrorOccurred(msg);
+        QString err =QString::fromStdString(msg);
+        emit logoutErrorOccurred(err);
     });
 
     connect(this,
@@ -173,17 +175,17 @@ Client::loginCb(const mtx::responses::Login &res)
     userSettings_.data()->setDeviceId(device_id);
     userSettings_.data()->setHomeserver(homeserver);
     UserInformation user;
-    user.userId = userid.toStdString();
-    user.homeServer = homeserver.toStdString();
-    user.deviceId = device_id.toStdString();
-    user.accessToken = token.toStdString();
+    user.userId = userid;
+    user.homeServer = homeserver;
+    user.deviceId = device_id;
+    user.accessToken = token;
     emit loginOk(user);
 }
 
 void
-Client::dropToLoginCb(const std::string &msg)
+Client::dropToLoginCb(const QString &msg)
 {
-    nhlog::ui()->info("dropping to the login page: {}", msg);
+    nhlog::ui()->info("dropping to the login page: {}", msg.toStdString());
     connectivityTimer_.stop();
     deleteConfigs();
 }
@@ -287,8 +289,8 @@ std::map<QString, RoomInfo> Client::joinedRoomList(){
     return cache::getRoomInfo(cache::joinedRooms());
 }    
 
-RoomInfo Client::roomInfo(const std::string &room_id){
-    return cache::singleRoomInfo(room_id);
+RoomInfo Client::roomInfo(const QString &room_id){
+    return cache::singleRoomInfo(room_id.toStdString());
 }
 
 void
@@ -330,11 +332,11 @@ Client::loadStateFromCache()
 }
 
 void
-Client::removeRoom(const std::string &room_id)
+Client::removeRoom(const QString &room_id)
 {
     try {
         cache::removeRoom(room_id);
-        cache::removeInvite(room_id);
+        cache::removeInvite(room_id.toStdString());
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failure while removing room: {}", e.what());
         // TODO: Notify the user.
@@ -409,7 +411,7 @@ Client::tryInitialSync()
                                  .arg(QString::fromStdString(err->matrix_error.error))
                                  .arg(status_code));
 
-              emit dropToLogin(errorMsg.toStdString());
+              emit dropToLogin(errorMsg);
               return;
           }
 
@@ -462,7 +464,7 @@ Client::startInitialSync()
                 return;
             }
             default: {
-                emit dropToLogin(msg.toStdString());
+                emit dropToLogin(msg);
                 return;
             }
             }
@@ -486,10 +488,10 @@ Client::startInitialSync()
 }
 
 void
-Client::handleSyncResponse(const mtx::responses::Sync &res, const std::string &prev_batch_token)
+Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token)
 {
     try {
-        if (prev_batch_token != cache::nextBatchToken()) {
+        if (prev_batch_token.toStdString() != cache::nextBatchToken()) {
             nhlog::net()->warn("Duplicate sync, dropping");
             return;
         }
@@ -557,7 +559,7 @@ Client::trySync()
                    (err->matrix_error.errcode == mtx::errors::ErrorCode::M_UNKNOWN_TOKEN ||
                     err->matrix_error.errcode == mtx::errors::ErrorCode::M_MISSING_TOKEN)) ||
                   !http::is_logged_in()) {
-                  emit dropToLogin(msg.toStdString());
+                  emit dropToLogin(msg);
                   return;
               }
 
@@ -570,31 +572,31 @@ Client::trySync()
               return;
           }
 
-          emit newSyncResponse(res, since);
+          emit newSyncResponse(res, QString::fromStdString(since));
       });
 }
 
 void
-Client::joinRoom(const std::string &room_id)
+Client::joinRoom(const QString &room_id)
 {
     joinRoomVia(room_id, {});
 }
 
 void
-Client::joinRoomVia(const std::string &room_id,
+Client::joinRoomVia(const QString &room_id,
                       const std::vector<std::string> &via) {
     http::client()->join_room(
-      room_id, via, [this, room_id](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
+      room_id.toStdString(), via, [this, room_id](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
           if (err) {
-              emit joinRoomFailed(err->matrix_error.error);
+              emit joinRoomFailed(QString::fromStdString(err->matrix_error.error));
               return;
           }
 
-          emit joinedRoom(roomId.room_id);
+          emit joinedRoom(QString::fromStdString(roomId.room_id));
 
           // We remove any invites with the same room_id.
           try {
-              cache::removeInvite(room_id);
+              cache::removeInvite(room_id.toStdString());
           } catch (const lmdb::error &e) {
               nhlog::db()->error("Failed to remove invite: {}", e.what()); // TODO error to user
           }
@@ -611,23 +613,23 @@ Client::createRoom(const mtx::requests::CreateRoom &req)
               const auto error      = err->matrix_error.error;
               const int status_code = static_cast<int>(err->status_code);
               nhlog::net()->warn("failed to create room: {} {} ({})", error, err_code, status_code);
-              emit roomCreationFailed(error);
+              emit roomCreationFailed(QString::fromStdString(error));
               return;
           }
 
           nhlog::net()->info("Room {} created.",res.room_id.to_string());
-          emit roomCreated(res.room_id.to_string());
+          emit roomCreated(QString::fromStdString(res.room_id.to_string()));
       });
 }
 
 void
-Client::leaveRoom(const std::string &room_id)
+Client::leaveRoom(const QString &room_id)
 {
     http::client()->leave_room(
-      room_id,
+      room_id.toStdString(),
       [this, room_id](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
-              emit roomLeaveFailed(err->matrix_error.error);
+              emit roomLeaveFailed(QString::fromStdString(err->matrix_error.error));
               return;
           }
           emit leftRoom(room_id);
@@ -635,27 +637,27 @@ Client::leaveRoom(const std::string &room_id)
 }
 
 void
-Client::inviteUser(const std::string &roomid,const std::string &userid, const std::string &reason)
+Client::inviteUser(const QString &roomid,const QString &userid, const QString &reason)
 {
     http::client()->invite_user(
-      roomid,
-      userid,
+      roomid.toStdString(),
+      userid.toStdString(),
       [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
               emit userInvitationFailed(userid,
                                         roomid,
-                                        err->matrix_error.error);
+                                        QString::fromStdString(err->matrix_error.error));
           } else
               emit userInvited(roomid, userid);
       },
-      QString::fromStdString(reason).trimmed().toStdString());
+      reason.trimmed().toStdString());
 }
 void
-Client::kickUser(const std::string & roomid,const std::string & userid, const std::string & reason)
+Client::kickUser(const QString & roomid,const QString & userid, const QString & reason)
 {
     http::client()->kick_user(
-      roomid,
-      userid,
+      roomid.toStdString(),
+      userid.toStdString(),
       [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
             // TODO emit error
@@ -668,14 +670,14 @@ Client::kickUser(const std::string & roomid,const std::string & userid, const st
             //   emit showNotification(tr("Kicked user: %1").arg(userid));
           }
       },
-      QString::fromStdString(reason).trimmed().toStdString());
+      reason.trimmed().toStdString());
 }
 void
-Client::banUser(const std::string &roomid, const std::string & userid, const std::string & reason)
+Client::banUser(const QString &roomid, const QString & userid, const QString & reason)
 {
     http::client()->ban_user(
-      roomid,
-      userid,
+      roomid.toStdString(),
+      userid.toStdString(),
       [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
             // TODO emit error
@@ -688,14 +690,14 @@ Client::banUser(const std::string &roomid, const std::string & userid, const std
             //   emit showNotification(tr("Banned user: %1").arg(userid));
           }
       },
-      QString::fromStdString(reason).trimmed().toStdString());
+      reason.trimmed().toStdString());
 }
 void
-Client::unbanUser(const std::string &roomid, const std::string & userid, const std::string & reason)
+Client::unbanUser(const QString  &roomid, const QString & userid, const QString & reason)
 {
     http::client()->unban_user(
-      roomid,
-      userid,
+      roomid.toStdString(),
+      userid.toStdString(),
       [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
             // TODO emit erro
@@ -708,13 +710,13 @@ Client::unbanUser(const std::string &roomid, const std::string & userid, const s
             //   emit showNotification(tr("Unbanned user: %1").arg(userid));
           }
       },
-      QString::fromStdString(reason).trimmed().toStdString());
+      reason.trimmed().toStdString());
 }
 
 void
-Client::receivedSessionKey(const std::string &room_id, const std::string &session_id)
+Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 {
-    nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
+    // nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
     // view_manager_->receivedSessionKey(room_id, session_id);
 }
 
@@ -832,16 +834,16 @@ Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
 }
 
 void
-Client::getProfileInfo(std::string userid)
+Client::getProfileInfo(QString userid)
 {
     http::client()->get_profile(
-      userid, [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
+      userid.toStdString(), [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
           if (err) {
               nhlog::net()->warn("failed to retrieve own profile info");
               return;
           }
-          emit userDisplayNameReady(res.display_name);
-          emit userAvatarReady(res.avatar_url);
+          emit userDisplayNameReady(QString::fromStdString(res.display_name));
+          emit userAvatarReady(QString::fromStdString(res.avatar_url));
       });
 }
 
@@ -1034,8 +1036,8 @@ Client::startChat(QString userid)
     emit Client::instance()->createRoom(req);
 }
 
-void Client::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
-    _authentication->loginWithPassword(deviceName, userId, password, serverAddress);
+void Client::loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress){
+    _authentication->loginWithPassword(deviceName.toStdString(), userId.toStdString(), password.toStdString(), serverAddress.toStdString());
 }
 
 bool Client::hasValidUser(){
@@ -1049,10 +1051,10 @@ UserInformation Client::userInformation(){
     using namespace mtx::identifiers;
     UserInformation result;    
     // res.user_id    = parse<User>(http::client()->user_id().to_string());
-    result.userId         = UserSettings::instance()->userId().toStdString();
-    result.deviceId        = UserSettings::instance()->deviceId().toStdString();
-    result.accessToken    = UserSettings::instance()->accessToken().toStdString();
-    result.homeServer       = UserSettings::instance()->homeserver().toStdString();
+    result.userId         = UserSettings::instance()->userId();
+    result.deviceId        = UserSettings::instance()->deviceId();
+    result.accessToken    = UserSettings::instance()->accessToken();
+    result.homeServer       = UserSettings::instance()->homeserver();
 
     return result;
 }
@@ -1061,12 +1063,12 @@ void Client::logout(){
     _authentication->logout();
 }
 
-std::string Client::serverDiscovery(std::string userId){
-    return _authentication->serverDiscovery(userId);
+std::string Client::serverDiscovery(QString userId){
+    return _authentication->serverDiscovery(userId.toStdString());
 }
 
-void Client::start(std::string userId, std::string homeServer, std::string token){
-    if(userId.empty()){
+void Client::start(QString userId, QString homeServer, QString token){
+    if(userId.isEmpty()){
         if(hasValidUser()){
           auto info = userInformation();
           userId = info.userId;
@@ -1080,6 +1082,6 @@ void Client::start(std::string userId, std::string homeServer, std::string token
             return;
         }
     }
-    bootstrap(userId, homeServer, token);
+    bootstrap(userId.toStdString(), homeServer.toStdString(), token.toStdString());
 }
 

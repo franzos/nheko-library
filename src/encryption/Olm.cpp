@@ -742,7 +742,7 @@ create_inbound_megolm_session(const mtx::events::DeviceEvent<mtx::events::msg::R
     nhlog::crypto()->info(
       "established inbound megolm session ({}, {})", roomKey.content.room_id, roomKey.sender);
 
-    Client::instance()->receivedSessionKey(index.room_id, index.session_id);
+    Client::instance()->receivedSessionKey(QString::fromStdString(index.room_id), QString::fromStdString(index.session_id));
 }
 
 void
@@ -783,7 +783,7 @@ import_inbound_megolm_session(
     nhlog::crypto()->info(
       "established inbound megolm session ({}, {})", roomKey.content.room_id, roomKey.sender);
 
-    Client::instance()->receivedSessionKey(index.room_id, index.session_id);
+    Client::instance()->receivedSessionKey(QString::fromStdString(index.room_id), QString::fromStdString(index.session_id));
 }
 
 void
@@ -930,7 +930,7 @@ lookup_keybackup(const std::string room, const std::string session_id)
 
                   // call on UI thread
                   QTimer::singleShot(0, Client::instance(), [index] {
-                      Client::instance()->receivedSessionKey(index.room_id, index.session_id);
+                      Client::instance()->receivedSessionKey(QString::fromStdString(index.room_id), QString::fromStdString(index.session_id));
                   });
               }
           } catch (const lmdb::error &e) {
