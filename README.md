@@ -55,6 +55,19 @@ Client *client;
 client = Client::instance();
 ```
 
+### 2. Enable/Disable logs
+The logs is enabled as default with `info` level. We can disable it via:
+```cpp
+client->enableLogger(false);
+```
+
+We can enable debug logs as well with this line:
+```cpp
+client->enableLogger(true, true);
+```
+The second `true` is related to `enable debug logs`.
+
+
 ### 3. Login with password
 ```cpp
 client->loginWithPassword(deviceName, userId, password, serverAddress); 
@@ -62,15 +75,14 @@ client->loginWithPassword(deviceName, userId, password, serverAddress);
 ```
 the result will be informed with 2 signal `Client::loginOk` and `Client::loginErrorOccurred`
 
-### 2. Client process should be start
+### 4. Client process should be start
 ```cpp
  client->start();
 ```
 if client is not loged in already will recieve `Client::dropToLogin` signale 
 
 
-
-### 4. Get Room Lists
+### 5. Get Room Lists
 ```
 std::map<QString, RoomInfo> Client::joinedRoomList()
 ```
