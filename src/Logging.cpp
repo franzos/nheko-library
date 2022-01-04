@@ -57,14 +57,9 @@ devMessageHandler(QtMsgType type, const QMessageLogContext &context, const QStri
 }
 
 namespace nhlog {
-#if SPDLOG_DEBUG_ON
-bool enable_debug_log_from_commandline = true;
-#else
-bool enable_debug_log_from_commandline = false;
-#endif
 
 void
-init(const std::string &file_path, bool enable_logger = true)
+init(const std::string &file_path, bool enable_logger, bool enable_debug_log)
 {
     auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
       file_path, MAX_FILE_SIZE, MAX_LOG_FILES);
@@ -81,19 +76,19 @@ init(const std::string &file_path, bool enable_logger = true)
     crypto_logger = std::make_shared<spdlog::logger>("crypto", std::begin(sinks), std::end(sinks));
     dev_logger    = std::make_shared<spdlog::logger>("dev", std::begin(sinks), std::end(sinks));
 
-    if(!enable_logger){
-        db_logger->set_level(spdlog::level::off);
-        ui_logger->set_level(spdlog::level::off);
-        crypto_logger->set_level(spdlog::level::off);
-        net_logger->set_level(spdlog::level::off);
-        dev_logger->set_level(spdlog::level::off);
-    } else if (enable_debug_log_from_commandline) {
-        db_logger->set_level(spdlog::level::trace);
-        ui_logger->set_level(spdlog::level::trace);
-        crypto_logger->set_level(spdlog::level::trace);
-        net_logger->set_level(spdlog::level::trace);
-        dev_logger->set_level(spdlog::level::trace);
-    }
+    spdlog::level::level_enum logLevel = spdlog::level::off;
+    if(enable_logger){
+        logLevel = spdlog::level::info;
+    } 
+    if (enable_debug_log) {
+        logLevel = spdlog::level::trace;
+    } 
+
+    db_logger->set_level(logLevel);
+    ui_logger->set_level(logLevel);
+    crypto_logger->set_level(logLevel);
+    net_logger->set_level(logLevel);
+    dev_logger->set_level(logLevel);
 
     qInstallMessageHandler(devMessageHandler);
 }

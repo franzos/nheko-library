@@ -70,8 +70,8 @@ public:
     mtx::presence::PresenceState currentPresence() const;
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
-    Q_INVOKABLE void enableLogger(bool enable){
-        nhlog::init("matrix-client-library", enable);    
+    Q_INVOKABLE void enableLogger(bool enable, bool enableDebugLogs = false){
+        nhlog::init("matrix-client-library", enable, enableDebugLogs);    
     }
 
 public slots:

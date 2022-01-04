@@ -140,13 +140,6 @@ foreach(HEADER ${HEADERS})
 endforeach(HEADER {HEADERS})
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DSPDLOG_DEBUG_ON)	
-	message(" + Build in Debug Mode (Debug Log is Active)")
-else()
-	message(" + Build in Release Mode (Debug Log is Disable)")
-endif()
-
 IF(BUILD_EXAMPLES)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets)

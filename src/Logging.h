@@ -9,7 +9,7 @@
 
 namespace nhlog {
 void
-init(const std::string &file, bool disableLogger);
+init(const std::string &file, bool enable_logger = true, bool enable_debug_log = false);
 
 std::shared_ptr<spdlog::logger>
 ui();
@@ -26,5 +26,4 @@ crypto();
 std::shared_ptr<spdlog::logger>
 dev();
 
-extern bool enable_debug_log_from_commandline;
 }
