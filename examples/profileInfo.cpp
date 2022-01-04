@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
         QString userId = "@hamzeh_test01:pantherx.org";
         QString password = "pQn3mDGsYR";
         QString serverAddress = "https://matrix.pantherx.org";   
+        qWarning() << msg;
         client->loginWithPassword(deviceName, userId, password, serverAddress); 
     });
 
@@ -62,7 +63,7 @@ int main(int argc, char *argv[]){
             qInfo() << "Joined rooms: " << r.first;
         }
     });
-
+    client->enableLogger(true,true);
     client->start();
     
     // QThread::sleep(10);
