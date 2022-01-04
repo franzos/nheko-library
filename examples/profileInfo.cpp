@@ -6,19 +6,17 @@
 #include <QThread>
 #include "../src/Client.h"
 
-mtx::responses::Login loginInfo;
+UserInformation loginInfo;
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
     auto client = Client::instance();
-    QEventLoop eventLoop;
     QObject::connect(client,  &Client::loginOk, [&](const UserInformation &res){
-        //loginInfo = res;
-        eventLoop.quit();
+        loginInfo = res;
+        client->start();
     });
     QObject::connect(client,  &Client::loginErrorOccurred, [&](const QString &out){
         qCritical() << out;
-        eventLoop.quit();
     });
 
     QObject::connect(client, &Client::logoutOk,[](){
@@ -49,22 +47,24 @@ int main(int argc, char *argv[]){
         }
     });
     
+    QObject::connect(client,  &Client::dropToLogin, [&](const QString &msg){
+        QString deviceName = "test";
+        QString userId = "@hamzeh_test01:pantherx.org";
+        QString password = "pQn3mDGsYR";
+        QString serverAddress = "https://matrix.pantherx.org";   
+        client->loginWithPassword(deviceName, userId, password, serverAddress); 
+    });
 
-    if(client->hasValidUser()){
-        //loginInfo = client->userInformation();
-    } else {
-        std::string deviceName = "test";
-        std::string userId = "@hamzeh_test01:pantherx.org";
-        std::string password = "pQn3mDGsYR";
-        std::string serverAddress = "https://matrix.pantherx.org";   
-        client->loginWithPassword(QString::fromStdString(deviceName), QString::fromStdString(userId), QString::fromStdString(password), QString::fromStdString(serverAddress)); 
-        eventLoop.exec();
-    }
+    QObject::connect(client,  &Client::initiateFinished, [&](){
+        auto rooms = client->joinedRoomList();
+        qInfo() << "Initiate Finished (" << rooms.size() << ")";
+        for(auto const &r: rooms){
+            qInfo() << "Joined rooms: " << r.first;
+        }
+    });
+
+    client->start();
     
-    // client->bootstrap(loginInfo.user_id.to_string(),
-    //                     "https://matrix.pantherx.org",
-    //                     loginInfo.access_token);
-    auto rooms = client->joinedRoomList();
     // QThread::sleep(10);
     // authentication->logout();
     return app.exec();     

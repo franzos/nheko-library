@@ -85,7 +85,7 @@ public slots:
     void joinRoomVia(const QString &room_id,
                      const std::vector<std::string> &via);
     void inviteUser(const QString &roomid, const QString &userid, const QString & reason);
-    void kickUser(const std::string & roomid, const std::string & userid, const std::string &reason);
+    void kickUser(const QString & roomid, const QString & userid, const QString &reason);
     void banUser(const QString & roomid, const QString  & userid, const QString & reason);
     void unbanUser(const QString & roomid, const QString &userid, const QString & reason);
     void receivedSessionKey(const QString &room_id, const QString &session_id);

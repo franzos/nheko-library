@@ -653,11 +653,11 @@ Client::inviteUser(const QString &roomid,const QString &userid, const QString &r
       reason.trimmed().toStdString());
 }
 void
-Client::kickUser(const std::string & roomid,const std::string & userid, const std::string & reason)
+Client::kickUser(const QString & roomid,const QString & userid, const QString & reason)
 {
     http::client()->kick_user(
-      roomid,
-      userid,
+      roomid.toStdString(),
+      userid.toStdString(),
       [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
             // TODO emit error
@@ -670,7 +670,7 @@ Client::kickUser(const std::string & roomid,const std::string & userid, const st
             //   emit showNotification(tr("Kicked user: %1").arg(userid));
           }
       },
-      QString::fromStdString(reason).trimmed().toStdString());
+      reason.trimmed().toStdString());
 }
 void
 Client::banUser(const QString &roomid, const QString & userid, const QString & reason)

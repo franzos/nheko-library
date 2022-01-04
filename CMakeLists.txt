@@ -111,12 +111,12 @@ set(MATRIX_LIB_DEPS
 	${SRC_FILES}
 	${MOC_HEADERS})
 
-IF(SHARED_LIB)
-	add_library (matrix-client-library SHARED ${MATRIX_LIB_DEPS})
-	message(" + Build as shared library.")
-ELSE()
+IF(STATIC_LIB)
 	add_library (matrix-client-library ${MATRIX_LIB_DEPS})
 	message(" + Build as static library.")
+ELSE()
+	add_library (matrix-client-library SHARED ${MATRIX_LIB_DEPS})
+	message(" + Build as shared library.")
 ENDIF()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
