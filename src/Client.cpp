@@ -281,11 +281,11 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
     }
 }
 
-QHash<QString, RoomInfo> Client::inviteRoomList(){
+QMap<QString, RoomInfo> Client::inviteRoomList(){
     return cache::invites();
 }    
 
-std::map<QString, RoomInfo> Client::joinedRoomList(){
+QMap<QString, RoomInfo> Client::joinedRoomList(){
     return cache::getRoomInfo(cache::joinedRooms());
 }    
 
