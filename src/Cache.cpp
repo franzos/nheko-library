@@ -1135,10 +1135,10 @@ Cache::saveState(const mtx::responses::Sync &res)
         saveTimelineMessages(txn, eventsDb, room.first, room.second.timeline);
 
         RoomInfo updatedInfo;
-        updatedInfo.name       = getRoomName(txn, statesdb, membersdb).toStdString();
-        updatedInfo.topic      = getRoomTopic(txn, statesdb).toStdString();
-        updatedInfo.avatar_url = getRoomAvatarUrl(txn, statesdb, membersdb).toStdString();
-        updatedInfo.version    = getRoomVersion(txn, statesdb).toStdString();
+        updatedInfo.name       = getRoomName(txn, statesdb, membersdb);
+        updatedInfo.topic      = getRoomTopic(txn, statesdb);
+        updatedInfo.avatar_url = getRoomAvatarUrl(txn, statesdb, membersdb);
+        updatedInfo.version    = getRoomVersion(txn, statesdb);
         updatedInfo.is_space   = getRoomIsSpace(txn, statesdb);
 
         if (updatedInfo.is_space) {
@@ -1288,9 +1288,9 @@ Cache::saveInvites(lmdb::txn &txn, const std::map<std::string, mtx::responses::I
         saveInvite(txn, statesdb, membersdb, room.second);
 
         RoomInfo updatedInfo;
-        updatedInfo.name       = getInviteRoomName(txn, statesdb, membersdb).toStdString();
-        updatedInfo.topic      = getInviteRoomTopic(txn, statesdb).toStdString();
-        updatedInfo.avatar_url = getInviteRoomAvatarUrl(txn, statesdb, membersdb).toStdString();
+        updatedInfo.name       = getInviteRoomName(txn, statesdb, membersdb);
+        updatedInfo.topic      = getInviteRoomTopic(txn, statesdb);
+        updatedInfo.avatar_url = getInviteRoomAvatarUrl(txn, statesdb, membersdb);
         updatedInfo.is_space   = getInviteRoomIsSpace(txn, statesdb);
         updatedInfo.is_invite  = true;
 
@@ -1410,10 +1410,10 @@ Cache::singleRoomInfo(const std::string &room_id)
     return RoomInfo();
 }
 
-std::map<QString, RoomInfo>
+QMap<QString, RoomInfo>
 Cache::getRoomInfo(const std::vector<std::string> &rooms)
 {
-    std::map<QString, RoomInfo> room_info;
+    QMap<QString, RoomInfo> room_info;
 
     // TODO This should be read only.
     auto txn = lmdb::txn::begin(env_);
@@ -1430,7 +1430,7 @@ Cache::getRoomInfo(const std::vector<std::string> &rooms)
                 tmp.join_rule    = getRoomJoinRule(txn, statesdb);
                 tmp.guest_access = getRoomGuestAccess(txn, statesdb);
 
-                room_info.emplace(QString::fromStdString(room), std::move(tmp));
+                room_info.insert(QString::fromStdString(room), std::move(tmp));
             } catch (const json::exception &e) {
                 nhlog::db()->warn("failed to parse room info: room_id ({}), {}: {}",
                                   room,
@@ -1444,7 +1444,7 @@ Cache::getRoomInfo(const std::vector<std::string> &rooms)
                     RoomInfo tmp     = json::parse(std::string_view(data));
                     tmp.member_count = getInviteMembersDb(txn, room).size(txn);
 
-                    room_info.emplace(QString::fromStdString(room), std::move(tmp));
+                    room_info.insert(QString::fromStdString(room), std::move(tmp));
                 } catch (const json::exception &e) {
                     nhlog::db()->warn("failed to parse room info for invite: "
                                       "room_id ({}), {}: {}",
@@ -1906,10 +1906,10 @@ Cache::getTimelineEventId(const std::string &room_id, uint64_t index)
     return std::string(val);
 }
 
-QHash<QString, RoomInfo>
+QMap<QString, RoomInfo>
 Cache::invites()
 {
-    QHash<QString, RoomInfo> result;
+    QMap<QString, RoomInfo> result;
 
     auto txn    = ro_txn(env_);
     auto cursor = lmdb::cursor::open(txn, invitesDb_);
@@ -4181,10 +4181,10 @@ Cache::verificationStatus_(const std::string &user_id, lmdb::txn &txn)
 void
 to_json(json &j, const RoomInfo &info)
 {
-    j["name"]         = info.name;
-    j["topic"]        = info.topic;
-    j["avatar_url"]   = info.avatar_url;
-    j["version"]      = info.version;
+    j["name"]         = info.name.toStdString();
+    j["topic"]        = info.topic.toStdString();
+    j["avatar_url"]   = info.avatar_url.toStdString();
+    j["version"]      = info.version.toStdString();
     j["is_invite"]    = info.is_invite;
     j["is_space"]     = info.is_space;
     j["join_rule"]    = info.join_rule;
@@ -4200,11 +4200,11 @@ to_json(json &j, const RoomInfo &info)
 void
 from_json(const json &j, RoomInfo &info)
 {
-    info.name       = j.at("name");
-    info.topic      = j.at("topic");
-    info.avatar_url = j.at("avatar_url");
-    info.version    = j.value(
-      "version", QCoreApplication::translate("RoomInfo", "no version stored").toStdString());
+    info.name       = QString::fromStdString(j.at("name"));
+    info.topic      = QString::fromStdString(j.at("topic"));
+    info.avatar_url = QString::fromStdString(j.at("avatar_url"));
+    info.version    = QString::fromStdString(j.value(
+      "version", QCoreApplication::translate("RoomInfo", "no version stored").toStdString()));
     info.is_invite    = j.at("is_invite");
     info.is_space     = j.value("is_space", false);
     info.join_rule    = j.at("join_rule");
@@ -4350,9 +4350,9 @@ init(const QString &user_id)
     qRegisterMetaType<RoomSearchResult>();
     qRegisterMetaType<RoomInfo>();
     qRegisterMetaType<QMap<QString, RoomInfo>>();
-    qRegisterMetaType<std::map<QString, RoomInfo>>();
-    qRegisterMetaType<std::map<QString, mtx::responses::Timeline>>();
-    qRegisterMetaType<mtx::responses::QueryKeys>();
+    qRegisterMetaType<std::map<QString, RoomInfo>>(); // TODO  - maybe should be deleted
+    qRegisterMetaType<std::map<QString, mtx::responses::Timeline>>(); // TODO - review
+    qRegisterMetaType<mtx::responses::QueryKeys>(); // TODO - review
 
     instance_ = std::make_unique<Cache>(user_id);
 }
@@ -4435,7 +4435,7 @@ roomInfo(bool withInvites)
 {
     return instance_->roomInfo(withInvites);
 }
-QHash<QString, RoomInfo>
+QMap<QString, RoomInfo>
 invites()
 {
     return instance_->invites();
@@ -4609,7 +4609,7 @@ roomsWithStateUpdates(const mtx::responses::Sync &res)
     return instance_->roomsWithStateUpdates(res);
 }
 
-std::map<QString, RoomInfo>
+QMap<QString, RoomInfo>
 getRoomInfo(const std::vector<std::string> &rooms)
 {
     return instance_->getRoomInfo(rooms);

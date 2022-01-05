@@ -75,8 +75,8 @@ public:
     }
 
 public slots:
-    std::map<QString, RoomInfo> joinedRoomList();
-    QHash<QString, RoomInfo> inviteRoomList();
+    QMap<QString, RoomInfo> joinedRoomList();
+    QMap<QString, RoomInfo> inviteRoomList();
     RoomInfo roomInfo(const QString &room_id);
     void startChat(QString userid);
     void leaveRoom(const QString &room_id);

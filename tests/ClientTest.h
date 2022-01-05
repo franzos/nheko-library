@@ -17,7 +17,7 @@ private:
     QString serverAddress = "https://matrix.pantherx.org";   
     QEventLoop eventLoop;
     Client *client;
-    std::string inviteRoomId;
+    QString inviteRoomId;
     QString joinRoomId = "!fCNlplLEJIMZawGUdE:pantherx.org";
 
     QString GetRandomString(int len) {
@@ -111,7 +111,7 @@ private slots:
         roomRqs.name = GetRandomString(10).toStdString();
         roomRqs.topic = "test";
         connect(client, &Client::roomCreated,[&](const QString roomId){
-            inviteRoomId = roomId.toStdString();
+            inviteRoomId = roomId;
             eventLoop.quit();
         });
 
@@ -124,11 +124,11 @@ private slots:
     }
 
     void inviteRoom(){
-        if(inviteRoomId.empty())
+        if(inviteRoomId.isEmpty())
             QFAIL("room id is empty because of the previous test case (createRoom) failed");
         else {
             connect(client, &Client::userInvited,[&](const QString room_id,const QString user_id){
-                QCOMPARE(QString::fromStdString(inviteRoomId),room_id);
+                QCOMPARE(inviteRoomId,room_id);
                 QCOMPARE(userId2,user_id);
                 eventLoop.quit();
             });
@@ -137,7 +137,7 @@ private slots:
                 QFAIL((error + "(\"" + room_id + ", " + user_id + "\")").toStdString().c_str());
                 eventLoop.quit();
             });
-            client->inviteUser(QString::fromStdString(inviteRoomId),userId2, "test");
+            client->inviteUser(inviteRoomId,userId2, "test");
             eventLoop.exec();
         }
     }
@@ -145,8 +145,8 @@ private slots:
 
    void roomList(){
         auto rooms = client->joinedRoomList();
-        for(auto const &room: rooms){
-            if(room.first.toStdString() == inviteRoomId) {
+        for(auto const &room: rooms.toStdMap()){
+            if(room.first == inviteRoomId) {
                 return;
             }
         }
@@ -192,11 +192,11 @@ private slots:
     }
 
     void deleteRoom(){
-        if(inviteRoomId.empty())
+        if(inviteRoomId.isEmpty())
             QFAIL("room id is empty because of the previous test case (createRoom) failed");
         else {
             connect(client, &Client::leftRoom,[&](const QString room_id){
-                QCOMPARE(QString::fromStdString(inviteRoomId),room_id);
+                QCOMPARE(inviteRoomId,room_id);
                 eventLoop.quit();
             });
 
@@ -204,7 +204,7 @@ private slots:
                 QFAIL(error.toStdString().c_str());
                 eventLoop.quit();
             });
-            client->leaveRoom(QString::fromStdString(inviteRoomId));
+            client->leaveRoom(inviteRoomId);
             eventLoop.exec();
         }
     }

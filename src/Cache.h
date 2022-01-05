@@ -62,7 +62,7 @@ joinedRooms();
 
 QMap<QString, RoomInfo>
 roomInfo(bool withInvites = true);
-QHash<QString, RoomInfo>
+QMap<QString, RoomInfo>
 invites();
 
 //! Calculate & return the name of the room.
@@ -153,7 +153,7 @@ lastInvisibleEventAfter(const std::string &room_id, std::string_view event_id);
 
 RoomInfo
 singleRoomInfo(const std::string &room_id);
-std::map<QString, RoomInfo>
+QMap<QString, RoomInfo>
 getRoomInfo(const std::vector<std::string> &rooms);
 
 //! Calculates which the read status of a room.

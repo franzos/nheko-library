@@ -68,13 +68,13 @@ operator!=(const DescInfo &a, const DescInfo &b)
 struct RoomInfo
 {
     //! The calculated name of the room.
-    std::string name;
+    QString name;
     //! The topic of the room.
-    std::string topic;
+    QString topic;
     //! The calculated avatar url of the room.
-    std::string avatar_url;
+    QString avatar_url;
     //! The calculated version of this room set at creation time.
-    std::string version;
+    QString version;
     //! Whether or not the room is an invite.
     bool is_invite = false;
     //! Wheter or not the room is a space

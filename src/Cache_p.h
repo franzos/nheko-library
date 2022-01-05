@@ -70,7 +70,7 @@ public:
 
     QMap<QString, RoomInfo> roomInfo(bool withInvites = true);
     std::optional<mtx::events::state::CanonicalAlias> getRoomAliases(const std::string &roomid);
-    QHash<QString, RoomInfo> invites();
+    QMap<QString, RoomInfo> invites();
     std::optional<RoomInfo> invite(std::string_view roomid);
     QMap<QString, std::optional<RoomInfo>> spaces();
 
@@ -157,7 +157,7 @@ public:
 
     RoomInfo singleRoomInfo(const std::string &room_id);
     std::vector<std::string> roomsWithStateUpdates(const mtx::responses::Sync &res);
-    std::map<QString, RoomInfo> getRoomInfo(const std::vector<std::string> &rooms);
+    QMap<QString, RoomInfo> getRoomInfo(const std::vector<std::string> &rooms);
 
     //! Calculates which the read status of a room.
     //! Whether all the events in the timeline have been read.

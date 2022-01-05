@@ -34,12 +34,12 @@ int main(int argc, char *argv[]){
     QObject::connect(client, &Client::roomListUpdated,[client](const mtx::responses::Rooms &rooms){
         for(auto const &room: rooms.join) {
             auto info = client->roomInfo(QString::fromStdString(room.first));
-            qDebug() << "JOIN: " << QString::fromStdString(room.first) << QString::fromStdString(info.name);
+            qDebug() << "JOIN: " << QString::fromStdString(room.first) << info.name;
         }
 
         for(auto const &room: rooms.invite) {
             auto info = client->roomInfo(QString::fromStdString(room.first));
-            qDebug() << "INV : " << QString::fromStdString(room.first) << QString::fromStdString(info.name);
+            qDebug() << "INV : " << QString::fromStdString(room.first) << info.name;
         }
 
         for(auto const &room: rooms.leave) {
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
     QObject::connect(client,  &Client::initiateFinished, [&](){
         auto rooms = client->joinedRoomList();
         qInfo() << "Initiate Finished (" << rooms.size() << ")";
-        for(auto const &r: rooms){
+        for(auto const &r: rooms.toStdMap()){
             qInfo() << "Joined rooms: " << r.first;
         }
     });
