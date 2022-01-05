@@ -102,8 +102,8 @@ public slots:
 signals:
     // Authentication signals
     void loginOk(const UserInformation &user);
-    void loginErrorOccurred(QString &msg);
-    void logoutErrorOccurred(QString &msg);
+    void loginErrorOccurred(const QString &msg);
+    void logoutErrorOccurred(const QString &msg);
     void logoutOk();    
     //
     void connectionLost();
