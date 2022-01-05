@@ -476,6 +476,7 @@ Client::startInitialSync()
             cache::client()->saveState(res);
             olm::handle_to_device_messages(res.to_device.events);
             cache::calculateRoomReadStatus();
+            emit initialSync(std::move(res));
         } catch (const lmdb::error &e) {
             nhlog::db()->error("failed to save state after initial sync: {}", e.what());
             startInitialSync();
@@ -512,7 +513,7 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
         auto updates = cache::getRoomInfo(cache::client()->roomsWithStateUpdates(res));
 
         if( res.rooms.join.size() || res.rooms.invite.size() || res.rooms.leave.size()) {
-            emit roomListUpdated(res.rooms);
+            emit newUpdated(res);
         }
         // if we process a lot of syncs (1 every 200ms), this means we clean the
         // db every 100s

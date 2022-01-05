@@ -17,6 +17,7 @@ private:
     QString serverAddress = "https://matrix.pantherx.org";   
     QEventLoop eventLoop;
     Client *client;
+    bool isInitialSynced, isUpdated;
     QString inviteRoomId;
     QString joinRoomId = "!fCNlplLEJIMZawGUdE:pantherx.org";
 
@@ -39,6 +40,18 @@ private slots:
         client = Client::instance();
         UserSettings::instance()->clear();
         client->enableLogger(false);
+         isInitialSynced = false;
+         isUpdated=false;
+
+         QObject::connect(client,  &Client::initialSync, [&](const mtx::responses::Sync &sync){   
+            qDebug()<<"Initial Sync is done";  
+            isInitialSynced = true;               
+        });
+
+        QObject::connect(client,  &Client::newUpdated, [&](const mtx::responses::Sync &sync){   
+            qDebug()<<"Update Sync is done";  
+            isUpdated = true;               
+        });
         
     }
 
@@ -72,6 +85,10 @@ private slots:
             eventLoop.quit();
         });
         eventLoop.exec();      
+    }
+
+    void initialSync(){
+        QCOMPARE(isInitialSynced,true);
     }
 
     void checkValidation(){
@@ -169,6 +186,10 @@ private slots:
         eventLoop.exec();
         disconnect(joinSignal);
         disconnect(joinErrorSignal);
+    }
+
+    void updateSync(){
+        QCOMPARE(isUpdated,true);
     }
 
     void leaveRoom(){
