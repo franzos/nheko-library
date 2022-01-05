@@ -131,7 +131,8 @@ signals:
     void joinRoomFailed(const QString &error);
     void userInvited(const QString &room_id, const QString user_id);
     void userInvitationFailed(const QString &room_id, const QString user_id, const QString &error);
-    void roomListUpdated(const mtx::responses::Rooms &rooms);
+    void newUpdated(const mtx::responses::Sync &sync);
+    void initialSync(const mtx::responses::Sync &sync);
 
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
     void decryptSidebarChanged();

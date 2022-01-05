@@ -31,18 +31,18 @@ int main(int argc, char *argv[]){
         qInfo() << "User avatar      : " << avatar;
     });
 
-    QObject::connect(client, &Client::roomListUpdated,[client](const mtx::responses::Rooms &rooms){
-        for(auto const &room: rooms.join) {
+    QObject::connect(client, &Client::newUpdated,[client](const mtx::responses::Sync &sync){
+        for(auto const &room: sync.rooms.join) {
             auto info = client->roomInfo(QString::fromStdString(room.first));
             qDebug() << "JOIN: " << QString::fromStdString(room.first) << info.name;
         }
 
-        for(auto const &room: rooms.invite) {
+        for(auto const &room: sync.rooms.invite) {
             auto info = client->roomInfo(QString::fromStdString(room.first));
             qDebug() << "INV : " << QString::fromStdString(room.first) << info.name;
         }
 
-        for(auto const &room: rooms.leave) {
+        for(auto const &room: sync.rooms.leave) {
             qDebug() << "LEFT: " << QString::fromStdString(room.first);
         }
     });
