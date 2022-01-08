@@ -40,24 +40,25 @@ private slots:
         client = Client::instance();
         UserSettings::instance()->clear();
         client->enableLogger(false);
-         isInitialSynced = false;
-         isUpdated=false;
+        isInitialSynced = false;
+        isUpdated=false;
 
-         QObject::connect(client,  &Client::initialSync, [&](const mtx::responses::Sync &sync){   
+        QObject::connect(client,  &Client::initialSync, [&](const mtx::responses::Sync &sync){  
+            (void)sync; 
             qDebug()<<"Initial Sync is done";  
             isInitialSynced = true;               
         });
 
         QObject::connect(client,  &Client::newUpdated, [&](const mtx::responses::Sync &sync){   
+            (void)sync;
             qDebug()<<"Update Sync is done";  
             isUpdated = true;               
         });
-        
     }
 
     void startProcess(){
         QObject::connect(client,  &Client::dropToLogin, [&](const QString &msg){
-            qDebug()<<"You are not logined yet";
+            qDebug() << msg;
             QVERIFY(1==1);
             eventLoop.quit();
         });
