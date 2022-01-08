@@ -1086,3 +1086,10 @@ void Client::start(QString userId, QString homeServer, QString token){
     bootstrap(userId.toStdString(), homeServer.toStdString(), token.toStdString());
 }
 
+void Client::stop(){
+    if (http::client() != nullptr) {
+        nhlog::net()->debug("shutting down all I/O threads & open connections");
+        http::client()->close(true);
+        nhlog::net()->debug("bye");
+    }
+}
