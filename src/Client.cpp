@@ -1038,7 +1038,9 @@ Client::startChat(QString userid)
 }
 
 void Client::loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress){
+    
     _authentication->loginWithPassword(deviceName.toStdString(), userId.toStdString(), password.toStdString(), serverAddress.toStdString());
+   
 }
 
 bool Client::hasValidUser(){

@@ -12,8 +12,13 @@ class AuthenticationTest: public QObject
     QEventLoop eventLoop;
     
 private slots:
+
+    void initTestCase(){
+        // client = Client::instance();
+        // UserSettings::instance()->clear();
+        nhlog::init("matrix-client-library", false, false);   
+    }
     void loginWithCorrectPassword(){
-        nhlog::init(" ",false);
         loginTest = new Authentication();
         //QEventLoop eventLoop;
         QObject::connect(loginTest,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
@@ -63,6 +68,7 @@ private slots:
 
         QObject::connect(loginTestWrong,  &Authentication::loginErrorOccurred, [&](const std::string &out){            
            QCOMPARE(out,"Invalid password");
+           qDebug()<<"INVALID Password";       
             eventLoop.quit();
         });
 
@@ -73,5 +79,5 @@ private slots:
         loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
-    
+       
 };
