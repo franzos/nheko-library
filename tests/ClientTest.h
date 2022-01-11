@@ -10,8 +10,8 @@ class ClientTest: public QObject
 private:
     mtx::responses::Login loginInfo;
     QString deviceName = "test";
-    QString userId = "@hamzeh_test01:pantherx.org";
-    QString password = "pQn3mDGsYR";
+    QString userId = "@fakhri_test01:pantherx.org";
+    QString password = "a2bqy9iHU8";
     QString userId2 = "@hamzeh_test02:pantherx.org";
     QString password2 = "5wn685g7mN";
     QString serverAddress = "https://matrix.pantherx.org";   
@@ -39,7 +39,7 @@ private slots:
     void initTestCase(){
         client = Client::instance();
         UserSettings::instance()->clear();
-        client->enableLogger(false);
+        client->enableLogger(false,false);
         isInitialSynced = false;
         isUpdated=false;
 
@@ -67,6 +67,8 @@ private slots:
     }
 
     void clientLogin(){
+       
+        
         QObject::connect(client,  &Client::loginOk, [&](const  UserInformation &user){   
             qDebug()<<user.userId;       
             QCOMPARE(user.userId,userId);
@@ -76,16 +78,25 @@ private slots:
 
         QObject::connect(client,  &Client::loginErrorOccurred, [&](const QString &out){
             qCritical() << out;
+            qDebug()<<out;   
             eventLoop.quit();
-        });      
-       client->loginWithPassword(deviceName, userId, password, serverAddress); 
-       eventLoop.exec();  
+        });   
 
-       
-        QObject::connect(client, &Client::initiateFinished,[&](){
+         try
+        {
+           client->loginWithPassword(deviceName, userId, password, serverAddress); 
+            eventLoop.exec();  
+            QObject::connect(client, &Client::initiateFinished,[&](){
             eventLoop.quit();
         });
-        eventLoop.exec();      
+        eventLoop.exec();    
+        }
+        catch(const std::exception& e)
+        {            
+            qDebug()<<" Loged in has error"<<e.what();
+        }   
+              
+         
     }
 
     void initialSync(){
@@ -102,7 +113,7 @@ private slots:
 
     void getUserInfo(){
         auto info = client->userInformation();
-        QCOMPARE(info.userId,"@hamzeh_test01:pantherx.org");
+        QCOMPARE(info.userId,"@fakhri_test01:pantherx.org");
     }
     
 
@@ -241,7 +252,7 @@ private slots:
         });
         client->logout();
         eventLoop.exec();
-    }
+    }    
 
     void cleanupTestCase(){
         QTimer::singleShot(4 * 1000, this, [&] {
