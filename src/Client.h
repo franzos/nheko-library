@@ -29,6 +29,7 @@
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
 #include "Utils.h"
+#include "timeline/Timeline.h"
 
 class UserSettings;
 
@@ -55,7 +56,6 @@ class Client : public QObject
     Q_OBJECT
 
 public:
-    
     Q_INVOKABLE static Client *instance() { 
         if(instance_ == nullptr){
             http::init();
@@ -68,6 +68,13 @@ public:
     QString status() const;
     void setStatus(const QString &status);
     mtx::presence::PresenceState currentPresence() const;
+    Timeline * timeline(const QString &roomID){
+        auto it = _timelines.find(roomID);
+        if(it != _timelines.end()){
+            return it.value();
+        }
+        return nullptr;
+    }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
@@ -163,6 +170,8 @@ private:
     static Client *instance_;
     Authentication *_authentication;
     QString _clientName;
+    QMap<QString, Timeline *> _timelines;
+
     Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
     void tryInitialSync();
@@ -171,6 +180,11 @@ private:
     void ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts);
     void getBackupVersion();
     void bootstrap(std::string userid, std::string homeserver, std::string token);
+    void syncTimelines(const mtx::responses::Rooms &rooms);
+    void syncTimeline(const QString &roomId, const mtx::responses::JoinedRoom &room);
+    void createTimelinesFromDB();
+    void addTimeline(const QString &roomID); 
+    void removeTimeline(const QString &roomID); 
 
     using UserID      = QString;
     using Membership  = mtx::events::StateEvent<mtx::events::state::Member>;

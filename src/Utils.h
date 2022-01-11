@@ -109,72 +109,72 @@ messageDescription(const QString &username = "",
 
     if (std::is_same<T, Audio>::value) {
         if (isLocal)
-            return "message-description sent: You sent an audio clip";
+            return "You sent an audio clip";
         else
-            return QString("message-description sent: %1 sent an audio clip")
+            return QString("%1 sent an audio clip")
               .arg(username);
     } else if (std::is_same<T, Image>::value) {
         if (isLocal)
-            return ("message-description sent: You sent an image");
+            return ("You sent an image");
         else
-            return QString("message-description sent: %1 sent an image")
+            return QString("%1 sent an image")
               .arg(username);
     } else if (std::is_same<T, File>::value) {
         if (isLocal)
-            return ("message-description sent: You sent a file");
+            return ("You sent a file");
         else
-            return QString("message-description sent: %1 sent a file")
+            return QString("%1 sent a file")
               .arg(username);
     } else if (std::is_same<T, Video>::value) {
         if (isLocal)
-            return ("message-description sent: You sent a video");
+            return ("You sent a video");
         else
-            return QString("message-description sent: %1 sent a video")
+            return QString("%1 sent a video")
               .arg(username);
     } else if (std::is_same<T, Sticker>::value) {
         if (isLocal)
-            return ("message-description sent: You sent a sticker");
+            return ("You sent a sticker");
         else
-            return QString("message-description sent: %1 sent a sticker")
+            return QString("%1 sent a sticker")
               .arg(username);
     } else if (std::is_same<T, Notice>::value) {
         if (isLocal)
-            return ("message-description sent: You sent a notification");
+            return ("You sent a notification");
         else
-            return QString("message-description sent: %1 sent a notification")
+            return QString("%1 sent a notification")
               .arg(username);
     } else if (std::is_same<T, Text>::value) {
         if (isLocal)
-            return QString("message-description sent: You: %1").arg(body);
+            return QString("You: %1").arg(body);
         else
-            return QString("message-description sent: %1: %2")
+            return QString("%1: %2")
               .arg(username)
               .arg(body);
     } else if (std::is_same<T, Emote>::value) {
         return QString("* %1 %2").arg(username).arg(body);
     } else if (std::is_same<T, Encrypted>::value) {
         if (isLocal)
-            return ("message-description sent: You sent an encrypted message");
+            return ("You sent an encrypted message");
         else
-            return QString("message-description sent: %1 sent an encrypted message")
+            return QString("%1 sent an encrypted message")
               .arg(username);
     } else if (std::is_same<T, CallInvite>::value) {
         if (isLocal)
-            return ("message-description sent: You placed a call");
+            return ("You placed a call");
         else
-            return QString("message-description sent: %1 placed a call")
+            return QString("%1 placed a call")
               .arg(username);
     } else if (std::is_same<T, CallAnswer>::value) {
         if (isLocal)
-            return ("message-description sent: You answered a call");
+            return ("You answered a call");
         else
-            return QString("message-description sent: %1 answered a call")
+            return QString("%1 answered a call")
               .arg(username);
     } else if (std::is_same<T, CallHangUp>::value) {
         if (isLocal)
-            return ("message-description sent: You ended a call");
+            return ("You ended a call");
         else
-            return QString("message-description sent: %1 ended a call")
+            return QString("%1 ended a call")
               .arg(username);
     } else {
         return ("utils - Unknown Message Type");

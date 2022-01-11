@@ -1750,7 +1750,6 @@ Cache::getTimelineRange(const std::string &room_id)
         return {};
     }
     range.first = lmdb::from_sv<uint64_t>(indexVal);
-
     return range;
 }
 std::optional<uint64_t>
