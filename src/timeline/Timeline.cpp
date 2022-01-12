@@ -27,7 +27,7 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
         // emit eventsChanged(_events.size() - to - 1, _events.size() - from - 1);
     });
     connect(&_events, &EventStore::beginInsertRows, this, [this](int from, int to) {
-        nhlog::ui()->debug("begin insert from {} to {}", from, to);
+        nhlog::ui()->debug("begin insert from {} to {} (size: {})", from, to, to - from + 1);
         emit newEventsStored(from, to - from + 1);
     });
     // connect(&_events, &EventStore::endInsertRows, this, [this]() {

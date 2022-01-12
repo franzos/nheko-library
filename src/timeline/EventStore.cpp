@@ -303,6 +303,8 @@ EventStore::receivedSessionKey(const std::string &session_id)
 void
 EventStore::handleSync(const mtx::responses::Timeline &events)
 {
+    bool flagToSendSignal = false;
+    int from = 0, to = 0;
     if (this->thread() != QThread::currentThread())
         nhlog::db()->warn("{} called from a different thread!", __func__);
     auto range = cache::client()->getTimelineRange(room_id_);
@@ -325,7 +327,10 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
         events_.clear();
         // emit endResetModel();
     } else if (range->last > this->last) {
-        emit beginInsertRows(toExternalIdx(this->last + 1), toExternalIdx(range->last));
+        // emit beginInsertRows(toExternalIdx(this->last + 1), toExternalIdx(range->last));
+        flagToSendSignal = true;
+        from = toExternalIdx(this->last + 1);
+        to = toExternalIdx(range->last);
         this->last = range->last;
         // emit endInsertRows();
     }
@@ -380,6 +385,9 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
                 handle_room_verification(*d_event->event);
             }
         }
+    }
+    if(flagToSendSignal){
+        emit beginInsertRows(from, to);
     }
 }
 

@@ -4,7 +4,7 @@
 #include <mtx/events/event_type.hpp>
 #include <mtx/events/collections.hpp>
 #include "EventStore.h"
-#include "CacheStructs.h"
+#include "../CacheStructs.h"
 
 Q_DECLARE_METATYPE(mtx::events::collections::TimelineEvents)
 
