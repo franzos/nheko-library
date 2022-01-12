@@ -6,7 +6,7 @@
 
 #include <QThread>
 #include <QTimer>
-
+#include <QDebug>
 #include <mtx/responses/common.hpp>
 
 #include "Cache.h"
@@ -44,7 +44,6 @@ EventStore::EventStore(std::string room_id, QObject *)
       [this](
         std::string id, std::string relatedTo, mtx::events::collections::TimelineEvents timeline) {
           cache::client()->storeEvent(room_id_, id, {timeline});
-
           if (!relatedTo.empty()) {
               auto idx = idToIndex(relatedTo);
               if (idx)
@@ -72,7 +71,7 @@ EventStore::EventStore(std::string room_id, QObject *)
                   auto oldFirst = this->first;
                   emit beginInsertRows(toExternalIdx(newFirst), toExternalIdx(this->first - 1));
                   this->first = newFirst;
-                  emit endInsertRows();
+                //   emit endInsertRows();
                   emit fetchedMore();
                   emit dataChanged(toExternalIdx(oldFirst), toExternalIdx(oldFirst));
               } else {
@@ -82,7 +81,7 @@ EventStore::EventStore(std::string room_id, QObject *)
                       emit beginInsertRows(0, int(range->last - range->first));
                       this->first = range->first;
                       this->last  = range->last;
-                      emit endInsertRows();
+                    //   emit endInsertRows();
                       emit fetchedMore();
                   } else {
                       fetchMore();
@@ -256,7 +255,7 @@ EventStore::addPending(mtx::events::collections::TimelineEvents event)
 void
 EventStore::clearTimeline()
 {
-    emit beginResetModel();
+    // emit beginResetModel();
 
     cache::client()->clearTimeline(room_id_);
     auto range = cache::client()->getTimelineRange(room_id_);
@@ -273,7 +272,7 @@ EventStore::clearTimeline()
     decryptedEvents_.clear();
     events_.clear();
 
-    emit endResetModel();
+    // emit endResetModel();
 }
 
 void
@@ -304,39 +303,40 @@ EventStore::receivedSessionKey(const std::string &session_id)
 void
 EventStore::handleSync(const mtx::responses::Timeline &events)
 {
+    bool flagToSendSignal = false;
+    int from = 0, to = 0;
     if (this->thread() != QThread::currentThread())
         nhlog::db()->warn("{} called from a different thread!", __func__);
-
     auto range = cache::client()->getTimelineRange(room_id_);
     if (!range) {
-        emit beginResetModel();
+        // emit beginResetModel();
         this->first = std::numeric_limits<uint64_t>::max();
         this->last  = std::numeric_limits<uint64_t>::max();
 
         decryptedEvents_.clear();
         events_.clear();
-        emit endResetModel();
+        // emit endResetModel();
         return;
     }
-
     if (events.limited) {
-        emit beginResetModel();
+        // emit beginResetModel();
         this->last  = range->last;
         this->first = range->first;
 
         decryptedEvents_.clear();
         events_.clear();
-        emit endResetModel();
+        // emit endResetModel();
     } else if (range->last > this->last) {
-        emit beginInsertRows(toExternalIdx(this->last + 1), toExternalIdx(range->last));
+        // emit beginInsertRows(toExternalIdx(this->last + 1), toExternalIdx(range->last));
+        flagToSendSignal = true;
+        from = toExternalIdx(this->last + 1);
+        to = toExternalIdx(range->last);
         this->last = range->last;
-        emit endInsertRows();
+        // emit endInsertRows();
     }
-
     for (const auto &event : events.events) {
         std::set<std::string> relates_to;
-        if (auto redaction =
-              std::get_if<mtx::events::RedactionEvent<mtx::events::msg::Redaction>>(&event)) {
+        if (auto redaction = std::get_if<mtx::events::RedactionEvent<mtx::events::msg::Redaction>>(&event)) {
             // fixup reactions
             auto redacted = events_by_id_.object({room_id_, redaction->redacts});
             if (redacted) {
@@ -350,7 +350,6 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
                     }
                 }
             }
-
             relates_to.insert(redaction->redacts);
         } else {
             for (const auto &r : mtx::accessors::relations(event).relations)
@@ -386,6 +385,9 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
                 handle_room_verification(*d_event->event);
             }
         }
+    }
+    if(flagToSendSignal){
+        emit beginInsertRows(from, to);
     }
 }
 
@@ -561,20 +563,17 @@ EventStore::get(int idx, bool decrypt)
     Index index{room_id_, toInternalIdx(idx)};
     if (index.idx > last || index.idx < first)
         return nullptr;
-
     auto event_ptr = events_.object(index);
     if (!event_ptr) {
         auto event_id = cache::client()->getTimelineEventId(room_id_, index.idx);
         if (!event_id)
             return nullptr;
-
         std::optional<mtx::events::collections::TimelineEvent> event;
         auto edits_ = edits(*event_id);
         if (edits_.empty())
             event = cache::client()->getEvent(room_id_, *event_id);
         else
             event = {edits_.back()};
-
         if (!event)
             return nullptr;
         else
@@ -586,8 +585,9 @@ EventStore::get(int idx, bool decrypt)
         if (auto encrypted =
               std::get_if<mtx::events::EncryptedEvent<mtx::events::msg::Encrypted>>(event_ptr)) {
             auto decrypted = decryptEvent({room_id_, encrypted->event_id}, *encrypted);
-            if (decrypted->event)
+            if (decrypted->event){
                 return &*decrypted->event;
+            }
         }
     }
 
@@ -621,7 +621,6 @@ EventStore::decryptEvent(const IdIndex &idx,
 {
     if (auto cachedEvent = decryptedEvents_.object(idx))
         return cachedEvent;
-
     MegolmSessionIndex index(room_id_, e.content);
 
     auto asCacheEntry = [&idx](olm::DecryptionResult &&event) {

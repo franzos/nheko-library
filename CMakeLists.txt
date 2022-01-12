@@ -45,6 +45,7 @@ set(SRC_FILES
 	src/Authentication.cpp
 	src/timeline/EventStore.cpp
 	src/timeline/Reaction.cpp
+	src/timeline/Timeline.cpp
 	src/encryption/Olm.cpp
 	src/Cache.cpp
 	src/Client.cpp
@@ -82,6 +83,7 @@ feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAG
 qt5_wrap_cpp(MOC_HEADERS
 	src/timeline/EventStore.h
 	src/timeline/Reaction.h
+	src/timeline/Timeline.h
 	src/encryption/Olm.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
@@ -93,6 +95,7 @@ qt5_wrap_cpp(MOC_HEADERS
 set(HEADERS 
 	timeline/EventStore.h
 	timeline/Reaction.h
+	timeline/Timeline.h
 	encryption/Olm.h
 	CacheCryptoStructs.h
 	CacheStructs.h

@@ -16,7 +16,7 @@
 #include <mtx/responses/sync.hpp>
 
 #include "Reaction.h"
-#include "encryption/Olm.h"
+#include "../encryption/Olm.h"
 
 class EventStore : public QObject
 {
@@ -96,9 +96,9 @@ public:
 
 signals:
     void beginInsertRows(int from, int to);
-    void endInsertRows();
-    void beginResetModel();
-    void endResetModel();
+    // void endInsertRows();
+    // void beginResetModel();
+    // void endResetModel();
     void dataChanged(int from, int to);
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
     void eventFetched(std::string id,
@@ -119,7 +119,7 @@ public slots:
     void receivedSessionKey(const std::string &session_id);
     void clearTimeline();
     void enableKeyRequests(bool suppressKeyRequests_);
-
+    
 private:
     olm::DecryptionResult *decryptEvent(
       const IdIndex &idx,

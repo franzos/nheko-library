@@ -326,6 +326,7 @@ Client::loadStateFromCache()
     getBackupVersion();
     verifyOneTimeKeyCountAfterStartup();
 
+    createTimelinesFromDB();
     emit initiateFinished();
     // Start receiving events.
     emit trySyncCb();
@@ -513,6 +514,7 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
         auto updates = cache::getRoomInfo(cache::client()->roomsWithStateUpdates(res));
 
         if( res.rooms.join.size() || res.rooms.invite.size() || res.rooms.leave.size()) {
+            syncTimelines(res.rooms);
             emit newUpdated(res);
         }
         // if we process a lot of syncs (1 every 200ms), this means we clean the
@@ -1093,5 +1095,46 @@ void Client::stop(){
         nhlog::net()->debug("shutting down all I/O threads & open connections");
         http::client()->close(true);
         nhlog::net()->debug("bye");
+    }
+}
+
+void Client::syncTimelines(const mtx::responses::Rooms &rooms){
+    for(auto const &r: rooms.join){
+        addTimeline(QString::fromStdString(r.first));
+        syncTimeline(QString::fromStdString(r.first), r.second);
+    }
+    for(auto const &r: rooms.leave){
+        removeTimeline(QString::fromStdString(r.first));
+    }
+}
+
+void Client::syncTimeline(const QString &roomId, const mtx::responses::JoinedRoom &room){
+    auto it = _timelines.find(roomId);
+    if(it != _timelines.end()){
+        it.value()->sync(room);
+    }
+}
+
+void Client::createTimelinesFromDB(){
+    auto rooms = joinedRoomList();
+    for(auto const &r: rooms.toStdMap()){
+        addTimeline(r.first);
+    }
+}
+
+void Client::addTimeline(const QString &roomID){
+    auto it = _timelines.find(roomID);
+    if(it == _timelines.end()){
+        _timelines[roomID] = new Timeline(roomID);
+        _timelines[roomID]->initialSync();
+    }
+}
+
+void Client::removeTimeline(const QString &roomID){
+    auto it = _timelines.find(roomID);
+    if(it != _timelines.end()){
+        auto timeline = _timelines[roomID];
+        _timelines.remove(roomID);
+        delete timeline;
     }
 }
