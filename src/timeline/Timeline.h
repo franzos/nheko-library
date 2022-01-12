@@ -29,12 +29,12 @@ public slots:
     void setDecryptDescription(bool decrypt) { _decryptDescription = decrypt; }
     int  eventSize() {return _events.size();};
     QVector<DescInfo> getEvents(int from, int len);
+    void updateLastMessage();
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
 
 private:
-    void updateLastMessage();
     void addEvents(const mtx::responses::Timeline &timeline);
     template<class T>
     void sendMessageEvent(const T &content, mtx::events::EventType eventType);
