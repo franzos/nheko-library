@@ -22,6 +22,7 @@ signals:
     void lastMessageChanged(const DescInfo &message);
     // void eventsChanged(int from, int to);
     void newEventsStored(int from, int len);
+    void notificationsChanged();
 
 public slots:
     bool canFetchMore() const;
@@ -30,6 +31,8 @@ public slots:
     int  eventSize() {return _events.size();};
     QVector<DescInfo> getEvents(int from, int len);
     void updateLastMessage();
+    int highlightCount() { return _highlightCount; }
+    int notificationCount() { return _notificationCount; }
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
@@ -46,5 +49,6 @@ private:
     QString _roomId;
     DescInfo _lastMessage{};
     bool _decryptDescription     = true;
+    int _notificationCount = 0, _highlightCount = 0;
     friend struct SendMessageVisitor;
 };
