@@ -277,12 +277,12 @@ void Timeline::sendMessage(const QString &msg) {
 void Timeline::sync(const mtx::responses::JoinedRoom &room){
     // this->syncState(room.state);
     addEvents(room.timeline);
-    // if (room.unread_notifications.highlight_count != highlight_count ||
-    //     room.unread_notifications.notification_count != notification_count) {
-    //     notification_count = room.unread_notifications.notification_count;
-    //     highlight_count    = room.unread_notifications.highlight_count;
-    //     emit notificationsChanged();
-    // }
+    if (room.unread_notifications.highlight_count != _highlightCount ||
+        room.unread_notifications.notification_count != _notificationCount) {
+        _notificationCount = room.unread_notifications.notification_count;
+        _highlightCount    = room.unread_notifications.highlight_count;
+        emit notificationsChanged();
+    }
 }
 
 void Timeline::initialSync(){
