@@ -41,10 +41,11 @@ createDescriptionInfo(const Event &event, const QString &localUser, const QStrin
 
     return DescInfo{QString::fromStdString(msg.event_id),
                     sender,
-                    utils::messageDescription<T>(username, body, sender == localUser),
+                    utils::messageDescription<T>(username, body),
                     utils::descriptiveTime(ts),
                     msg.origin_server_ts,
-                    ts};
+                    ts,
+                    sender == localUser};
 }
 
 std::string
@@ -231,12 +232,12 @@ utils::getMessageDescription(const TimelineEvent &event,
         DescInfo info;
         info.userid = sender;
         info.body =
-          QString(" %1").arg(messageDescription<Encrypted>(username, "", sender == localUser));
+          QString(" %1").arg(messageDescription<Encrypted>(username, ""));
         info.timestamp       = msg->origin_server_ts;
         info.descriptiveTime = utils::descriptiveTime(ts);
         info.event_id        = QString::fromStdString(msg->event_id);
         info.datetime        = ts;
-
+        info.isLocal         = sender == localUser;
         return info;
     }
 
