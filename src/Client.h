@@ -113,6 +113,7 @@ signals:
     void loginErrorOccurred(const QString &msg);
     void logoutErrorOccurred(const QString &msg);
     void logoutOk();    
+    void dropToLogin(const QString &msg);
     //
     void connectionLost();
     void connectionRestored();
@@ -120,9 +121,7 @@ signals:
     void notificationsRetrieved(const mtx::responses::Notifications &);
     void highlightedNotifsRetrieved(const mtx::responses::Notifications &, const QPoint widgetPos);
 
-    void initiateFinished();
-    void dropToLogin(const QString &msg);
-
+    //
     void userDisplayNameReady(const QString &name);
     void userAvatarReady(const QString &avatar);
     // sync signals
@@ -130,6 +129,9 @@ signals:
     void tryDelayedSyncCb();
     void tryInitialSyncCb();
     void newSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
+    void initiateFinished();
+    void newUpdated(const mtx::responses::Sync &sync);
+    void initialSync(const mtx::responses::Sync &sync);
     // room signals
     void leftRoom(const QString &room_id);
     void roomLeaveFailed(const QString &error);
@@ -139,9 +141,7 @@ signals:
     void joinRoomFailed(const QString &error);
     void userInvited(const QString &room_id, const QString user_id);
     void userInvitationFailed(const QString &room_id, const QString user_id, const QString &error);
-    void newUpdated(const mtx::responses::Sync &sync);
-    void initialSync(const mtx::responses::Sync &sync);
-
+    //
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
     void decryptSidebarChanged();
     //! Signals for device verificaiton

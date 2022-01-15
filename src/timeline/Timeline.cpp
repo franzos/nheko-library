@@ -283,6 +283,17 @@ void Timeline::sync(const mtx::responses::JoinedRoom &room){
         _highlightCount    = room.unread_notifications.highlight_count;
         emit notificationsChanged();
     }
+    for (const auto &ev : room.ephemeral.events) {
+        if (auto t = std::get_if<mtx::events::EphemeralEvent<mtx::events::ephemeral::Typing>>(&ev)) {
+            QStringList typing;
+            typing.reserve(t->content.user_ids.size());
+            for (const auto &user : t->content.user_ids) {
+                if (user != http::client()->user_id().to_string())
+                    typing << QString::fromStdString(user);
+            }
+            updateTypingUsers(typing);
+        }
+    }
 }
 
 void Timeline::initialSync(){
@@ -448,8 +459,9 @@ void Timeline::updateLastMessage(){
     }
 }
 
-QVector<DescInfo> Timeline::getEvents(int from, int len){
+QVector<DescInfo> Timeline::getEvents(int from, int len, bool markAsRead){
     QVector<DescInfo> events;
+    QStringList eventIds;
     for(int i = from; i < from + len && i < _events.size(); i++){
         auto e = _events.get(i,true);
         if(e) {
@@ -457,7 +469,30 @@ QVector<DescInfo> Timeline::getEvents(int from, int len){
                     utils::localUser(), 
                     cache::displayName(_roomId, QString::fromStdString(mtx::accessors::sender(*e))));
             events.push_back(descMsg);
+            eventIds << descMsg.event_id;
         }
     }
+    if(markAsRead){
+        markEventsAsRead(eventIds);
+    }
     return events;
+}
+
+void Timeline::markEventsAsRead(const QStringList &event_ids){
+    for(auto const &id: event_ids){
+        http::client()->read_event(_roomId.toStdString(), id.toStdString(), [this, id](mtx::http::RequestErr err) {
+            if (err) {
+                nhlog::net()->warn(
+                    "failed to read_event ({}, {})", _roomId.toStdString(), id.toStdString());
+            }
+        });
+    }
+}
+
+QString Timeline::displayName(QString id) const {
+    return cache::displayName(_roomId, id).toHtmlEscaped();
+}
+
+QString Timeline::avatarUrl(QString id) const {
+    return cache::avatarUrl(_roomId, id);
 }

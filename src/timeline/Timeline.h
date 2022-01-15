@@ -23,16 +23,27 @@ signals:
     // void eventsChanged(int from, int to);
     void newEventsStored(int from, int len);
     void notificationsChanged();
+    void typingUsersChanged(const QStringList &users);
 
 public slots:
     bool canFetchMore() const;
     void sendMessage(const QString &msg);
     void setDecryptDescription(bool decrypt) { _decryptDescription = decrypt; }
     int  eventSize() {return _events.size();};
-    QVector<DescInfo> getEvents(int from, int len);
+    QVector<DescInfo> getEvents(int from, int len, bool markAsRead = true);
     void updateLastMessage();
     int highlightCount() { return _highlightCount; }
     int notificationCount() { return _notificationCount; }
+    void updateTypingUsers(const QStringList &users) {
+        if (this->_typingUsers != users) {
+            this->_typingUsers = users;
+            emit typingUsersChanged(_typingUsers);
+        }
+    }
+    QStringList typingUsers() const { return _typingUsers; }
+    void markEventsAsRead(const QStringList &event_ids);
+    QString displayName(QString id) const;
+    QString avatarUrl(QString id) const;
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
@@ -50,5 +61,6 @@ private:
     DescInfo _lastMessage{};
     bool _decryptDescription     = true;
     int _notificationCount = 0, _highlightCount = 0;
+    QStringList _typingUsers;
     friend struct SendMessageVisitor;
 };
