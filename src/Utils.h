@@ -91,8 +91,7 @@ event_body(const mtx::events::collections::TimelineEvents &event);
 template<class T>
 QString
 messageDescription(const QString &username = "",
-                   const QString &body     = "",
-                   const bool isLocal      = false)
+                   const QString &body     = "")
 {
     using Audio      = mtx::events::RoomEvent<mtx::events::msg::Audio>;
     using Emote      = mtx::events::RoomEvent<mtx::events::msg::Emote>;
@@ -108,74 +107,29 @@ messageDescription(const QString &username = "",
     using Encrypted  = mtx::events::EncryptedEvent<mtx::events::msg::Encrypted>;
 
     if (std::is_same<T, Audio>::value) {
-        if (isLocal)
-            return "You sent an audio clip";
-        else
-            return QString("%1 sent an audio clip")
-              .arg(username);
+        return QString("sent an audio clip");
     } else if (std::is_same<T, Image>::value) {
-        if (isLocal)
-            return ("You sent an image");
-        else
-            return QString("%1 sent an image")
-              .arg(username);
+        return ("sent an image");
     } else if (std::is_same<T, File>::value) {
-        if (isLocal)
-            return ("You sent a file");
-        else
-            return QString("%1 sent a file")
-              .arg(username);
+        return ("sent a file");
     } else if (std::is_same<T, Video>::value) {
-        if (isLocal)
-            return ("You sent a video");
-        else
-            return QString("%1 sent a video")
-              .arg(username);
+        return ("sent a video");
     } else if (std::is_same<T, Sticker>::value) {
-        if (isLocal)
-            return ("You sent a sticker");
-        else
-            return QString("%1 sent a sticker")
-              .arg(username);
+        return ("sent a sticker");
     } else if (std::is_same<T, Notice>::value) {
-        if (isLocal)
-            return ("You sent a notification");
-        else
-            return QString("%1 sent a notification")
-              .arg(username);
+        return ("sent a notification");
     } else if (std::is_same<T, Text>::value) {
-        if (isLocal)
-            return QString("You: %1").arg(body);
-        else
-            return QString("%1: %2")
-              .arg(username)
-              .arg(body);
+        return QString("%1").arg(body);
     } else if (std::is_same<T, Emote>::value) {
         return QString("* %1 %2").arg(username).arg(body);
     } else if (std::is_same<T, Encrypted>::value) {
-        if (isLocal)
-            return ("You sent an encrypted message");
-        else
-            return QString("%1 sent an encrypted message")
-              .arg(username);
+        return ("sent an encrypted message");
     } else if (std::is_same<T, CallInvite>::value) {
-        if (isLocal)
-            return ("You placed a call");
-        else
-            return QString("%1 placed a call")
-              .arg(username);
+        return ("placed a call");
     } else if (std::is_same<T, CallAnswer>::value) {
-        if (isLocal)
-            return ("You answered a call");
-        else
-            return QString("%1 answered a call")
-              .arg(username);
+            return ("answered a call");
     } else if (std::is_same<T, CallHangUp>::value) {
-        if (isLocal)
-            return ("You ended a call");
-        else
-            return QString("%1 ended a call")
-              .arg(username);
+        return ("ended a call");
     } else {
         return ("utils - Unknown Message Type");
     }

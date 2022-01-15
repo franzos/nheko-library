@@ -49,6 +49,7 @@ struct DescInfo
     QString descriptiveTime;
     uint64_t timestamp;
     QDateTime datetime;
+    bool    isLocal;
 };
 
 inline bool
