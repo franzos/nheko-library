@@ -1,4 +1,4 @@
-### PantherX Matrix Client Library
+### Matrix Client Library
 
 #### Dependencies
  * `mtxclient`          : Matrix Client Library - [link](https://github.com/Nheko-Reborn/mtxclient)
