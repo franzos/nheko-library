@@ -749,10 +749,10 @@ QString utils::httpMtxErrorToString(const mtx::http::RequestErr &err){
         error = err->parse_error;
     }
     QString s = QString::fromStdString(error) + 
-                "("  + QString::number(err->error_code) + 
+                "("  + "Error Code: " + QString::number(err->error_code) + 
                 // ", " + QString(err->error_code_string) + 
-                ", " + QString::number(err->status_code) + 
-                ", " + QString::number(int(err->matrix_error.errcode)) +
-                ", " + QString::fromStdString(err->matrix_error.error) + ")";
+                ", " + "Status Code: " + QString::number(err->status_code) + 
+                ", " + "Matrix Error Code: " + QString::number(int(err->matrix_error.errcode)) +
+                 ")";
     return s;
 }
