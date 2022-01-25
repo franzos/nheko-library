@@ -11,6 +11,7 @@
 #include <QRegularExpression>
 #include <mtx/events/collections.hpp>
 #include <mtx/events/common.hpp>
+#include <mtxclient/http/client.hpp>
 
 #include <qmath.h>
 
@@ -236,4 +237,6 @@ readImage(const QByteArray &data);
 
 bool
 isReply(const mtx::events::collections::TimelineEvents &e);
+
+QString httpMtxErrorToString(const mtx::http::RequestErr &err);
 }

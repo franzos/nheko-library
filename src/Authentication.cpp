@@ -1,7 +1,7 @@
 #include "Authentication.h"
 #include <QDebug>
 #include <iostream>
-
+#include "Utils.h"
 
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
@@ -14,11 +14,7 @@ mtx::identifiers::User user;
     deviceName,
     [this](const mtx::responses::Login &res, mtx::http::RequestErr err) {
         if (err) {
-            auto error = err->matrix_error.error;
-            if (error.empty()){            
-                    error = err->parse_error;
-            }
-            std::string s = std::string (error);
+            auto s = utils::httpMtxErrorToString(err).toStdString();
             emit loginErrorOccurred(s);
             return;
         }
