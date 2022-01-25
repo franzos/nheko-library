@@ -86,7 +86,7 @@ struct fmt::formatter<mtx::http::ClientError>
         bool prepend_comma = false;
         format_to(ctx.out(), "(");
         if (print_network_error || e.error_code) {
-            format_to(ctx.out(), "connection: {}", e.error_code());
+            format_to(ctx.out(), "connection: {}", e.error_code);
             prepend_comma = true;
         }
 

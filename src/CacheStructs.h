@@ -55,14 +55,14 @@ struct DescInfo
 inline bool
 operator==(const DescInfo &a, const DescInfo &b)
 {
-    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime) ==
-           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime);
+    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime, a.isLocal) ==
+           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime, b.isLocal);
 }
 inline bool
 operator!=(const DescInfo &a, const DescInfo &b)
 {
-    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime) !=
-           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime);
+    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime, a.isLocal) !=
+           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime, b.isLocal);
 }
 
 //! UI info associated with a room.
