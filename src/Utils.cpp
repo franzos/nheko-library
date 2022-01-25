@@ -742,3 +742,17 @@ utils::isReply(const mtx::events::collections::TimelineEvents &e)
 {
     return mtx::accessors::relations(e).reply_to().has_value();
 }
+
+QString utils::httpMtxErrorToString(const mtx::http::RequestErr &err){
+    auto error = err->matrix_error.error;
+    if (error.empty()){            
+        error = err->parse_error;
+    }
+    QString s = QString::fromStdString(error) + 
+                "("  + "Error Code: " + QString::number(err->error_code) + 
+                // ", " + QString(err->error_code_string) + 
+                ", " + "Status Code: " + QString::number(err->status_code) + 
+                ", " + "Matrix Error Code: " + QString::number(int(err->matrix_error.errcode)) +
+                 ")";
+    return s;
+}

@@ -1,12 +1,12 @@
 #include "Authentication.h"
 #include <QDebug>
 #include <iostream>
-
+#include "Utils.h"
 
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
-http::client()->set_server(serverAddress);
-mtx::identifiers::User user;
+    http::client()->set_server(serverAddress);
+    mtx::identifiers::User user;
     user = mtx::identifiers::parse<mtx::identifiers::User>(userId);        
     http::client()->login(          
     user.localpart(),
@@ -14,18 +14,12 @@ mtx::identifiers::User user;
     deviceName,
     [this](const mtx::responses::Login &res, mtx::http::RequestErr err) {
         if (err) {
-            auto error = err->matrix_error.error;
-            if (error.empty()){            
-                    error = err->parse_error;
-            }
-            std::string s = std::string (error);
+            auto s = utils::httpMtxErrorToString(err).toStdString();
             emit loginErrorOccurred(s);
             return;
         }
         if (res.well_known) {
             http::client()->set_server(res.well_known->homeserver.base_url);
-            // nhlog::net()->info("Login requested to user server: " +
-                                //res.well_known->homeserver.base_url);
         }
         emit loginOk(res);
     });
@@ -36,14 +30,8 @@ mtx::identifiers::User user;
   void Authentication::logout(){
     http::client()->logout([this](const mtx::responses::Logout &, mtx::http::RequestErr err) {
         if (err) {
-           // nhlog::net()->warn("failed to logout: {}", err);
-           
-            auto error = err->matrix_error.error;
-            if (error.empty()){            
-                error = err->parse_error;
-            }
-            std::string s = std::string (error);            
-           emit logoutErrorOccurred(s);
+            auto s = utils::httpMtxErrorToString(err).toStdString();     
+            emit logoutErrorOccurred(s);
             return;
         }        
         emit logoutOk();

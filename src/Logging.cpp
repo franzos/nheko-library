@@ -6,6 +6,7 @@
 
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/android_sink.h"
 #include <iostream>
 
 #include <QString>
@@ -61,14 +62,13 @@ namespace nhlog {
 void
 init(const std::string &file_path, bool enable_logger, bool enable_debug_log)
 {
-    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-      file_path, MAX_FILE_SIZE, MAX_LOG_FILES);
-
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-
     std::vector<spdlog::sink_ptr> sinks;
-    sinks.push_back(file_sink);
-    sinks.push_back(console_sink);
+#ifdef Q_OS_ANDROID
+    sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>());
+#else
+    sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file_path, MAX_FILE_SIZE, MAX_LOG_FILES));
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+#endif
 
     net_logger    = std::make_shared<spdlog::logger>("net", std::begin(sinks), std::end(sinks));
     ui_logger     = std::make_shared<spdlog::logger>("ui", std::begin(sinks), std::end(sinks));

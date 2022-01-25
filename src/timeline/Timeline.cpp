@@ -437,7 +437,7 @@ void Timeline::updateLastMessage(){
                        tr("You joined this room."),
                        utils::descriptiveTime(time),
                        ts,
-                       time};
+                       time}; // TODO
             if (description != _lastMessage) {
                 _lastMessage = description;
                 emit lastMessageChanged(_lastMessage);
