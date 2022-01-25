@@ -8,29 +8,22 @@
 #include <spdlog/spdlog.h>
 
 namespace nhlog {
-
-#ifdef Q_OS_ANDROID
-typedef spdlog::android_logger_mt os_specific_logger;
-#else
-typedef spdlog::logger os_specific_logger;
-#endif
-
 void
 init(const std::string &file, bool enable_logger = true, bool enable_debug_log = false);
 
-std::shared_ptr<os_specific_logger>
+std::shared_ptr<spdlog::logger>
 ui();
 
-std::shared_ptr<os_specific_logger>
+std::shared_ptr<spdlog::logger>
 net();
 
-std::shared_ptr<os_specific_logger>
+std::shared_ptr<spdlog::logger>
 db();
 
-std::shared_ptr<os_specific_logger>
+std::shared_ptr<spdlog::logger>
 crypto();
 
-std::shared_ptr<os_specific_logger>
+std::shared_ptr<spdlog::logger>
 dev();
 
 }
