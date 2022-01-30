@@ -14,6 +14,7 @@ private:
     QString password = "a2bqy9iHU8";
     QString userId2 = "@hamzeh_test02:pantherx.org";
     QString password2 = "5wn685g7mN";
+    // recovery key: EsTi jVgL chr3 nu3D avQ3 Ld9Y f4th 9wiF Ctvx Xqu7 tEv7 Uo7o
     QString serverAddress = "https://matrix.pantherx.org";   
     QEventLoop eventLoop;
     Client *client;
