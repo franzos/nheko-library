@@ -242,7 +242,6 @@ EventStore::addPending(mtx::events::collections::TimelineEvents event)
 {
     if (this->thread() != QThread::currentThread())
         nhlog::db()->warn("{} called from a different thread!", __func__);
-
     cache::client()->savePendingMessage(this->room_id_, {event});
     mtx::responses::Timeline events;
     events.limited = false;

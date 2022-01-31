@@ -137,7 +137,6 @@ struct SendMessageVisitor
             auto encInfo = mtx::accessors::file(msg);
             if (encInfo)
                 emit _timeline->newEncryptedImage(encInfo.value());
-
             _timeline->sendEncryptedMessage(msg, Event);
         } else {
             msg.type = Event;
