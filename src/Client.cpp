@@ -325,7 +325,10 @@ Client::loadStateFromCache()
     getProfileInfo();
     getBackupVersion();
     verifyOneTimeKeyCountAfterStartup();
+    goForSync();
+}
 
+void Client::goForSync(){
     createTimelinesFromDB();
     emit initiateFinished();
     // Start receiving events.
@@ -438,7 +441,6 @@ Client::startInitialSync()
 
     http::client()->sync(opts, [this](const mtx::responses::Sync &res, mtx::http::RequestErr err) {
         // TODO: Initial Sync should include mentions as well...
-
         if (err) {
             const auto error      = QString::fromStdString(err->matrix_error.error);
             const auto msg        = tr("Please try to login again: %1").arg(error);
@@ -458,16 +460,16 @@ Client::startInitialSync()
             }
 
             switch (status_code) {
-            case 502:
-            case 504:
-            case 524: {
-                startInitialSync();
-                return;
-            }
-            default: {
-                emit dropToLogin(msg);
-                return;
-            }
+                case 502:
+                case 504:
+                case 524: {
+                    startInitialSync();
+                    return;
+                }
+                default: {
+                    emit dropToLogin(msg);
+                    return;
+                }
             }
         }
 
@@ -483,9 +485,7 @@ Client::startInitialSync()
             startInitialSync();
             return;
         }
-
-        emit trySyncCb();
-        emit initiateFinished();
+        goForSync();
     });
 }
 

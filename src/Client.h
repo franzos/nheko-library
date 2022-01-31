@@ -165,6 +165,7 @@ private slots:
     void removeRoom(const QString &room_id);
     void dropToLoginCb(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
+    void goForSync();
 
 private:
     static Client *instance_;

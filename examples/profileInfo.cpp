@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
                 auto ev = timeline->getEvents(0,timeline->eventSize());
                 qDebug() << "-------------------------------------------------------------------------------";
                 qDebug() << "OLD MESSAGES";
-                for(auto const &e: ev){
+                for(auto const &e: ev) {
                     qDebug() << e.userid << e.event_id << e.body << e.timestamp;
                 }
 
