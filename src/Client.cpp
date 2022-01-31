@@ -125,6 +125,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     //   });
 
     connect(this, &Client::leftRoom, this, &Client::removeRoom);
+    connect(this, &Client::prepareTimelines, this, &Client::prepareTimelinesCB, Qt::QueuedConnection);
     connect(this, &Client::notificationsRetrieved, this, &Client::sendNotifications);
     connect(this,
             &Client::highlightedNotifsRetrieved,
@@ -325,14 +326,14 @@ Client::loadStateFromCache()
     getProfileInfo();
     getBackupVersion();
     verifyOneTimeKeyCountAfterStartup();
-    goForSync();
+    
+    emit trySyncCb();
+    emit prepareTimelines();
 }
 
-void Client::goForSync(){
+void Client::prepareTimelinesCB(){
     createTimelinesFromDB();
     emit initiateFinished();
-    // Start receiving events.
-    emit trySyncCb();
 }
 
 void
@@ -485,7 +486,8 @@ Client::startInitialSync()
             startInitialSync();
             return;
         }
-        goForSync();
+        emit trySyncCb();
+        emit prepareTimelines();
     });
 }
 
