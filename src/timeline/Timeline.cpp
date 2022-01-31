@@ -75,39 +75,36 @@ template<typename T>
 void
 Timeline::sendEncryptedMessage(mtx::events::RoomEvent<T> msg, mtx::events::EventType eventType)
 {
-    (void)msg;
-    (void)eventType;
-    // const auto room_id = room_id_.toStdString();
+    const auto room_id = _roomId.toStdString();
+    using namespace mtx::events;
+    using namespace mtx::identifiers;
 
-    // using namespace mtx::events;
-    // using namespace mtx::identifiers;
+    json doc = {{"type", mtx::events::to_string(eventType)},
+                {"content", json(msg.content)},
+                {"room_id", room_id}};
 
-    // json doc = {{"type", mtx::events::to_string(eventType)},
-    //             {"content", json(msg.content)},
-    //             {"room_id", room_id}};
+    try {
+        mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> event;
+        event.content  = olm::encrypt_group_message(room_id, http::client()->device_id(), doc);
+        event.event_id = msg.event_id;
+        event.room_id  = room_id;
+        event.sender   = http::client()->user_id().to_string();
+        event.type     = mtx::events::EventType::RoomEncrypted;
+        event.origin_server_ts = QDateTime::currentMSecsSinceEpoch();
 
-    // try {
-    //     mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> event;
-    //     event.content  = olm::encrypt_group_message(room_id, http::client()->device_id(), doc);
-    //     event.event_id = msg.event_id;
-    //     event.room_id  = room_id;
-    //     event.sender   = http::client()->user_id().to_string();
-    //     event.type     = mtx::events::EventType::RoomEncrypted;
-    //     event.origin_server_ts = QDateTime::currentMSecsSinceEpoch();
+        emit addPendingMessageToStore(event);
 
-    //     emit this->addPendingMessageToStore(event);
-
-    //     // TODO: Let the user know about the errors.
-    // } catch (const lmdb::error &e) {
-    //     nhlog::db()->critical("failed to open outbound megolm session ({}): {}", room_id, e.what());
-    //     emit ChatPage::instance()->showNotification(
-    //       tr("Failed to encrypt event, sending aborted!"));
-    // } catch (const mtx::crypto::olm_exception &e) {
-    //     nhlog::crypto()->critical(
-    //       "failed to open outbound megolm session ({}): {}", room_id, e.what());
-    //     emit ChatPage::instance()->showNotification(
-    //       tr("Failed to encrypt event, sending aborted!"));
-    // }
+        // TODO: Let the user know about the errors.
+    } catch (const lmdb::error &e) {
+        nhlog::db()->critical("failed to open outbound megolm session ({}): {}", room_id, e.what());
+        // emit ChatPage::instance()->showNotification(
+        //   tr("Failed to encrypt event, sending aborted!"));
+    } catch (const mtx::crypto::olm_exception &e) {
+        nhlog::crypto()->critical(
+          "failed to open outbound megolm session ({}): {}", room_id, e.what());
+     //     emit ChatPage::instance()->showNotification(
+     //       tr("Failed to encrypt event, sending aborted!"));
+    }
 }
 
 template<class T>
@@ -431,13 +428,12 @@ void Timeline::updateLastMessage(){
         if (std::visit([](const auto &e) -> bool { return isYourJoin(e); }, *event)) {
             auto time   = mtx::accessors::origin_server_ts(*event);
             uint64_t ts = time.toMSecsSinceEpoch();
-            auto description =
-              DescInfo{QString::fromStdString(mtx::accessors::event_id(*event)),
-                       QString::fromStdString(http::client()->user_id().to_string()),
-                       tr("You joined this room."),
-                       utils::descriptiveTime(time),
-                       ts,
-                       time}; // TODO
+            auto description = DescInfo{QString::fromStdString(mtx::accessors::event_id(*event)),
+                                QString::fromStdString(http::client()->user_id().to_string()),
+                                tr("You joined this room."),
+                                utils::descriptiveTime(time),
+                                ts,
+                                time,true};
             if (description != _lastMessage) {
                 _lastMessage = description;
                 emit lastMessageChanged(_lastMessage);
