@@ -17,9 +17,7 @@ pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Widgets QuickControls2 REQUIRED)
-find_package(Qt5QuickCompiler)
-find_package(Qt5Test)
+find_package(Qt5 5.15 COMPONENTS Gui REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -137,7 +135,7 @@ set(DEP_LIBS
 	MatrixClient::MatrixClient
 	cmark::cmark
 	spdlog::spdlog
-	Qt5::QuickControls2
+	Qt5::Gui
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
@@ -151,6 +149,7 @@ endforeach(HEADER {HEADERS})
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
+	find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets)
 	message(" + \"examples\" will be built.")
@@ -158,11 +157,14 @@ ENDIF()
 
 IF(BUILD_TESTS)
 	set(CMAKE_AUTOMOC ON)
+	find_package(Qt5Test)
+	find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
+
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
 					tests/AuthenticationTest.h
 					tests/ClientTest.h
 					tests/UserSettingsTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Widgets)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui)
 	message(" + \"tests\" will be built.")
 ENDIF()

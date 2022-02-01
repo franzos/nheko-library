@@ -125,6 +125,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     //   });
 
     connect(this, &Client::leftRoom, this, &Client::removeRoom);
+    connect(this, &Client::prepareTimelines, this, &Client::prepareTimelinesCB, Qt::QueuedConnection);
     connect(this, &Client::notificationsRetrieved, this, &Client::sendNotifications);
     connect(this,
             &Client::highlightedNotifsRetrieved,
@@ -325,11 +326,14 @@ Client::loadStateFromCache()
     getProfileInfo();
     getBackupVersion();
     verifyOneTimeKeyCountAfterStartup();
+    
+    emit trySyncCb();
+    emit prepareTimelines();
+}
 
+void Client::prepareTimelinesCB(){
     createTimelinesFromDB();
     emit initiateFinished();
-    // Start receiving events.
-    emit trySyncCb();
 }
 
 void
@@ -438,7 +442,6 @@ Client::startInitialSync()
 
     http::client()->sync(opts, [this](const mtx::responses::Sync &res, mtx::http::RequestErr err) {
         // TODO: Initial Sync should include mentions as well...
-
         if (err) {
             const auto error      = QString::fromStdString(err->matrix_error.error);
             const auto msg        = tr("Please try to login again: %1").arg(error);
@@ -458,16 +461,16 @@ Client::startInitialSync()
             }
 
             switch (status_code) {
-            case 502:
-            case 504:
-            case 524: {
-                startInitialSync();
-                return;
-            }
-            default: {
-                emit dropToLogin(msg);
-                return;
-            }
+                case 502:
+                case 504:
+                case 524: {
+                    startInitialSync();
+                    return;
+                }
+                default: {
+                    emit dropToLogin(msg);
+                    return;
+                }
             }
         }
 
@@ -483,9 +486,8 @@ Client::startInitialSync()
             startInitialSync();
             return;
         }
-
         emit trySyncCb();
-        emit initiateFinished();
+        emit prepareTimelines();
     });
 }
 

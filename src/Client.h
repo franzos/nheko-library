@@ -132,6 +132,7 @@ signals:
     void initiateFinished();
     void newUpdated(const mtx::responses::Sync &sync);
     void initialSync(const mtx::responses::Sync &sync);
+    void prepareTimelines();
     // room signals
     void leftRoom(const QString &room_id);
     void roomLeaveFailed(const QString &error);
@@ -165,6 +166,7 @@ private slots:
     void removeRoom(const QString &room_id);
     void dropToLoginCb(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
+    void prepareTimelinesCB();
 
 private:
     static Client *instance_;
