@@ -12,7 +12,7 @@
 #include <mtx/responses/common.hpp>
 
 #include "CacheCryptoStructs.h"
-#include "Timeline.h"
+#include "timeline/Timeline.h"
 
 namespace verification {
 Q_NAMESPACE
@@ -117,7 +117,7 @@ class UserProfile : public QObject
 public:
     UserProfile(QString roomid,
                 QString userid,
-                Timeline *manager_,
+                Timeline *manager_
                 // TimelineModel *parent = nullptr
                 );
 

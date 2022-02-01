@@ -17,7 +17,7 @@
 
 UserProfile::UserProfile(QString roomid,
                          QString userid,
-                         Timeline *manager_,
+                         Timeline *manager_
                         //  TimelineModel *parent
                          )
   : 
@@ -40,9 +40,9 @@ UserProfile::UserProfile(QString roomid,
         getGlobalProfileData();
     }
 
-    if (!cache::client() || !cache::client()->isDatabaseReady() ||
-        !Client::instance()->timelineManager())
-        return;
+    // if (!cache::client() || !cache::client()->isDatabaseReady() ||
+    //     !Client::instance()->timeline())
+    //     return;
 
     connect(
       cache::client(), &Cache::verificationStatusChanged, this, [this](const std::string &user_id) {
@@ -298,7 +298,7 @@ UserProfile::updateVerificationStatus()
 void
 UserProfile::banUser()
 {
-    Client::instance()->banUser(this->userid_, "");
+    // Client::instance()->banUser(this->userid_, "");
 }
 
 // void ignoreUser(){
@@ -308,7 +308,7 @@ UserProfile::banUser()
 void
 UserProfile::kickUser()
 {
-    Client::instance()->kickUser(this->userid_, "");
+    // Client::instance()->kickUser(this->userid_, "");
 }
 
 void
@@ -496,5 +496,5 @@ UserProfile::getGlobalProfileData()
 void
 UserProfile::openGlobalProfile()
 {
-    emit manager->openGlobalUserProfile(userid_);
+    // emit manager->openGlobalUserProfile(userid_);
 }
