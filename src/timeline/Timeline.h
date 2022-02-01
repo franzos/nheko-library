@@ -5,6 +5,7 @@
 #include <mtx/events/collections.hpp>
 #include "EventStore.h"
 #include "../CacheStructs.h"
+#include "../encryption/VerificationManager.h"
 
 Q_DECLARE_METATYPE(mtx::events::collections::TimelineEvents)
 
@@ -13,6 +14,7 @@ Q_OBJECT
 public:
     Timeline(const QString &roomId, QObject *parent = nullptr);
     void sync(const mtx::responses::JoinedRoom &room);
+    VerificationManager *verificationManager() { return verificationManager_; }
     void initialSync();
 
 signals:
@@ -63,4 +65,6 @@ private:
     int _notificationCount = 0, _highlightCount = 0;
     QStringList _typingUsers;
     friend struct SendMessageVisitor;
+    VerificationManager *verificationManager_ = nullptr;
+
 };

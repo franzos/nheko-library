@@ -215,7 +215,7 @@ SelfVerificationStatus::verifyMasterKey()
     }
 
     // if (!devices.empty())
-    //     Client::instance()->timelineManager()->verificationManager()->verifyOneOfDevices(
+    //     Client::instance()->timeline()->verificationManager()->verifyOneOfDevices(
     //       QString::fromStdString(this_user), std::move(devices));
 }
 
@@ -246,7 +246,7 @@ SelfVerificationStatus::verifyUnverifiedDevices()
     }
 
     // if (!devices.empty())
-    //     Client::instance()->timelineManager()->verificationManager()->verifyOneOfDevices(
+    //     Client::instance()->timeline()->verificationManager()->verifyOneOfDevices(
     //       QString::fromStdString(this_user), std::move(devices));
 }
 

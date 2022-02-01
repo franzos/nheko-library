@@ -149,6 +149,9 @@ signals:
     void receivedDeviceVerificationAccept(const mtx::events::msg::KeyVerificationAccept &message);
     void receivedDeviceVerificationRequest(const mtx::events::msg::KeyVerificationRequest &message,
                                            std::string sender);
+    // void receivedRoomDeviceVerificationRequest(
+    //   const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
+    //   TimelineModel *model);
     void receivedDeviceVerificationCancel(const mtx::events::msg::KeyVerificationCancel &message);
     void receivedDeviceVerificationKey(const mtx::events::msg::KeyVerificationKey &message);
     void receivedDeviceVerificationMac(const mtx::events::msg::KeyVerificationMac &message);
