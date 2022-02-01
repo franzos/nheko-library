@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
                     qDebug() << e.userid << e.event_id << e.body << e.timestamp;
                     qDebug() << "-------------------------------------------------------------------------------";
                 });
-            }            
+            }
             // timeline->sendMessage("Hello, I'm here now.");
         }
     });
