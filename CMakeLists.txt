@@ -87,6 +87,9 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/timeline/Reaction.h
 	src/timeline/Timeline.h
 	src/encryption/Olm.h
+	src/encryption/DeviceVerificationFlow.h
+	src/encryption/SelfVerificationStatus.h
+	src/encryption/VerificationManager.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/Client.h

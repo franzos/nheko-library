@@ -875,18 +875,18 @@ DeviceVerificationFlow::NewToDeviceVerification(QObject *parent_,
 //     flow->sender = true;
 //     return flow;
 // }
-// QSharedPointer<DeviceVerificationFlow>
-// DeviceVerificationFlow::InitiateDeviceVerification(QObject *parent_,
-//                                                    QString userid,
-//                                                    std::vector<QString> devices)
-// {
-    // assert(!devices.empty());
+QSharedPointer<DeviceVerificationFlow>
+DeviceVerificationFlow::InitiateDeviceVerification(QObject *parent_,
+                                                   QString userid,
+                                                   std::vector<QString> devices)
+{
+    assert(!devices.empty());
 
-    // QSharedPointer<DeviceVerificationFlow> flow(
-    //   new DeviceVerificationFlow(parent_, Type::ToDevice, nullptr, userid, devices));
+    QSharedPointer<DeviceVerificationFlow> flow(
+      new DeviceVerificationFlow(parent_, Type::ToDevice, userid, devices));
 
-//     flow->sender         = true;
-//     flow->transaction_id = http::client()->generate_txn_id();
+    flow->sender         = true;
+    flow->transaction_id = http::client()->generate_txn_id();
 
-//     return flow;
-// }
+    return flow;
+}
