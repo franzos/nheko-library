@@ -75,6 +75,7 @@ VerificationManager::receivedDeviceVerificationStart(
 void
 VerificationManager::verifyUser(QString userid)
 {
+    (void)userid; // TODO - to fix unused warning
     // auto joined_rooms = cache::joinedRooms();
     // auto room_infos   = cache::getRoomInfo(joined_rooms);
 

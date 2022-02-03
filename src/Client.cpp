@@ -28,8 +28,8 @@ Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
 Client::Client(QSharedPointer<UserSettings> userSettings)
-  : isConnected_(true),
-   _verificationManager(new VerificationManager()),
+  :_verificationManager(new VerificationManager()), 
+   isConnected_(true),
    userSettings_{userSettings}
 {
     instance_->enableLogger(true);
@@ -176,11 +176,11 @@ Client::logoutCb()
 void
 Client::loginCb(const mtx::responses::Login &res)
 {
-    auto userid     = QString::fromStdString(http::client()->user_id().to_string());
-    auto device_id  = QString::fromStdString(http::client()->device_id());
+    auto userid     = QString::fromStdString(res.user_id.to_string());
+    auto device_id  = QString::fromStdString(res.device_id);
     auto homeserver = QString::fromStdString(http::client()->server() + ":" +
                                             std::to_string(http::client()->port()));
-    auto token      = QString::fromStdString(http::client()->access_token());
+    auto token      = QString::fromStdString(res.access_token);
 
     userSettings_.data()->setUserId(userid);
     userSettings_.data()->setAccessToken(token);

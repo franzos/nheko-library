@@ -99,9 +99,9 @@ set(HEADERS
 	timeline/Reaction.h
 	timeline/Timeline.h
 	encryption/Olm.h
-	src/encryption/DeviceVerificationFlow.h
-	src/encryption/SelfVerificationStatus.h
-	src/encryption/VerificationManager.h
+	encryption/DeviceVerificationFlow.h
+	encryption/SelfVerificationStatus.h
+	encryption/VerificationManager.h
 	CacheCryptoStructs.h
 	CacheStructs.h
 	Cache_p.h

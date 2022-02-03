@@ -179,8 +179,6 @@ private:
     Authentication *_authentication;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
-    VerificationManager *_verificationManager = nullptr;
-
 
     Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
@@ -209,8 +207,8 @@ private:
     void sendNotifications(const mtx::responses::Notifications &);
 
     QTimer connectivityTimer_;
+    VerificationManager *_verificationManager = nullptr;
     std::atomic_bool isConnected_;
-
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;
 };
