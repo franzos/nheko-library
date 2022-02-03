@@ -30,6 +30,7 @@
 #include "CacheStructs.h"
 #include "Utils.h"
 #include "timeline/Timeline.h"
+#include "encryption/VerificationManager.h"
 
 class UserSettings;
 
@@ -75,6 +76,8 @@ public:
         }
         return nullptr;
     }
+
+    VerificationManager *verificationManager() { return _verificationManager; }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
@@ -149,6 +152,9 @@ signals:
     void receivedDeviceVerificationAccept(const mtx::events::msg::KeyVerificationAccept &message);
     void receivedDeviceVerificationRequest(const mtx::events::msg::KeyVerificationRequest &message,
                                            std::string sender);
+    // void receivedRoomDeviceVerificationRequest(
+    //   const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
+    //   TimelineModel *model);
     void receivedDeviceVerificationCancel(const mtx::events::msg::KeyVerificationCancel &message);
     void receivedDeviceVerificationKey(const mtx::events::msg::KeyVerificationKey &message);
     void receivedDeviceVerificationMac(const mtx::events::msg::KeyVerificationMac &message);
@@ -201,8 +207,8 @@ private:
     void sendNotifications(const mtx::responses::Notifications &);
 
     QTimer connectivityTimer_;
+    VerificationManager *_verificationManager = nullptr;
     std::atomic_bool isConnected_;
-
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;
 };

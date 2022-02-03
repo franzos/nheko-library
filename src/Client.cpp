@@ -28,8 +28,9 @@ Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
 Client::Client(QSharedPointer<UserSettings> userSettings)
-  : isConnected_(true)
-  , userSettings_{userSettings}
+  :_verificationManager(new VerificationManager()), 
+   isConnected_(true),
+   userSettings_{userSettings}
 {
     instance_->enableLogger(true);
     setObjectName("matrix_client");
@@ -152,6 +153,16 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
       this, &Client::newSyncResponse, this, &Client::handleSyncResponse, Qt::QueuedConnection);
 
     connect(this, &Client::dropToLogin, this, &Client::dropToLoginCb);
+
+    // verification handlers
+    connect(this,
+            &Client::receivedDeviceVerificationRequest,
+            _verificationManager,
+            &VerificationManager::receivedDeviceVerificationRequest);
+    connect(this,
+            &Client::receivedDeviceVerificationStart,
+            _verificationManager,
+            &VerificationManager::receivedDeviceVerificationStart);
 }
 
 void
@@ -165,11 +176,11 @@ Client::logoutCb()
 void
 Client::loginCb(const mtx::responses::Login &res)
 {
-    auto userid     = QString::fromStdString(http::client()->user_id().to_string());
-    auto device_id  = QString::fromStdString(http::client()->device_id());
+    auto userid     = QString::fromStdString(res.user_id.to_string());
+    auto device_id  = QString::fromStdString(res.device_id);
     auto homeserver = QString::fromStdString(http::client()->server() + ":" +
                                             std::to_string(http::client()->port()));
-    auto token      = QString::fromStdString(http::client()->access_token());
+    auto token      = QString::fromStdString(res.access_token);
 
     userSettings_.data()->setUserId(userid);
     userSettings_.data()->setAccessToken(token);

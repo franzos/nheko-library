@@ -69,6 +69,8 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
         //       emit replyChanged(reply_);
         //   }
       });
+
+   
 }
 
 template<typename T>

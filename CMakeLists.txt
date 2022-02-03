@@ -46,6 +46,9 @@ set(SRC_FILES
 	src/timeline/Reaction.cpp
 	src/timeline/Timeline.cpp
 	src/encryption/Olm.cpp
+	src/encryption/DeviceVerificationFlow.cpp
+	src/encryption/SelfVerificationStatus.cpp
+	src/encryption/VerificationManager.cpp
 	src/Cache.cpp
 	src/Client.cpp
 	src/EventAccessors.cpp
@@ -84,6 +87,9 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/timeline/Reaction.h
 	src/timeline/Timeline.h
 	src/encryption/Olm.h
+	src/encryption/DeviceVerificationFlow.h
+	src/encryption/SelfVerificationStatus.h
+	src/encryption/VerificationManager.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/Client.h
@@ -96,6 +102,9 @@ set(HEADERS
 	timeline/Reaction.h
 	timeline/Timeline.h
 	encryption/Olm.h
+	encryption/DeviceVerificationFlow.h
+	encryption/SelfVerificationStatus.h
+	encryption/VerificationManager.h
 	CacheCryptoStructs.h
 	CacheStructs.h
 	Cache_p.h
