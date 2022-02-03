@@ -16,16 +16,13 @@
 #include "mtx/responses/crypto.hpp"
 
 UserProfile::UserProfile(QString roomid,
-                         QString userid,
-                         Timeline *manager_
-                        //  TimelineModel *parent
+                        QString userid,
+                        QObject* parent
                          )
   : 
-//   QObject(parent)
     roomid_(roomid)
   , userid_(userid)
-  , manager(manager_)
-//    model(parent)
+  , QObject(parent)
 {
     globalAvatarUrl = "";
 
@@ -357,10 +354,11 @@ UserProfile::changeDeviceName(QString deviceID, QString deviceName)
 void
 UserProfile::verify(QString device)
 {
+    
     if (!device.isEmpty())
-        manager->verificationManager()->verifyDevice(userid_, device);
+        Client::instance()->verificationManager()->verifyDevice(userid_, device);
     else {
-        manager->verificationManager()->verifyUser(userid_);
+        Client::instance()->verificationManager()->verifyUser(userid_);
     }
 }
 

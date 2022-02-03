@@ -214,9 +214,9 @@ SelfVerificationStatus::verifyMasterKey()
         }
     }
 
-    // if (!devices.empty())
-    //     Client::instance()->timeline()->verificationManager()->verifyOneOfDevices(
-    //       QString::fromStdString(this_user), std::move(devices));
+    if (!devices.empty())
+        Client::instance()->verificationManager()->verifyOneOfDevices(
+          QString::fromStdString(this_user), std::move(devices));
 }
 
 void

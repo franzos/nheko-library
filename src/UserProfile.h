@@ -117,8 +117,7 @@ class UserProfile : public QObject
 public:
     UserProfile(QString roomid,
                 QString userid,
-                Timeline *manager_
-                // TimelineModel *parent = nullptr
+                QObject *parent = nullptr
                 );
 
     DeviceInfoModel *deviceList();
@@ -177,6 +176,4 @@ private:
     crypto::Trust isUserVerified = crypto::Trust::Unverified;
     bool hasMasterKey            = false;
     bool isLoading_              = false;
-    Timeline *manager;
-    // TimelineModel *model;
 };

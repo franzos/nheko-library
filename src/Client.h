@@ -30,6 +30,7 @@
 #include "CacheStructs.h"
 #include "Utils.h"
 #include "timeline/Timeline.h"
+#include "encryption/VerificationManager.h"
 
 class UserSettings;
 
@@ -75,6 +76,8 @@ public:
         }
         return nullptr;
     }
+
+    VerificationManager *verificationManager() { return _verificationManager; }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
@@ -176,6 +179,8 @@ private:
     Authentication *_authentication;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
+    VerificationManager *_verificationManager = nullptr;
+
 
     Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();

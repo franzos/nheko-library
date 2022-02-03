@@ -447,6 +447,10 @@ DeviceVerificationFlow::state()
     }
 }
 
+DeviceVerificationFlow::State DeviceVerificationFlow::stateEnum(){
+    return state_;
+}
+
 void
 DeviceVerificationFlow::next()
 {
@@ -829,38 +833,38 @@ DeviceVerificationFlow::unverify()
 
 //     return flow;
 // }
-// QSharedPointer<DeviceVerificationFlow>
-// DeviceVerificationFlow::NewToDeviceVerification(QObject *parent_,
-//                                                 const mtx::events::msg::KeyVerificationRequest &msg,
-//                                                 QString other_user_,
-//                                                 QString txn_id_)
-// {
-    // QSharedPointer<DeviceVerificationFlow> flow(new DeviceVerificationFlow(
-    //   parent_, Type::ToDevice, nullptr, other_user_, {QString::fromStdString(msg.from_device)}));
-    // flow->transaction_id = txn_id_.toStdString();
+QSharedPointer<DeviceVerificationFlow>
+DeviceVerificationFlow::NewToDeviceVerification(QObject *parent_,
+                                                const mtx::events::msg::KeyVerificationRequest &msg,
+                                                QString other_user_,
+                                                QString txn_id_)
+{
+    QSharedPointer<DeviceVerificationFlow> flow(new DeviceVerificationFlow(
+      parent_, Type::ToDevice, other_user_, {QString::fromStdString(msg.from_device)}));
+    flow->transaction_id = txn_id_.toStdString();
 
-//     if (std::find(msg.methods.begin(),
-//                   msg.methods.end(),
-//                   mtx::events::msg::VerificationMethods::SASv1) == msg.methods.end()) {
-//         flow->cancelVerification(UnknownMethod);
-//     }
+    if (std::find(msg.methods.begin(),
+                  msg.methods.end(),
+                  mtx::events::msg::VerificationMethods::SASv1) == msg.methods.end()) {
+        flow->cancelVerification(UnknownMethod);
+    }
 
-//     return flow;
-// }
-// QSharedPointer<DeviceVerificationFlow>
-// DeviceVerificationFlow::NewToDeviceVerification(QObject *parent_,
-//                                                 const mtx::events::msg::KeyVerificationStart &msg,
-//                                                 QString other_user_,
-//                                                 QString txn_id_)
-// {
-    // QSharedPointer<DeviceVerificationFlow> flow(new DeviceVerificationFlow(
-    //   parent_, Type::ToDevice, nullptr, other_user_, {QString::fromStdString(msg.from_device)}));
-    // flow->transaction_id = txn_id_.toStdString();
+    return flow;
+}
+QSharedPointer<DeviceVerificationFlow>
+DeviceVerificationFlow::NewToDeviceVerification(QObject *parent_,
+                                                const mtx::events::msg::KeyVerificationStart &msg,
+                                                QString other_user_,
+                                                QString txn_id_)
+{
+    QSharedPointer<DeviceVerificationFlow> flow(new DeviceVerificationFlow(
+      parent_, Type::ToDevice, other_user_, {QString::fromStdString(msg.from_device)}));
+    flow->transaction_id = txn_id_.toStdString();
 
-//     flow->handleStartMessage(msg, "");
+    flow->handleStartMessage(msg, "");
 
-//     return flow;
-// }
+    return flow;
+}
 // QSharedPointer<DeviceVerificationFlow>
 // DeviceVerificationFlow::InitiateUserVerification(QObject *parent_,
 //                                                  TimelineModel *timelineModel_,

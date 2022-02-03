@@ -28,8 +28,9 @@ Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
 Client::Client(QSharedPointer<UserSettings> userSettings)
-  : isConnected_(true)
-  , userSettings_{userSettings}
+  : isConnected_(true),
+   _verificationManager(new VerificationManager()),
+   userSettings_{userSettings}
 {
     instance_->enableLogger(true);
     setObjectName("matrix_client");
@@ -152,6 +153,16 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
       this, &Client::newSyncResponse, this, &Client::handleSyncResponse, Qt::QueuedConnection);
 
     connect(this, &Client::dropToLogin, this, &Client::dropToLoginCb);
+
+    // verification handlers
+    connect(this,
+            &Client::receivedDeviceVerificationRequest,
+            _verificationManager,
+            &VerificationManager::receivedDeviceVerificationRequest);
+    connect(this,
+            &Client::receivedDeviceVerificationStart,
+            _verificationManager,
+            &VerificationManager::receivedDeviceVerificationStart);
 }
 
 void

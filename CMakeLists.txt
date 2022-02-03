@@ -49,7 +49,6 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
-	src/UserProfile.cpp
 	src/Cache.cpp
 	src/Client.cpp
 	src/EventAccessors.cpp
@@ -103,7 +102,6 @@ set(HEADERS
 	src/encryption/DeviceVerificationFlow.h
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
-	src/UserProfile.h
 	CacheCryptoStructs.h
 	CacheStructs.h
 	Cache_p.h

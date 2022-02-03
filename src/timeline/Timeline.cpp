@@ -11,7 +11,6 @@
 Timeline::Timeline(const QString &roomId, QObject *parent):
     QObject(parent),
     _events(roomId.toStdString(), this),
-    verificationManager_(new VerificationManager()),
     _roomId(roomId)
     {
     nhlog::dev()->debug("Timeline created for: \"" + roomId.toStdString() + "\"");
@@ -71,18 +70,7 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
         //   }
       });
 
-    // connect(dynamic_cast<Client *>(parent),
-    //         &Client::receivedRoomDeviceVerificationRequest,
-    //         verificationManager_,
-    //         &VerificationManager::receivedRoomDeviceVerificationRequest);
-    connect(dynamic_cast<Client *>(parent),
-            &Client::receivedDeviceVerificationRequest,
-            verificationManager_,
-            &VerificationManager::receivedDeviceVerificationRequest);
-    connect(dynamic_cast<Client *>(parent),
-            &Client::receivedDeviceVerificationStart,
-            verificationManager_,
-            &VerificationManager::receivedDeviceVerificationStart);
+   
 }
 
 template<typename T>

@@ -11,6 +11,8 @@
 #include <mtx/events.hpp>
 #include <mtx/events/encrypted.hpp>
 
+#include "SelfVerificationStatus.h"
+
 class DeviceVerificationFlow;
 
 class VerificationManager : public QObject
@@ -18,12 +20,13 @@ class VerificationManager : public QObject
     Q_OBJECT
 
 public:
-    // VerificationManager(TimelineViewManager *o = nullptr);
+    VerificationManager(QObject *parent = nullptr);
 
     Q_INVOKABLE void removeVerificationFlow(DeviceVerificationFlow *flow);
     void verifyUser(QString userid);
     void verifyDevice(QString userid, QString deviceid);
     void verifyOneOfDevices(QString userid, std::vector<QString> deviceids);
+    SelfVerificationStatus* selfVerificationStatus(){return _selfVerificationStatus;}  
 
 signals:
     void newDeviceVerificationRequest(DeviceVerificationFlow *flow);
@@ -40,5 +43,6 @@ public slots:
 private:
     QHash<QString, QSharedPointer<DeviceVerificationFlow>> dvList;
     bool isInitialSync_ = false;
+    SelfVerificationStatus *_selfVerificationStatus = nullptr;
     // RoomlistModel *rooms_;
 };

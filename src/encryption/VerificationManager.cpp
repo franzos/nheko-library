@@ -7,10 +7,10 @@
 #include "Client.h"
 #include "DeviceVerificationFlow.h"
 
-// VerificationManager::VerificationManager(TimelineViewManager *o)
-//   : QObject(o)
-//   , rooms_(o->rooms())
-// {}
+VerificationManager::VerificationManager(QObject *parent)
+  : QObject(parent)
+  , _selfVerificationStatus(new SelfVerificationStatus(this))
+{}
 
 // void
 // VerificationManager::receivedRoomDeviceVerificationRequest(

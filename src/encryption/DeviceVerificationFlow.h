@@ -125,6 +125,7 @@ public:
 
     // getters
     QString state();
+    State stateEnum();
     Error error() { return error_; }
     QString getUserId();
     QString getDeviceId();
