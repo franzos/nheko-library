@@ -3778,9 +3778,11 @@ Cache::updateUserKeys(const std::string &sync_token, const mtx::responses::Query
             for (const auto &[user, status] : tmp) {
                 (void)status;
                 emit verificationStatusChanged(user);
+                qDebug() << QString::fromStdString(user.data());
             }
         } else {
             emit verificationStatusChanged(user_id);
+            qDebug() << QString::fromStdString(user_id.data());
         }
     }
 }
@@ -4040,6 +4042,7 @@ VerificationStatus
 Cache::verificationStatus(const std::string &user_id)
 {
     auto txn = ro_txn(env_);
+    qDebug() << "............................" << "Cache::verificationStatus";
     return verificationStatus_(user_id, txn);
 }
 
@@ -4151,7 +4154,6 @@ Cache::verificationStatus_(const std::string &user_id, lmdb::txn &txn)
         }
 
         status.user_verified = trustlevel;
-
         verification_storage.status[user_id] = status;
         if (!verifyAtLeastOneSig(theirKeys->self_signing_keys, master_keys, user_id))
             return status;

@@ -136,6 +136,8 @@ signals:
     void newUpdated(const mtx::responses::Sync &sync);
     void initialSync(const mtx::responses::Sync &sync);
     void prepareTimelines();
+    void initializeEmptyViews();
+    
     // room signals
     void leftRoom(const QString &room_id);
     void roomLeaveFailed(const QString &error);

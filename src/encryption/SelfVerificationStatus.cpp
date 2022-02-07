@@ -9,20 +9,21 @@
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "Olm.h"
-
+#include "UserProfile.h"
+#include <QDebug>
 #include <mtx/responses/common.hpp>
 
 SelfVerificationStatus::SelfVerificationStatus(QObject *o)
   : QObject(o)
 {
-    // connect(Client::instance(), &Client::contentLoaded, this, [this] {
-    //     connect(cache::client(),
-    //             &Cache::selfVerificationStatusChanged,
-    //             this,
-    //             &SelfVerificationStatus::invalidate,
-    //             Qt::UniqueConnection);
-    //     cache::client()->markUserKeysOutOfDate({http::client()->user_id().to_string()});
-    // });
+    connect((Client*)o, &Client::prepareTimelines, this, [this] {
+        connect(cache::client(),
+                &Cache::selfVerificationStatusChanged,
+                this,
+                &SelfVerificationStatus::invalidate,
+                Qt::UniqueConnection);
+        cache::client()->markUserKeysOutOfDate({http::client()->user_id().to_string()});
+    });
 }
 
 void
@@ -234,7 +235,6 @@ SelfVerificationStatus::verifyUnverifiedDevices()
 
     auto keys  = cache::client()->userKeys(this_user);
     auto verif = cache::client()->verificationStatus(this_user);
-
     if (!keys)
         return;
 
@@ -245,9 +245,9 @@ SelfVerificationStatus::verifyUnverifiedDevices()
             devices.push_back(QString::fromStdString(device));
     }
 
-    // if (!devices.empty())
-    //     Client::instance()->timeline()->verificationManager()->verifyOneOfDevices(
-    //       QString::fromStdString(this_user), std::move(devices));
+    if (!devices.empty())
+        Client::instance()->verificationManager()->verifyOneOfDevices(
+          QString::fromStdString(this_user), std::move(devices));
 }
 
 void
@@ -268,8 +268,7 @@ SelfVerificationStatus::invalidate()
     if (!keys || keys->device_keys.find(http::client()->device_id()) == keys->device_keys.end()) {
         if (keys && (keys->seen_device_ids.count(http::client()->device_id()) ||
                      keys->seen_device_keys.count(olm::client()->identity_keys().curve25519))) {
-            // emit Client::instance()->dropToLoginCb(
-            //   tr("Identity key changed. This breaks E2EE, so logging out."));
+            emit Client::instance()->dropToLogin("Identity key changed. This breaks E2EE, so logging out.");
             return;
         }
 

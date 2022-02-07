@@ -5,9 +5,14 @@
 #include <QEventLoop>
 #include <QThread>
 #include "../src/Client.h"
+#include "../src/encryption/SelfVerificationStatus.h"
+#include "../src/encryption/DeviceVerificationFlow.h"
+#include "../src/encryption/VerificationManager.h"
 
 UserInformation loginInfo;
 QMap <QString, Timeline*> timelineMap;
+bool onetimeLogin = true;
+bool oneTimeFlagJustForTesst = true;
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
@@ -50,48 +55,87 @@ int main(int argc, char *argv[]){
     
     QObject::connect(client,  &Client::dropToLogin, [&](const QString &msg){
         QString deviceName = "test";
-        QString userId = "@hamzeh_test01:pantherx.org";
-        QString password = "pQn3mDGsYR";
+        QString userId = "@hamzeh_test02:pantherx.org";
+        QString password = "5wn685g7mN"; 
         QString serverAddress = "https://matrix.pantherx.org";   
         qWarning() << msg;
+        if(!onetimeLogin)
+            return;
         client->loginWithPassword(deviceName, userId, password, serverAddress); 
+        onetimeLogin = false;
     });
 
     QObject::connect(client,  &Client::initiateFinished, [&](){
-        auto rooms = client->joinedRoomList();
-        qInfo() << "Initiate Finished (" << rooms.size() << ")";
-        for(auto const &r: rooms.toStdMap()){
-            qInfo() << "Joined rooms: " << r.first;
+        // auto rooms = client->joinedRoomList();
+        // qInfo() << "Initiate Finished (" << rooms.size() << ")";
+        // for(auto const &r: rooms.toStdMap()){
+        //     qInfo() << "Joined rooms: " << r.first;
 
-            auto timeline = client->timeline(r.first);
-            if(timeline){
-                auto ev = timeline->getEvents(0,timeline->eventSize());
-                qDebug() << "-------------------------------------------------------------------------------";
-                qDebug() << "OLD MESSAGES";
-                for(auto const &e: ev) {
-                    qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-                }
+        //     auto timeline = client->timeline(r.first);
+        //     if(timeline){
+        //         auto ev = timeline->getEvents(0,timeline->eventSize());
+        //         qDebug() << "-------------------------------------------------------------------------------";
+        //         qDebug() << "OLD MESSAGES";
+        //         for(auto const &e: ev) {
+        //             qDebug() << e.userid << e.event_id << e.body << e.timestamp;
+        //         }
 
-                QObject::connect(timeline, &Timeline::newEventsStored, [timeline](int from, int len){
-                    qDebug() << "-------------------------------------------------------------------------------";
-                    qDebug() << "New MESSAGES";
-                    auto events = timeline->getEvents(from, len);
-                    for(auto const &e: events){
-                        qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-                        if(e.body == "Hamzeh: answer")
-                            timeline->sendMessage("Hi, I got your message");
+        //         QObject::connect(timeline, &Timeline::newEventsStored, [timeline](int from, int len){
+        //             qDebug() << "-------------------------------------------------------------------------------";
+        //             qDebug() << "New MESSAGES";
+        //             auto events = timeline->getEvents(from, len);
+        //             for(auto const &e: events){
+        //                 qDebug() << e.userid << e.event_id << e.body << e.timestamp;
+        //                 if(e.body == "Hamzeh: answer")
+        //                     timeline->sendMessage("Hi, I got your message");
+        //             }
+        //             qDebug() << "-------------------------------------------------------------------------------";
+        //         });
+        //         QObject::connect(timeline, &Timeline::lastMessageChanged,[](const DescInfo &e){
+        //             qDebug() << "-------------------------------------------------------------------------------";
+        //             qDebug() << "LAST MESSAGE";
+        //             qDebug() << e.userid << e.event_id << e.body << e.timestamp;
+        //             qDebug() << "-------------------------------------------------------------------------------";
+        //         });
+        //     }
+        //     // timeline->sendMessage("Hello, I'm here now.");
+        // }
+        // -------------------------------------------
+        auto _verificationManager = client->verificationManager();
+        QObject::connect(_verificationManager, &VerificationManager::newDeviceVerificationRequest, [](DeviceVerificationFlow *flow){
+            QObject::connect(flow,&DeviceVerificationFlow::stateChanged,[flow](){
+                qDebug() << "--------------------------------------------------";
+                qDebug() << flow->stateEnum() << flow->state(); 
+                // if(flow->stateEnum() == DeviceVerificationFlow::State::CompareEmoji){
+                    auto keys = flow->getSasList();
+                    for(auto const&k: keys){
+                        qDebug() << k;
                     }
-                    qDebug() << "-------------------------------------------------------------------------------";
-                });
-                QObject::connect(timeline, &Timeline::lastMessageChanged,[](const DescInfo &e){
-                    qDebug() << "-------------------------------------------------------------------------------";
-                    qDebug() << "LAST MESSAGE";
-                    qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-                    qDebug() << "-------------------------------------------------------------------------------";
-                });
+                // }
+                qDebug() << "--------------------------------------------------";
+            });
+            if(oneTimeFlagJustForTesst) {
+                oneTimeFlagJustForTesst = false;
+                flow->next();
             }
-            // timeline->sendMessage("Hello, I'm here now.");
-        }
+        });
+        auto selfVerificationStatus = _verificationManager->selfVerificationStatus(); 
+        // qDebug() << "***********************************************";
+        // qDebug() << selfVerificationStatus->status();
+        // qDebug() << "***********************************************";  
+        QObject::connect(selfVerificationStatus, &SelfVerificationStatus::statusChanged,[selfVerificationStatus](){
+            auto status = selfVerificationStatus->status();
+            qDebug() << "***********************************************";
+            qDebug() << status;
+            qDebug() << "***********************************************";  
+            if(status == SelfVerificationStatus::Status::UnverifiedDevices) {
+                selfVerificationStatus->verifyUnverifiedDevices();
+            }
+        });
+        QTimer::singleShot(5000, [selfVerificationStatus] {
+        //    selfVerificationStatus->verifyMasterKeyWithPassphrase();
+           selfVerificationStatus->verifyMasterKey(); 
+        });
     });
     client->enableLogger(true,true);
     client->start();
