@@ -65,7 +65,7 @@ UserSettings::load(std::optional<QString> profile)
     useOnlineKeyBackup_ = settings.value(prefix + "user/online_key_backup", false).toBool();
 
     disableCertificateValidation_ =
-      settings.value("disable_certificate_validation", false).toBool();
+      settings.value("disable_certificate_validation", true).toBool();
     
     settings.beginGroup("secrets");
     QStringList secretKeys = settings.allKeys();
