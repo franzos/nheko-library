@@ -95,7 +95,7 @@ private:
     bool onlyShareKeysWithVerifiedUsers_;
     bool useOnlineKeyBackup_;
     Presence presence_;
-    bool disableCertificateValidation_ = false;
+    bool disableCertificateValidation_ = true;
     QString profile_;
     QString userId_;
     QString accessToken_;

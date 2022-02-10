@@ -416,14 +416,13 @@ Client::tryInitialSync()
       [this](const mtx::responses::UploadKeys &res, mtx::http::RequestErr err) {
           if (err) {
               const int status_code = static_cast<int>(err->status_code);
-
               if (status_code == 404) {
                   nhlog::net()->warn("skipping key uploading. server doesn't provide /keys/upload");
                   return startInitialSync();
               }
-
+              auto s = utils::httpMtxErrorToString(err).toStdString();
               nhlog::crypto()->critical(
-                "failed to upload one time keys: {} {}", err->matrix_error.error, status_code);
+                "failed to upload one time keys: {} {} \n({})", err->matrix_error.error, status_code,s);
 
               QString errorMsg(tr("Failed to setup encryption keys. Server response: "
                                   "%1 %2. Please try again later.")
@@ -859,7 +858,8 @@ Client::getProfileInfo(QString userid)
     http::client()->get_profile(
       userid.toStdString(), [this](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
           if (err) {
-              nhlog::net()->warn("failed to retrieve own profile info");
+              auto s = utils::httpMtxErrorToString(err).toStdString();
+              nhlog::net()->warn("failed to retrieve own profile info ({})", s);
               return;
           }
           emit userDisplayNameReady(QString::fromStdString(res.display_name));
