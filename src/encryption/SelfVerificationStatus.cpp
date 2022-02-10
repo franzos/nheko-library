@@ -221,10 +221,10 @@ SelfVerificationStatus::verifyMasterKey()
 }
 
 void
-SelfVerificationStatus::verifyMasterKeyWithPassphrase()
+SelfVerificationStatus::verifyMasterKeyWithPassphrase(const QString &recoveryKey)
 {
     nhlog::db()->info("Clicked verify master key with passphrase");
-    olm::download_cross_signing_keys();
+    olm::download_cross_signing_keys(recoveryKey.toStdString());
 }
 
 void

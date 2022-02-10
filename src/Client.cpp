@@ -223,6 +223,7 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
 
     http::client()->set_server(homeserver);
     http::client()->set_access_token(token);
+    http::client()->set_device_id(UserSettings::instance()->deviceId().toStdString());
     http::client()->verify_certificates(!UserSettings::instance()->disableCertificateValidation());
 
     // The Olm client needs the user_id & device_id that will be included
@@ -921,20 +922,17 @@ Client::getBackupVersion()
 }
 
 void
-Client::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
+Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                    const SecretsToDecrypt &secrets)
 {
-    QString text = "EsTi jVgL chr3 nu3D avQ3 Ld9Y f4th 9wiF Ctvx Xqu7 tEv7 Uo7o";
-    nhlog::ui()->warn("getText for CrossSigningSecrets: TODO");
-
-    if (text.isEmpty())
+    if (recoveryKey.empty())
         return;
 
-    auto decryptionKey = mtx::crypto::key_from_recoverykey(text.toStdString(), keyDesc);
+    auto decryptionKey = mtx::crypto::key_from_recoverykey(recoveryKey, keyDesc);
 
     if (!decryptionKey && keyDesc.passphrase) {
         try {
-            decryptionKey = mtx::crypto::key_from_passphrase(text.toStdString(), keyDesc);
+            decryptionKey = mtx::crypto::key_from_passphrase(recoveryKey, keyDesc);
         } catch (std::exception &e) {
             nhlog::crypto()->error("Failed to derive secret key from passphrase: {}", e.what());
         }

@@ -66,76 +66,73 @@ int main(int argc, char *argv[]){
     });
 
     QObject::connect(client,  &Client::initiateFinished, [&](){
-        // auto rooms = client->joinedRoomList();
-        // qInfo() << "Initiate Finished (" << rooms.size() << ")";
-        // for(auto const &r: rooms.toStdMap()){
-        //     qInfo() << "Joined rooms: " << r.first;
+        auto rooms = client->joinedRoomList();
+        qInfo() << "Initiate Finished (" << rooms.size() << ")";
+        for(auto const &r: rooms.toStdMap()){
+            qInfo() << "Joined rooms: " << r.first;
 
-        //     auto timeline = client->timeline(r.first);
-        //     if(timeline){
-        //         auto ev = timeline->getEvents(0,timeline->eventSize());
-        //         qDebug() << "-------------------------------------------------------------------------------";
-        //         qDebug() << "OLD MESSAGES";
-        //         for(auto const &e: ev) {
-        //             qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-        //         }
+            auto timeline = client->timeline(r.first);
+            if(timeline){
+                auto ev = timeline->getEvents(0,timeline->eventSize());
+                qDebug() << "-------------------------------------------------------------------------------";
+                qDebug() << "OLD MESSAGES";
+                for(auto const &e: ev) {
+                    qDebug() << e.userid << e.event_id << e.body << e.timestamp;
+                }
 
-        //         QObject::connect(timeline, &Timeline::newEventsStored, [timeline](int from, int len){
-        //             qDebug() << "-------------------------------------------------------------------------------";
-        //             qDebug() << "New MESSAGES";
-        //             auto events = timeline->getEvents(from, len);
-        //             for(auto const &e: events){
-        //                 qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-        //                 if(e.body == "Hamzeh: answer")
-        //                     timeline->sendMessage("Hi, I got your message");
-        //             }
-        //             qDebug() << "-------------------------------------------------------------------------------";
-        //         });
-        //         QObject::connect(timeline, &Timeline::lastMessageChanged,[](const DescInfo &e){
-        //             qDebug() << "-------------------------------------------------------------------------------";
-        //             qDebug() << "LAST MESSAGE";
-        //             qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-        //             qDebug() << "-------------------------------------------------------------------------------";
-        //         });
-        //     }
-        //     // timeline->sendMessage("Hello, I'm here now.");
-        // }
-        // -------------------------------------------
-        auto _verificationManager = client->verificationManager();
-        QObject::connect(_verificationManager, &VerificationManager::newDeviceVerificationRequest, [](DeviceVerificationFlow *flow){
-            QObject::connect(flow,&DeviceVerificationFlow::stateChanged,[flow](){
-                qDebug() << "--------------------------------------------------";
-                qDebug() << flow->stateEnum() << flow->state(); 
-                // if(flow->stateEnum() == DeviceVerificationFlow::State::CompareEmoji){
-                    auto keys = flow->getSasList();
-                    for(auto const&k: keys){
-                        qDebug() << k;
+                QObject::connect(timeline, &Timeline::newEventsStored, [timeline](int from, int len){
+                    qDebug() << "-------------------------------------------------------------------------------";
+                    qDebug() << "New MESSAGES";
+                    auto events = timeline->getEvents(from, len);
+                    for(auto const &e: events){
+                        qDebug() << e.userid << e.event_id << e.body << e.timestamp;
+                        if(e.body == "Hamzeh: answer")
+                            timeline->sendMessage("Hi, I got your message");
                     }
-                // }
-                qDebug() << "--------------------------------------------------";
-            });
-            if(oneTimeFlagJustForTesst) {
-                oneTimeFlagJustForTesst = false;
-                flow->next();
+                    qDebug() << "-------------------------------------------------------------------------------";
+                });
+                QObject::connect(timeline, &Timeline::lastMessageChanged,[](const DescInfo &e){
+                    qDebug() << "-------------------------------------------------------------------------------";
+                    qDebug() << "LAST MESSAGE";
+                    qDebug() << e.userid << e.event_id << e.body << e.timestamp;
+                    qDebug() << "-------------------------------------------------------------------------------";
+                });
             }
-        });
-        auto selfVerificationStatus = _verificationManager->selfVerificationStatus(); 
-        // qDebug() << "***********************************************";
-        // qDebug() << selfVerificationStatus->status();
-        // qDebug() << "***********************************************";  
-        QObject::connect(selfVerificationStatus, &SelfVerificationStatus::statusChanged,[selfVerificationStatus](){
-            auto status = selfVerificationStatus->status();
-            qDebug() << "***********************************************";
-            qDebug() << status;
-            qDebug() << "***********************************************";  
-            if(status == SelfVerificationStatus::Status::UnverifiedDevices) {
-                selfVerificationStatus->verifyUnverifiedDevices();
-            }
-        });
-        QTimer::singleShot(5000, [selfVerificationStatus] {
-        //    selfVerificationStatus->verifyMasterKeyWithPassphrase();
-           selfVerificationStatus->verifyMasterKey(); 
-        });
+            // timeline->sendMessage("Hello, I'm here now.");
+        }
+        // -------------------------------------------
+        // auto _verificationManager = client->verificationManager();
+        // QObject::connect(_verificationManager, &VerificationManager::newDeviceVerificationRequest, [](DeviceVerificationFlow *flow){
+        //     QObject::connect(flow,&DeviceVerificationFlow::stateChanged,[flow](){
+        //         qDebug() << "--------------------------------------------------";
+        //         qDebug() << flow->stateEnum() << flow->state(); 
+        //         // if(flow->stateEnum() == DeviceVerificationFlow::State::CompareEmoji){
+        //             auto keys = flow->getSasList();
+        //             for(auto const&k: keys){
+        //                 qDebug() << k;
+        //             }
+        //         // }
+        //         qDebug() << "--------------------------------------------------";
+        //     });
+        //     if(oneTimeFlagJustForTesst) {
+        //         oneTimeFlagJustForTesst = false;
+        //         flow->next();
+        //     }
+        // });
+        // auto selfVerificationStatus = _verificationManager->selfVerificationStatus();
+        // QObject::connect(selfVerificationStatus, &SelfVerificationStatus::statusChanged,[selfVerificationStatus](){
+        //     auto status = selfVerificationStatus->status();
+        //     qDebug() << "***********************************************";
+        //     qDebug() << status;
+        //     qDebug() << "***********************************************";  
+        //     if(status == SelfVerificationStatus::Status::UnverifiedDevices) {
+        //         // selfVerificationStatus->verifyUnverifiedDevices();
+        //     }
+        // });
+        // QTimer::singleShot(5000, [selfVerificationStatus] {
+        // //    selfVerificationStatus->verifyMasterKeyWithPassphrase("EsTi jVgL chr3 nu3D avQ3 Ld9Y f4th 9wiF Ctvx Xqu7 tEv7 Uo7o");
+        // //    selfVerificationStatus->verifyMasterKey(); 
+        // });
     });
     client->enableLogger(true,true);
     client->start();
