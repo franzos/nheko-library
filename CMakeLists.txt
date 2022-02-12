@@ -42,6 +42,7 @@ endif()
 #
 set(SRC_FILES
 	src/Authentication.cpp
+	src/CibaAuthentication.cpp
 	src/timeline/EventStore.cpp
 	src/timeline/Reaction.cpp
 	src/timeline/Timeline.cpp
@@ -95,6 +96,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Client.h
 	src/UserSettings.h	
 	src/Authentication.h
+	src/CibaAuthentication.h
 )
 
 set(HEADERS 
