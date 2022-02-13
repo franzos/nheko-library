@@ -17,6 +17,8 @@ pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
+
+find_package(Qt5Network REQUIRED)
 find_package(Qt5 5.15 COMPONENTS Gui REQUIRED)
 
 set(
@@ -57,6 +59,8 @@ set(SRC_FILES
 	src/MatrixClient.cpp
 	src/UserSettings.cpp
 	src/Utils.cpp
+	src/RestRequest.cpp
+	src/Logger.h
 	)
 
 include(FeatureSummary)
@@ -97,6 +101,8 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/UserSettings.h	
 	src/Authentication.h
 	src/CibaAuthentication.h
+	src/RestRequest.h
+	src/Logger.h
 )
 
 set(HEADERS 
@@ -113,11 +119,14 @@ set(HEADERS
 	Client.h
 	UserSettings.h	
 	Authentication.h	
+	RestRequest.h
 	Cache.h	
 	EventAccessors.h
 	Logging.h
+	Logger.h
 	MatrixClient.h
 	Utils.h
+	CibaAuthentication.h
 )
 
 set(MATRIX_LIB_DEPS
@@ -141,6 +150,7 @@ set(DEP_LIBS
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
+	Qt5::Network
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
@@ -156,7 +166,7 @@ target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 IF(BUILD_EXAMPLES)
 	find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
 	add_executable(profileInfo examples/profileInfo.cpp)
-	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets)
+	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets Qt5::Network)
 	message(" + \"examples\" will be built.")
 ENDIF()
 
@@ -170,6 +180,6 @@ IF(BUILD_TESTS)
 					tests/AuthenticationTest.h
 					tests/ClientTest.h
 					tests/UserSettingsTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui Qt5::Network)
 	message(" + \"tests\" will be built.")
 ENDIF()
