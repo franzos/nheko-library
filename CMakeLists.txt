@@ -60,7 +60,6 @@ set(SRC_FILES
 	src/UserSettings.cpp
 	src/Utils.cpp
 	src/RestRequest.cpp
-	src/Logger.h
 	)
 
 include(FeatureSummary)
@@ -102,7 +101,6 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Authentication.h
 	src/CibaAuthentication.h
 	src/RestRequest.h
-	src/Logger.h
 )
 
 set(HEADERS 
@@ -123,7 +121,6 @@ set(HEADERS
 	Cache.h	
 	EventAccessors.h
 	Logging.h
-	Logger.h
 	MatrixClient.h
 	Utils.h
 	CibaAuthentication.h
