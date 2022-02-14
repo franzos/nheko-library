@@ -54,6 +54,7 @@ set(SRC_FILES
 	src/EventAccessors.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
+	src/UserProfile.cpp
 	src/UserSettings.cpp
 	src/Utils.cpp
 	)
@@ -93,6 +94,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/Client.h
+	src/UserProfile.h	
 	src/UserSettings.h	
 	src/Authentication.h
 )
@@ -109,6 +111,7 @@ set(HEADERS
 	CacheStructs.h
 	Cache_p.h
 	Client.h
+	UserProfile.h	
 	UserSettings.h	
 	Authentication.h	
 	Cache.h	
