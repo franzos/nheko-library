@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#pragma once
 // Some more information
 //                                                     Library                           GUI
 //                                                        |                               |
@@ -35,6 +34,9 @@
 //                                                        |                               |
 //                                                 emit error()           -->       showing a dialog box to show error message
 //                                                        |                               |
+
+#pragma once
+
 #include <QObject>
 
 #include "MatrixClient.h"
