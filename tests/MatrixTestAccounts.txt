@@ -14,7 +14,7 @@ pass: tingly-headdress-earthlike
 
 user: @hamzeh_test05:pantherx.org
 pass: riverbed-judiciary-sworn
-
+recovery-key : EsTs kXqj kpPR 9VGC AZSM xrZZ dL4A ZvYz W2Cd 7y4n vqTU oGuE
 
 // Fakhri
 user: @fakhri_test01:pantherx.org
