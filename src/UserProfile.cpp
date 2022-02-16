@@ -16,13 +16,12 @@
 #include "mtx/responses/crypto.hpp"
 
 UserProfile::UserProfile(QString roomid,
-                        QString userid,
-                        QObject* parent
-                         )
+                         QString userid,
+                         QObject* parent)
   : 
-    roomid_(roomid)
+    QObject(parent)
+  , roomid_(roomid)
   , userid_(userid)
-  , QObject(parent)
 {
     globalAvatarUrl = "";
 

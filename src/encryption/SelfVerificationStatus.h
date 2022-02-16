@@ -38,6 +38,7 @@ signals:
     void setupCompleted();
     void showRecoveryKey(QString key);
     void setupFailed(QString message);
+    void verifyMasterKeyWithPassphraseFailed(const QString &message);
 
 public slots:
     void invalidate();

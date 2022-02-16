@@ -109,8 +109,7 @@ class UserProfile : public QObject
 public:
     UserProfile(QString roomid,
                 QString userid,
-                QObject *parent = nullptr
-                );
+                QObject *parent = nullptr);
 
     DeviceInfoModel *deviceList();
 
@@ -161,7 +160,8 @@ private:
     void getGlobalProfileData();
 
 private:
-    QString roomid_, userid_;
+    QString roomid_;
+    QString userid_;
     QString globalUsername;
     QString globalAvatarUrl;
     DeviceInfoModel deviceList_;

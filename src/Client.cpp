@@ -343,6 +343,7 @@ Client::loadStateFromCache()
     emit trySyncCb();
     emit prepareTimelines();
     auto up = new UserProfile("",utils::localUser());
+    (void) up; //TODO: review
 }
 
 void Client::prepareTimelinesCB(){
@@ -502,6 +503,7 @@ Client::startInitialSync()
         emit trySyncCb();
         emit prepareTimelines();
         auto up = new UserProfile("",utils::localUser());
+        (void) up; //TODO: review
     });
 }
 
@@ -735,6 +737,7 @@ Client::unbanUser(const QString  &roomid, const QString & userid, const QString 
 void
 Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 {
+    (void)room_id; (void)session_id; // TODO: review
     // nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
     // view_manager_->receivedSessionKey(room_id, session_id);
 }
@@ -927,9 +930,7 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
 {
     if (recoveryKey.empty())
         return;
-
     auto decryptionKey = mtx::crypto::key_from_recoverykey(recoveryKey, keyDesc);
-
     if (!decryptionKey && keyDesc.passphrase) {
         try {
             decryptionKey = mtx::crypto::key_from_passphrase(recoveryKey, keyDesc);
@@ -937,20 +938,15 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
             nhlog::crypto()->error("Failed to derive secret key from passphrase: {}", e.what());
         }
     }
-
-    // if (!decryptionKey) {
-    //     QMessageBox::information(
-    //       Client::instance(),
-    //       QCoreApplication::translate("CrossSigningSecrets", "Decryption failed"),
-    //       QCoreApplication::translate("CrossSigningSecrets",
-    //                                   "Failed to decrypt secrets with the "
-    //                                   "provided recovery key or passphrase"));
-    //     return;
-    // }
+    if (!decryptionKey) {
+        auto message = "Failed to decrypt secrets with the provided recovery key or passphrase";
+        nhlog::crypto()->error(message);
+        emit _verificationManager->selfVerificationStatus()->verifyMasterKeyWithPassphraseFailed(message);
+        return;
+    }
 
     auto deviceKeys = cache::client()->userKeys(http::client()->user_id().to_string());
     mtx::requests::KeySignaturesUpload req;
-
     for (const auto &[secretName, encryptedSecret] : secrets) {
         auto decrypted = mtx::crypto::decrypt(encryptedSecret, *decryptionKey, secretName);
         if (!decrypted.empty()) {
