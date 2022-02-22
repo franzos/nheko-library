@@ -13,6 +13,7 @@ class Authentication: public QObject{
 public:
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
+    bool loginWithCiba(QString username);
     std::string serverDiscovery(std::string userId);
 
 signals:
@@ -20,6 +21,12 @@ signals:
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
+    void loginCibaOk(QString response);
+    void loginCibaErrorOccurred(std::string &msg);
+    void cibaStatusChanged(QString accessToken,QString username);
+
+private slots:
+    void loginCibaFlow(QString accessToken,QString username);
 };
 
 
