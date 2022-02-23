@@ -120,6 +120,6 @@ void
 request_cross_signing_keys();
 //! Download backup and signing keys and cache them locally
 void
-download_cross_signing_keys();
+download_cross_signing_keys(const std::string &recoveryKey);
 
 } // namespace olm

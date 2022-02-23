@@ -9,20 +9,22 @@
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "Olm.h"
-
+#include "UserProfile.h"
+#include <QDebug>
 #include <mtx/responses/common.hpp>
+#include "../UIA.h"
 
 SelfVerificationStatus::SelfVerificationStatus(QObject *o)
   : QObject(o)
 {
-    // connect(Client::instance(), &Client::contentLoaded, this, [this] {
-    //     connect(cache::client(),
-    //             &Cache::selfVerificationStatusChanged,
-    //             this,
-    //             &SelfVerificationStatus::invalidate,
-    //             Qt::UniqueConnection);
-    //     cache::client()->markUserKeysOutOfDate({http::client()->user_id().to_string()});
-    // });
+    connect((Client*)o, &Client::prepareTimelines, this, [this] {
+        connect(cache::client(),
+                &Cache::selfVerificationStatusChanged,
+                this,
+                &SelfVerificationStatus::invalidate,
+                Qt::UniqueConnection);
+        cache::client()->markUserKeysOutOfDate({http::client()->user_id().to_string()});
+    });
 }
 
 void
@@ -121,74 +123,74 @@ SelfVerificationStatus::setupCrosssigning(bool useSSSS, QString password, bool u
     device_sign.master_key       = xsign_keys->master_key;
     device_sign.self_signing_key = xsign_keys->self_signing_key;
     device_sign.user_signing_key = xsign_keys->user_signing_key;
-    // http::client()->device_signing_upload(
-    //   device_sign,
-    //   UIA::instance()->genericHandler(tr("Encryption Setup")),
-    //   [this, ssss, xsign_keys](mtx::http::RequestErr e) {
-    //       if (e) {
-    //           nhlog::crypto()->critical("Failed to upload cross signing keys: {}",
-    //                                     e->matrix_error.error);
+    http::client()->device_signing_upload(
+      device_sign,
+      UIA::instance()->genericHandler(tr("Encryption Setup")),
+      [this, ssss, xsign_keys](mtx::http::RequestErr e) {
+          if (e) {
+              nhlog::crypto()->critical("Failed to upload cross signing keys: {}",
+                                        e->matrix_error.error);
 
-    //           emit setupFailed(tr("Encryption setup failed: %1")
-    //                              .arg(QString::fromStdString(e->matrix_error.error)));
-    //           return;
-    //       }
-    //       nhlog::crypto()->info("Crosssigning keys uploaded!");
+              emit setupFailed(tr("Encryption setup failed: %1")
+                                 .arg(QString::fromStdString(e->matrix_error.error)));
+              return;
+          }
+          nhlog::crypto()->info("Crosssigning keys uploaded!");
 
-    //       auto deviceKeys = cache::client()->userKeys(http::client()->user_id().to_string());
-    //       if (deviceKeys) {
-    //           auto myKey = deviceKeys->device_keys.at(http::client()->device_id());
-    //           if (myKey.user_id == http::client()->user_id().to_string() &&
-    //               myKey.device_id == http::client()->device_id() &&
-    //               myKey.keys["ed25519:" + http::client()->device_id()] ==
-    //                 olm::client()->identity_keys().ed25519 &&
-    //               myKey.keys["curve25519:" + http::client()->device_id()] ==
-    //                 olm::client()->identity_keys().curve25519) {
-    //               json j = myKey;
-    //               j.erase("signatures");
-    //               j.erase("unsigned");
+          auto deviceKeys = cache::client()->userKeys(http::client()->user_id().to_string());
+          if (deviceKeys) {
+              auto myKey = deviceKeys->device_keys.at(http::client()->device_id());
+              if (myKey.user_id == http::client()->user_id().to_string() &&
+                  myKey.device_id == http::client()->device_id() &&
+                  myKey.keys["ed25519:" + http::client()->device_id()] ==
+                    olm::client()->identity_keys().ed25519 &&
+                  myKey.keys["curve25519:" + http::client()->device_id()] ==
+                    olm::client()->identity_keys().curve25519) {
+                  json j = myKey;
+                  j.erase("signatures");
+                  j.erase("unsigned");
 
-    //               auto ssk =
-    //                 mtx::crypto::PkSigning::from_seed(xsign_keys->private_self_signing_key);
-    //               myKey.signatures[http::client()->user_id().to_string()]
-    //                               ["ed25519:" + ssk.public_key()] = ssk.sign(j.dump());
-    //               mtx::requests::KeySignaturesUpload req;
-    //               req.signatures[http::client()->user_id().to_string()]
-    //                             [http::client()->device_id()] = myKey;
+                  auto ssk =
+                    mtx::crypto::PkSigning::from_seed(xsign_keys->private_self_signing_key);
+                  myKey.signatures[http::client()->user_id().to_string()]
+                                  ["ed25519:" + ssk.public_key()] = ssk.sign(j.dump());
+                  mtx::requests::KeySignaturesUpload req;
+                  req.signatures[http::client()->user_id().to_string()]
+                                [http::client()->device_id()] = myKey;
 
-    //               http::client()->keys_signatures_upload(
-    //                 req,
-    //                 [](const mtx::responses::KeySignaturesUpload &res, mtx::http::RequestErr err) {
-    //                     if (err) {
-    //                         nhlog::net()->error("failed to upload signatures: {},{}",
-    //                                             mtx::errors::to_string(err->matrix_error.errcode),
-    //                                             static_cast<int>(err->status_code));
-    //                     }
+                  http::client()->keys_signatures_upload(
+                    req,
+                    [](const mtx::responses::KeySignaturesUpload &res, mtx::http::RequestErr err) {
+                        if (err) {
+                            nhlog::net()->error("failed to upload signatures: {},{}",
+                                                mtx::errors::to_string(err->matrix_error.errcode),
+                                                static_cast<int>(err->status_code));
+                        }
 
-    //                     for (const auto &[user_id, tmp] : res.errors)
-    //                         for (const auto &[key_id, e_] : tmp)
-    //                             nhlog::net()->error("signature error for user {} and key "
-    //                                                 "id {}: {}, {}",
-    //                                                 user_id,
-    //                                                 key_id,
-    //                                                 mtx::errors::to_string(e_.errcode),
-    //                                                 e_.error);
-    //                 });
-    //           }
-    //       }
+                        for (const auto &[user_id, tmp] : res.errors)
+                            for (const auto &[key_id, e_] : tmp)
+                                nhlog::net()->error("signature error for user {} and key "
+                                                    "id {}: {}, {}",
+                                                    user_id,
+                                                    key_id,
+                                                    mtx::errors::to_string(e_.errcode),
+                                                    e_.error);
+                    });
+              }
+          }
 
-    //       if (ssss) {
-    //           auto k = QString::fromStdString(mtx::crypto::key_to_recoverykey(ssss->privateKey));
+          if (ssss) {
+              auto k = QString::fromStdString(mtx::crypto::key_to_recoverykey(ssss->privateKey));
 
-    //           QString r;
-    //           for (int i = 0; i < k.size(); i += 4)
-    //               r += k.mid(i, 4) + " ";
+              QString r;
+              for (int i = 0; i < k.size(); i += 4)
+                  r += k.mid(i, 4) + " ";
 
-    //           emit showRecoveryKey(r.trimmed());
-    //       } else {
-    //           emit setupCompleted();
-    //       }
-    //   });
+              emit showRecoveryKey(r.trimmed());
+          } else {
+              emit setupCompleted();
+          }
+      });
 }
 
 void
@@ -220,10 +222,10 @@ SelfVerificationStatus::verifyMasterKey()
 }
 
 void
-SelfVerificationStatus::verifyMasterKeyWithPassphrase()
+SelfVerificationStatus::verifyMasterKeyWithPassphrase(const QString &recoveryKey)
 {
     nhlog::db()->info("Clicked verify master key with passphrase");
-    olm::download_cross_signing_keys();
+    olm::download_cross_signing_keys(recoveryKey.toStdString());
 }
 
 void
@@ -234,7 +236,6 @@ SelfVerificationStatus::verifyUnverifiedDevices()
 
     auto keys  = cache::client()->userKeys(this_user);
     auto verif = cache::client()->verificationStatus(this_user);
-
     if (!keys)
         return;
 
@@ -245,9 +246,9 @@ SelfVerificationStatus::verifyUnverifiedDevices()
             devices.push_back(QString::fromStdString(device));
     }
 
-    // if (!devices.empty())
-    //     Client::instance()->timeline()->verificationManager()->verifyOneOfDevices(
-    //       QString::fromStdString(this_user), std::move(devices));
+    if (!devices.empty())
+        Client::instance()->verificationManager()->verifyOneOfDevices(
+          QString::fromStdString(this_user), std::move(devices));
 }
 
 void
@@ -268,8 +269,7 @@ SelfVerificationStatus::invalidate()
     if (!keys || keys->device_keys.find(http::client()->device_id()) == keys->device_keys.end()) {
         if (keys && (keys->seen_device_ids.count(http::client()->device_id()) ||
                      keys->seen_device_keys.count(olm::client()->identity_keys().curve25519))) {
-            // emit Client::instance()->dropToLoginCb(
-            //   tr("Identity key changed. This breaks E2EE, so logging out."));
+            emit Client::instance()->dropToLogin("Identity key changed. This breaks E2EE, so logging out.");
             return;
         }
 

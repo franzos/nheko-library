@@ -57,6 +57,8 @@ set(SRC_FILES
 	src/EventAccessors.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
+	src/UIA.cpp
+	src/UserProfile.cpp
 	src/UserSettings.cpp
 	src/Utils.cpp
 	src/RestRequest.cpp
@@ -94,9 +96,12 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/DeviceVerificationFlow.h
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
+	src/Authentication.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/Client.h
+	src/UIA.h
+	src/UserProfile.h	
 	src/UserSettings.h	
 	src/Authentication.h
 	src/CibaAuthentication.h
@@ -111,10 +116,12 @@ set(HEADERS
 	encryption/DeviceVerificationFlow.h
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
+	Authentication.h	
 	CacheCryptoStructs.h
 	CacheStructs.h
 	Cache_p.h
 	Client.h
+	UserProfile.h	
 	UserSettings.h	
 	Authentication.h	
 	RestRequest.h
@@ -122,6 +129,7 @@ set(HEADERS
 	EventAccessors.h
 	Logging.h
 	MatrixClient.h
+	UIA.h
 	Utils.h
 	CibaAuthentication.h
 )

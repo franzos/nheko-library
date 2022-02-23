@@ -16,6 +16,7 @@
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
+#include "UserProfile.h"
 #include "UserSettings.h"
 #include "encryption/Olm.h"
 
@@ -31,8 +32,7 @@ Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 
 Client::Client(QSharedPointer<UserSettings> userSettings)
-  :_verificationManager(new VerificationManager()), 
-   isConnected_(true),
+  :isConnected_(true),
    userSettings_{userSettings}
 {
     instance_->enableLogger(true);
@@ -42,7 +42,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
-
+    _verificationManager = new VerificationManager(this);
     _authentication = new Authentication();
     connect(_authentication,
             &Authentication::logoutOk,
@@ -236,6 +236,7 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
 
     http::client()->set_server(homeserver);
     http::client()->set_access_token(token);
+    http::client()->set_device_id(UserSettings::instance()->deviceId().toStdString());
     http::client()->verify_certificates(!UserSettings::instance()->disableCertificateValidation());
 
     // The Olm client needs the user_id & device_id that will be included
@@ -325,6 +326,7 @@ Client::loadStateFromCache()
 
     try {
         olm::client()->load(cache::restoreOlmAccount(), cache::client()->pickleSecret());
+        emit initializeEmptyViews();
         cache::calculateRoomReadStatus();
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());
@@ -353,6 +355,8 @@ Client::loadStateFromCache()
     
     emit trySyncCb();
     emit prepareTimelines();
+    auto up = new UserProfile("",utils::localUser());
+    (void) up; //TODO: review
 }
 
 void Client::prepareTimelinesCB(){
@@ -511,6 +515,8 @@ Client::startInitialSync()
         }
         emit trySyncCb();
         emit prepareTimelines();
+        auto up = new UserProfile("",utils::localUser());
+        (void) up; //TODO: review
     });
 }
 
@@ -744,6 +750,7 @@ Client::unbanUser(const QString  &roomid, const QString & userid, const QString 
 void
 Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 {
+    (void)room_id; (void)session_id; // TODO: review
     // nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
     // view_manager_->receivedSessionKey(room_id, session_id);
 }
@@ -931,49 +938,28 @@ Client::getBackupVersion()
 }
 
 void
-Client::decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
+Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                    const SecretsToDecrypt &secrets)
 {
-    QString text = "TODO";
-    nhlog::ui()->warn("getText for CrossSigningSecrets: TODO");
-    // QString text = QInputDialog::getText(
-    //   Client::instance(),
-    //   QCoreApplication::translate("CrossSigningSecrets", "Decrypt secrets"),
-    //   keyDesc.name.empty()
-    //     ? QCoreApplication::translate(
-    //         "CrossSigningSecrets", "Enter your recovery key or passphrase to decrypt your secrets:")
-    //     : QCoreApplication::translate(
-    //         "CrossSigningSecrets",
-    //         "Enter your recovery key or passphrase called %1 to decrypt your secrets:")
-    //         .arg(QString::fromStdString(keyDesc.name)),
-    //   QLineEdit::Password);
-
-    if (text.isEmpty())
+    if (recoveryKey.empty())
         return;
-
-    auto decryptionKey = mtx::crypto::key_from_recoverykey(text.toStdString(), keyDesc);
-
+    auto decryptionKey = mtx::crypto::key_from_recoverykey(recoveryKey, keyDesc);
     if (!decryptionKey && keyDesc.passphrase) {
         try {
-            decryptionKey = mtx::crypto::key_from_passphrase(text.toStdString(), keyDesc);
+            decryptionKey = mtx::crypto::key_from_passphrase(recoveryKey, keyDesc);
         } catch (std::exception &e) {
             nhlog::crypto()->error("Failed to derive secret key from passphrase: {}", e.what());
         }
     }
-
-    // if (!decryptionKey) {
-    //     QMessageBox::information(
-    //       Client::instance(),
-    //       QCoreApplication::translate("CrossSigningSecrets", "Decryption failed"),
-    //       QCoreApplication::translate("CrossSigningSecrets",
-    //                                   "Failed to decrypt secrets with the "
-    //                                   "provided recovery key or passphrase"));
-    //     return;
-    // }
+    if (!decryptionKey) {
+        auto message = "Failed to decrypt secrets with the provided recovery key or passphrase";
+        nhlog::crypto()->error(message);
+        emit _verificationManager->selfVerificationStatus()->verifyMasterKeyWithPassphraseFailed(message);
+        return;
+    }
 
     auto deviceKeys = cache::client()->userKeys(http::client()->user_id().to_string());
     mtx::requests::KeySignaturesUpload req;
-
     for (const auto &[secretName, encryptedSecret] : secrets) {
         auto decrypted = mtx::crypto::decrypt(encryptedSecret, *decryptionKey, secretName);
         if (!decrypted.empty()) {
