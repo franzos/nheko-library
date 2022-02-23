@@ -23,6 +23,10 @@ class RestRequest : public QObject{
                      const QMap<QString, QString>& queryItems, 
                      const QMap<QString, QString> &data,
                      QString &response);
+        int post    (const QString &url, 
+                    const QMap<QString, QString> &headers, 
+                     const QString &data,
+                     QString &response);
 
         int postJson (const QString &url, 
                 const QMap<QString, QString> &headers, 

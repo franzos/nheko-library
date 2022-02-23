@@ -177,6 +177,6 @@ IF(BUILD_TESTS)
 					tests/AuthenticationTest.h
 					tests/ClientTest.h
 					tests/UserSettingsTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui Qt5::Network)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui Qt5::Network Qt5::Widgets)
 	message(" + \"tests\" will be built.")
 ENDIF()

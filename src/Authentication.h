@@ -6,6 +6,7 @@
 #include <mtx/responses/login.hpp>
 #include <mtx/requests.hpp>
 #include "MatrixClient.h"
+#include "CibaAuthentication.h"
 
 class Authentication: public QObject{
  Q_OBJECT
@@ -13,7 +14,7 @@ class Authentication: public QObject{
 public:
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
-    bool loginWithCiba(QString username);
+    bool loginWithCiba(QString username,QString server);
     std::string serverDiscovery(std::string userId);
 
 signals:
@@ -27,6 +28,8 @@ signals:
 
 private slots:
     void loginCibaFlow(QString accessToken,QString username);
+private:
+   CibaAuthentication *ciba; 
 };
 
 

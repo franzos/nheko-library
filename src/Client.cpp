@@ -1165,8 +1165,8 @@ void Client::removeTimeline(const QString &roomID){
     }
 }
 
-void Client::loginWithCiba(QString username){
-     _authentication->loginWithCiba(username);
+void Client::loginWithCiba(QString username,QString server){
+     _authentication->loginWithCiba(username,server);
 }
 
 void Client::loginCibaCb(QString response){
@@ -1177,5 +1177,10 @@ void Client::loginCibaCb(QString response){
     userInfo.userId = jsonObj["user_id"].toString();
     userInfo.homeServer = jsonObj["home_server"].toString();
     userInfo.deviceId = jsonObj["device_id"].toString();
+
+    userSettings_.data()->setUserId(userInfo.userId);
+    userSettings_.data()->setAccessToken(userInfo.accessToken);
+    userSettings_.data()->setDeviceId(userInfo.deviceId);
+    userSettings_.data()->setHomeserver(userInfo.homeServer);
     emit loginOk(userInfo);
 }

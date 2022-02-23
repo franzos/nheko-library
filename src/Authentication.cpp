@@ -92,58 +92,58 @@ std::string Authentication::serverDiscovery(std::string userId){
    return homeServer.toStdString();
 }
 
-bool Authentication::loginWithCiba(QString username){
+bool Authentication::loginWithCiba(QString username,QString server){
     connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
-    
-    CibaAuthentication ciba;
-    auto res = ciba.availableLogin();
+    qDebug()<<"START LOGIN CIBA";
+    ciba = new CibaAuthentication(server);
+    auto res = ciba->availableLogin();
+    qDebug()<<"SEnd AVAILABA LOGIN "<<res.status;
     if(res.status==200 || res.status==201){
         QJsonDocument jsonResponse = QJsonDocument::fromJson(res.jsonRespnse.toUtf8());
-        if(jsonResponse.isArray()){
-            QJsonArray jsonArray = jsonResponse.array();
-            foreach (const QJsonValue & value, jsonArray) {
-                QJsonObject obj = value.toObject();
-                QString type = obj["type"].toString();
-                if (type.contains("cm.ciba_auth"))
-                {
-                    auto idResp = ciba.loginRequest(username);
-                    if(idResp.status==200 || idResp.status==201){
-                        QJsonDocument idJsonResponse = QJsonDocument::fromJson(idResp.jsonRespnse.toUtf8());
-                        QString requestId = "";
-                        QJsonObject jsonObj = idJsonResponse.object();
-                        if(jsonObj.contains("auth_req_id")){
-                            requestId = jsonObj["auth_req_id"].toString();
-                            QThread thread;
-                            QObject context;
-                            context.moveToThread(&thread);
-                            QObject::connect(&thread, &QThread::started, &context, [&,username,this]() { 
-                                bool isPenging = true;
-                                while(isPenging){                                    
-                                    auto statusRsp = ciba.checkStatus(requestId);    
-                                    QJsonDocument statusResponse = QJsonDocument::fromJson(statusRsp.jsonRespnse.toUtf8());
-                                    QJsonObject jsonObj = statusResponse.object();
-                                    if(jsonObj.contains("access_token")){
-                                        QString token = jsonObj["access_token"].toString();
-                                        emit this->cibaStatusChanged(token,username); 
-                                        isPenging = false;
-                                    }else{
-                                        sleep(5);
-                                    }   
-                                }        
-                            });
-                            thread.start();
-                            //thread.quit();
-                            thread.wait();  
-                            return true;                 
-                        }
-                            
+        auto object = jsonResponse.object();
+        QJsonValue value = object.value("flows");
+        QJsonArray array = value.toArray();
+        foreach (const QJsonValue & v, array) {   
+        QString type =  v.toObject().value("type").toString();
+            if (type.contains("cm.ciba_auth"))
+            {                
+                auto idResp = ciba->loginRequest(username);
+                if(idResp.status==200 || idResp.status==201){
+                    QJsonDocument idJsonResponse = QJsonDocument::fromJson(idResp.jsonRespnse.toUtf8());
+                    QString requestId = "";
+                    QJsonObject jsonObj = idJsonResponse.object();
+                    if(jsonObj.contains("auth_req_id")){
+                        requestId = jsonObj["auth_req_id"].toString();
+                        auto thread = new QThread();
+                        auto context = new QObject() ;
+                        context->moveToThread(thread);
+                        QObject::connect(thread, &QThread::started, context, [&,requestId,username]() { 
+                            bool isPenging = true;
+                            while(isPenging){                                    
+                                auto statusRsp = ciba->checkStatus(requestId);    
+                                QJsonDocument statusResponse = QJsonDocument::fromJson(statusRsp.jsonRespnse.toUtf8());
+                                QJsonObject jsonObj = statusResponse.object();
+                                if(jsonObj.contains("access_token")){
+                                    QString token = jsonObj["access_token"].toString();
+                                    emit cibaStatusChanged(token,username); 
+                                    isPenging = false;
+                                }else{
+                                    sleep(5);
+                                }   
+                            }        
+                        });
+                        thread->start();
+                        //thread.quit();
+                        // thread.wait();  
+                        return true;                 
                     }
-                }else{
-                    std::string msg = "Ciba is not supported";
-                    emit loginCibaErrorOccurred(msg);
+                        
                 }
-            }           
-        }
+            }else{
+                std::string msg = "Ciba is not supported";
+                emit loginCibaErrorOccurred(msg);
+            }
+        }   
     }
 std::string msg = "Connection or Json error";
 emit loginCibaErrorOccurred(msg);
@@ -151,17 +151,16 @@ emit loginCibaErrorOccurred(msg);
 }
 
 void Authentication::loginCibaFlow(QString accessToken,QString username){
-    CibaAuthentication ciba;
-    auto res = ciba.checkRegistration(accessToken);
+    auto res = ciba->checkRegistration(accessToken);
     if(res.status == 200 || res.status == 201){
         QJsonDocument jsonResponse = QJsonDocument::fromJson(res.jsonRespnse.toUtf8());
         QJsonObject jsonObj = jsonResponse.object();
         if(!jsonObj.contains("exists"))
-           ciba.registeration(accessToken);
-        auto loginRes = ciba.login(accessToken,username);
-        if(loginRes.status == 200 || loginRes.status == 201)
+           ciba->registeration(accessToken);
+        auto loginRes = ciba->login(accessToken,username);
+        if(loginRes.status == 200 || loginRes.status == 201){
             emit loginCibaOk(loginRes.jsonRespnse);
-        else{
+        }else{
             std::string msg = "Connection error";
             emit loginCibaErrorOccurred(msg); 
         }

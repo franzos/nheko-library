@@ -75,6 +75,43 @@ int RestRequest::post    (const QString &url,
     return httpCode;
 }
 
+ int RestRequest::post    (const QString &url, 
+                     const QMap<QString, QString> &headers, 
+                     const QString &data,
+                     QString &response){
+        // LOG
+    std::string debugTitle = " * POST " + url.toStdString() + "\n";
+    std::string debug = debugTitle;
+    if(headers.size())      debug +="   + Headers   :\n" + qmapToString(headers);
+    debug +="   + Data      :\n" + data.toStdString();
+    debug += "   + " + QSslSocket::sslLibraryVersionString().toStdString();
+    qDebug()<<QString::fromStdString(debug);
+
+     QEventLoop loop;
+    QNetworkAccessManager manager;
+    int httpCode = 0;
+    QObject::connect(&manager, &QNetworkAccessManager::finished, [&](QNetworkReply *reply) {
+        QVariant statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
+        if (statusCode.isValid())
+            httpCode = statusCode.toInt();
+        response = QString::fromUtf8(reply->readAll());
+        QString reason = reply->attribute( QNetworkRequest::HttpReasonPhraseAttribute ).toString();
+        std::string dbg = " < " + debugTitle + response.toStdString() + " (" + reason.toStdString() + ":" + std::to_string(httpCode) + ")";
+        if(reply->error() != QNetworkReply::NoError) 
+            qDebug()<<QString::fromStdString(dbg);
+        else
+            qDebug()<<QString::fromStdString(dbg);
+        loop.quit();
+    });
+
+    QNetworkRequest request = setRequestHeaders(url, headers);
+
+    manager.post(request, data.toUtf8());
+
+    loop.exec();
+    return httpCode;
+    }
+
 
 int RestRequest::postJson    (const QString &url, 
                 const QMap<QString, QString> &headers, 

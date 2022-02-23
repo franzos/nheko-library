@@ -15,13 +15,16 @@ class CibaAuthentication: public QObject{
  Q_OBJECT
 
 public:
-
+    CibaAuthentication(QString server);
     RestRequestResponse availableLogin();
     RestRequestResponse loginRequest(QString user);
     RestRequestResponse checkStatus(QString requestId);
     RestRequestResponse checkRegistration(QString accessToken);
     RestRequestResponse registeration(QString accessToken);
-    RestRequestResponse login(QString accessToken,QString user);    
+    RestRequestResponse login(QString accessToken,QString user);  
+private:
+    QString serverAddress;
+    
     
 };
 
