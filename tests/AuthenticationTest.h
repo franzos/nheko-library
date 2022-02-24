@@ -58,35 +58,32 @@ private slots:
         eventLoop.exec();
     }    
 
-    // void loginWithIncorrectPassword(){
-    //     Authentication *loginTestWrong = new Authentication();
-    //     QEventLoop eventLoop;
-    //     QObject::connect(loginTestWrong,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
-    //         QFAIL(("Logined in invalid user "+res.user_id.localpart()).c_str() );
-    //         eventLoop.quit();
-    //     });
+    void loginWithIncorrectPassword(){
+        Authentication *loginTestWrong = new Authentication();
+        QEventLoop eventLoop;
+        QObject::connect(loginTestWrong,  &Authentication::loginOk, [&](const mtx::responses::Login &res){
+            QFAIL(("Logined in invalid user "+res.user_id.localpart()).c_str() );
+            eventLoop.quit();
+        });
 
-    //     QObject::connect(loginTestWrong,  &Authentication::loginErrorOccurred, [&](const std::string &out){            
-    //        QCOMPARE(out,"Invalid password");
-    //        qDebug()<<"INVALID Password";       
-    //         eventLoop.quit();
-    //     });
+        QObject::connect(loginTestWrong,  &Authentication::loginErrorOccurred, [&](const std::string &out){            
+            qDebug()<<"INVALID Password";       
+            eventLoop.quit();
+        });
 
-    //     std::string deviceName = "test";
-    //     std::string userId = "@fakhri_test01:pantherx.org";
-    //     std::string password = "a2bqy9iHU88";
-    //     std::string serverAddress = "https://matrix.pantherx.org";   
-    //     loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
-    //     eventLoop.exec();        
-    // }
+        std::string deviceName = "test";
+        std::string userId = "@fakhri_test01:pantherx.org";
+        std::string password = "a2bqy9iHU88";
+        std::string serverAddress = "https://matrix.pantherx.org";   
+        loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
+        eventLoop.exec();        
+    }
 
 
 void loginWithCorrectCiba(){
         auto loginCibaTest = new Authentication();
         //QEventLoop eventLoop;
-        QObject::connect(loginCibaTest,  &Authentication::loginCibaOk, [&](QString res){
-            //QCOMPARE(res.user_id.localpart(),"fakhri_test01");      
-            QVERIFY(1==1);
+        QObject::connect(loginCibaTest,  &Authentication::loginCibaOk, [&](UserInformation res){            
             eventLoop.quit();
         });
 

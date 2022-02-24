@@ -159,7 +159,14 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
            ciba->registeration(accessToken);
         auto loginRes = ciba->login(accessToken,username);
         if(loginRes.status == 200 || loginRes.status == 201){
-            emit loginCibaOk(loginRes.jsonRespnse);
+            UserInformation userInfo;
+            QJsonDocument userJson = QJsonDocument::fromJson(loginRes.jsonRespnse.toUtf8());
+            QJsonObject jsonObj = userJson.object();
+            userInfo.accessToken = jsonObj["access_token"].toString();
+            userInfo.userId = jsonObj["user_id"].toString();
+            userInfo.homeServer = jsonObj["home_server"].toString();
+            userInfo.deviceId = jsonObj["device_id"].toString();
+            emit loginCibaOk(userInfo);
         }else{
             std::string msg = "Connection error";
             emit loginCibaErrorOccurred(msg); 

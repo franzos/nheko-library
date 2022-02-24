@@ -8,6 +8,13 @@
 #include "MatrixClient.h"
 #include "CibaAuthentication.h"
 
+struct UserInformation{
+    QString userId;
+    QString accessToken;
+    QString deviceId;
+    QString homeServer;
+} ;
+
 class Authentication: public QObject{
  Q_OBJECT
 
@@ -22,7 +29,7 @@ signals:
     void loginErrorOccurred(std::string &msg);
     void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
-    void loginCibaOk(QString response);
+    void loginCibaOk(UserInformation userInfo);
     void loginCibaErrorOccurred(std::string &msg);
     void cibaStatusChanged(QString accessToken,QString username);
 

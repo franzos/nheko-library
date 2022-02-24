@@ -1155,15 +1155,7 @@ void Client::loginWithCiba(QString username,QString server){
      _authentication->loginWithCiba(username,server);
 }
 
-void Client::loginCibaCb(QString response){
-    UserInformation userInfo;
-    QJsonDocument userJson = QJsonDocument::fromJson(response.toUtf8());
-    QJsonObject jsonObj = userJson.object();
-    userInfo.accessToken = jsonObj["access_token"].toString();
-    userInfo.userId = jsonObj["user_id"].toString();
-    userInfo.homeServer = jsonObj["home_server"].toString();
-    userInfo.deviceId = jsonObj["device_id"].toString();
-
+void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setUserId(userInfo.userId);
     userSettings_.data()->setAccessToken(userInfo.accessToken);
     userSettings_.data()->setDeviceId(userInfo.deviceId);

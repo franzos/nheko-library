@@ -44,12 +44,7 @@ struct Timeline;
 struct Rooms;
 }
 
-struct UserInformation{
-    QString userId;
-    QString accessToken;
-    QString deviceId;
-    QString homeServer;
-} ;
+
 
 using SecretsToDecrypt = std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData>;
 
@@ -173,7 +168,7 @@ signals:
 private slots:
     void logoutCb();
     void loginCb(const mtx::responses::Login &res);
-    void loginCibaCb(QString response);
+    void loginCibaCb(UserInformation userInfo);
     void removeRoom(const QString &room_id);
     void dropToLoginCb(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
