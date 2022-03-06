@@ -9,8 +9,10 @@
 
 VerificationManager::VerificationManager(QObject *parent)
   : QObject(parent)
-  , _selfVerificationStatus(new SelfVerificationStatus(this))
-{}
+  , _selfVerificationStatus(new SelfVerificationStatus(parent))
+{
+    connect((Client*)parent,&Client::initializeEmptyViews,_selfVerificationStatus,&SelfVerificationStatus::invalidate);
+}
 
 // void
 // VerificationManager::receivedRoomDeviceVerificationRequest(
