@@ -1546,48 +1546,48 @@ request_cross_signing_keys()
 
 namespace {
 void
-unlock_secrets(const std::string &key,
+unlock_secrets(const std::string &recoveryKey, const std::string &key,
                const std::map<std::string, mtx::secret_storage::AesHmacSha2EncryptedData> &secrets)
 {
     http::client()->secret_storage_key(
       key,
-      [secrets](mtx::secret_storage::AesHmacSha2KeyDescription keyDesc, mtx::http::RequestErr err) {
+      [recoveryKey, secrets](mtx::secret_storage::AesHmacSha2KeyDescription keyDesc, mtx::http::RequestErr err) {
           if (err) {
               nhlog::net()->error("Failed to download secret storage key");
               return;
           }
 
-          emit Client::instance()->downloadedSecrets(keyDesc, secrets);
+          emit Client::instance()->downloadedSecrets(recoveryKey, keyDesc, secrets);
       });
 }
 }
 
 void
-download_cross_signing_keys()
+download_cross_signing_keys(const std::string &recoveryKey)
 {
     using namespace mtx::secret_storage;
     http::client()->secret_storage_secret(
-      secrets::megolm_backup_v1, [](Secret secret, mtx::http::RequestErr err) {
+      secrets::megolm_backup_v1, [recoveryKey](Secret secret, mtx::http::RequestErr err) {
           std::optional<Secret> backup_key;
           if (!err)
               backup_key = secret;
 
           http::client()->secret_storage_secret(
-            secrets::cross_signing_master, [backup_key](Secret secret, mtx::http::RequestErr err) {
+            secrets::cross_signing_master, [recoveryKey,backup_key](Secret secret, mtx::http::RequestErr err) {
                 std::optional<Secret> master_key;
                 if (!err)
                     master_key = secret;
 
                 http::client()->secret_storage_secret(
                   secrets::cross_signing_self_signing,
-                  [backup_key, master_key](Secret secret, mtx::http::RequestErr err) {
+                  [recoveryKey, backup_key, master_key](Secret secret, mtx::http::RequestErr err) {
                       std::optional<Secret> self_signing_key;
                       if (!err)
                           self_signing_key = secret;
 
                       http::client()->secret_storage_secret(
                         secrets::cross_signing_user_signing,
-                        [backup_key, self_signing_key, master_key](Secret secret,
+                        [recoveryKey, backup_key, self_signing_key, master_key](Secret secret,
                                                                    mtx::http::RequestErr err) {
                             std::optional<Secret> user_signing_key;
                             if (!err)
@@ -1617,7 +1617,7 @@ download_cross_signing_keys()
                                          user_signing_key->encrypted.begin()->second;
 
                             for (const auto &[key, secrets] : secrets)
-                                unlock_secrets(key, secrets);
+                                unlock_secrets(recoveryKey, key, secrets);
                         });
                   });
             });

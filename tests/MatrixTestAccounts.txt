@@ -1,0 +1,26 @@
+// Hamzeh
+user: @hamzeh_test01:pantherx.org
+pass: pQn3mDGsYR
+
+user: @hamzeh_test02:pantherx.org
+pass: powwow-babbling-deviator
+recovery-key : EsTi jVgL chr3 nu3D avQ3 Ld9Y f4th 9wiF Ctvx Xqu7 tEv7 Uo7o
+
+user: @hamzeh_test03:pantherx.org
+pass: siberian-avoid-vocalize
+
+user: @hamzeh_test04:pantherx.org
+pass: tingly-headdress-earthlike
+
+user: @hamzeh_test05:pantherx.org
+pass: riverbed-judiciary-sworn
+recovery-key : EsTs kXqj kpPR 9VGC AZSM xrZZ dL4A ZvYz W2Cd 7y4n vqTU oGuE
+
+// Fakhri
+user: @fakhri_test01:pantherx.org
+pass: a2bqy9iHU8
+recovery key: EsTD YWcK PYGy DbyH iBRu agxx gWzB 17PN 9HMz WJuz tHzv HWrQ
+
+user: @fakhri_test02:pantherx.org
+pass: 6RCNv5xKc5
+

@@ -67,8 +67,7 @@ private slots:
         });
 
         QObject::connect(loginTestWrong,  &Authentication::loginErrorOccurred, [&](const std::string &out){            
-           QCOMPARE(out,"Invalid password");
-           qDebug()<<"INVALID Password";       
+            QCOMPARE(out,"Invalid password");
             eventLoop.quit();
         });
 
