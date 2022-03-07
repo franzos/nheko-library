@@ -100,7 +100,7 @@ public slots:
     void banUser(const QString & roomid, const QString  & userid, const QString & reason);
     void unbanUser(const QString & roomid, const QString &userid, const QString & reason);
     void receivedSessionKey(const QString &room_id, const QString &session_id);
-    void decryptDownloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
+    void decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                                   const SecretsToDecrypt &secrets);
     // Authentication
     void loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress);
@@ -136,6 +136,8 @@ signals:
     void newUpdated(const mtx::responses::Sync &sync);
     void initialSync(const mtx::responses::Sync &sync);
     void prepareTimelines();
+    void initializeEmptyViews();
+    
     // room signals
     void leftRoom(const QString &room_id);
     void roomLeaveFailed(const QString &error);
@@ -163,7 +165,7 @@ signals:
     void receivedDeviceVerificationReady(const mtx::events::msg::KeyVerificationReady &message);
     void receivedDeviceVerificationDone(const mtx::events::msg::KeyVerificationDone &message);
 
-    void downloadedSecrets(mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
+    void downloadedSecrets(const std::string &recoveryKey, mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
                            const SecretsToDecrypt &secrets);
 
 private slots:

@@ -4151,7 +4151,6 @@ Cache::verificationStatus_(const std::string &user_id, lmdb::txn &txn)
         }
 
         status.user_verified = trustlevel;
-
         verification_storage.status[user_id] = status;
         if (!verifyAtLeastOneSig(theirKeys->self_signing_keys, master_keys, user_id))
             return status;

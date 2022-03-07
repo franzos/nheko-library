@@ -9,9 +9,9 @@
 #include <mtx/responses/crypto.hpp>
 #include <nlohmann/json.hpp>
 
-#include "CacheCryptoStructs.h"
-#include "Logging.h"
-#include "MatrixClient.h"
+#include "../CacheCryptoStructs.h"
+#include "../Logging.h"
+#include "../MatrixClient.h"
 #include "Olm.h"
 
 class QTimer;

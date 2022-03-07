@@ -26,7 +26,7 @@ public:
 
     Q_INVOKABLE void setupCrosssigning(bool useSSSS, QString password, bool useOnlineKeyBackup);
     Q_INVOKABLE void verifyMasterKey();
-    Q_INVOKABLE void verifyMasterKeyWithPassphrase();
+    Q_INVOKABLE void verifyMasterKeyWithPassphrase(const QString &recoveryKey);
     Q_INVOKABLE void verifyUnverifiedDevices();
 
     Status status() const { return status_; }
@@ -38,6 +38,7 @@ signals:
     void setupCompleted();
     void showRecoveryKey(QString key);
     void setupFailed(QString message);
+    void verifyMasterKeyWithPassphraseFailed(const QString &message);
 
 public slots:
     void invalidate();

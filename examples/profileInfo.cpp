@@ -5,9 +5,14 @@
 #include <QEventLoop>
 #include <QThread>
 #include "../src/Client.h"
+#include "../src/encryption/SelfVerificationStatus.h"
+#include "../src/encryption/DeviceVerificationFlow.h"
+#include "../src/encryption/VerificationManager.h"
 
 UserInformation loginInfo;
 QMap <QString, Timeline*> timelineMap;
+bool onetimeLogin = true;
+bool oneTimeFlagJustForTesst = true;
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
@@ -50,11 +55,14 @@ int main(int argc, char *argv[]){
     
     QObject::connect(client,  &Client::dropToLogin, [&](const QString &msg){
         QString deviceName = "test";
-        QString userId = "@hamzeh_test01:pantherx.org";
-        QString password = "pQn3mDGsYR";
+        QString userId = "@hamzeh_test02:pantherx.org";
+        QString password = "5wn685g7mN"; 
         QString serverAddress = "https://matrix.pantherx.org";   
         qWarning() << msg;
+        if(!onetimeLogin)
+            return;
         client->loginWithPassword(deviceName, userId, password, serverAddress); 
+        onetimeLogin = false;
     });
 
     QObject::connect(client,  &Client::initiateFinished, [&](){
@@ -92,6 +100,39 @@ int main(int argc, char *argv[]){
             }
             // timeline->sendMessage("Hello, I'm here now.");
         }
+        // -------------------------------------------
+        // auto _verificationManager = client->verificationManager();
+        // QObject::connect(_verificationManager, &VerificationManager::newDeviceVerificationRequest, [](DeviceVerificationFlow *flow){
+        //     QObject::connect(flow,&DeviceVerificationFlow::stateChanged,[flow](){
+        //         qDebug() << "--------------------------------------------------";
+        //         qDebug() << flow->stateEnum() << flow->state(); 
+        //         // if(flow->stateEnum() == DeviceVerificationFlow::State::CompareEmoji){
+        //             auto keys = flow->getSasList();
+        //             for(auto const&k: keys){
+        //                 qDebug() << k;
+        //             }
+        //         // }
+        //         qDebug() << "--------------------------------------------------";
+        //     });
+        //     if(oneTimeFlagJustForTesst) {
+        //         oneTimeFlagJustForTesst = false;
+        //         flow->next();
+        //     }
+        // });
+        // auto selfVerificationStatus = _verificationManager->selfVerificationStatus();
+        // QObject::connect(selfVerificationStatus, &SelfVerificationStatus::statusChanged,[selfVerificationStatus](){
+        //     auto status = selfVerificationStatus->status();
+        //     qDebug() << "***********************************************";
+        //     qDebug() << status;
+        //     qDebug() << "***********************************************";  
+        //     if(status == SelfVerificationStatus::Status::UnverifiedDevices) {
+        //         // selfVerificationStatus->verifyUnverifiedDevices();
+        //     }
+        // });
+        // QTimer::singleShot(5000, [selfVerificationStatus] {
+        // //    selfVerificationStatus->verifyMasterKeyWithPassphrase("EsTi jVgL chr3 nu3D avQ3 Ld9Y f4th 9wiF Ctvx Xqu7 tEv7 Uo7o");
+        // //    selfVerificationStatus->verifyMasterKey(); 
+        // });
     });
     client->enableLogger(true,true);
     client->start();
