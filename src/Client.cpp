@@ -7,6 +7,9 @@
 #include <mtx/responses.hpp>
 #include <QDebug>
 #include <QThread>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonDocument>
 #include "Cache.h"
 #include "Cache_p.h"
 #include "Client.h"
@@ -51,7 +54,17 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             this,
             &Client::loginCb,
             Qt::QueuedConnection);
+    connect(_authentication,
+            &Authentication::loginCibaOk,
+            this,
+            &Client::loginCibaCb,
+            Qt::QueuedConnection);
     connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
+        nhlog::net()->info("login failed: {}", msg);
+        QString err =QString::fromStdString(msg);
+        emit loginErrorOccurred(err);
+    });
+    connect(_authentication, &Authentication::loginCibaErrorOccurred, [&](std::string &msg) {
         nhlog::net()->info("login failed: {}", msg);
         QString err =QString::fromStdString(msg);
         emit loginErrorOccurred(err);
@@ -1137,4 +1150,16 @@ void Client::removeTimeline(const QString &roomID){
         _timelines.remove(roomID);
         delete timeline;
     }
+}
+
+void Client::loginWithCiba(QString username,QString server){
+     _authentication->loginWithCiba(username,server);
+}
+
+void Client::loginCibaCb(UserInformation userInfo){
+    userSettings_.data()->setUserId(userInfo.userId);
+    userSettings_.data()->setAccessToken(userInfo.accessToken);
+    userSettings_.data()->setDeviceId(userInfo.deviceId);
+    userSettings_.data()->setHomeserver(userInfo.homeServer);
+    emit loginOk(userInfo);
 }
