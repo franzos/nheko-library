@@ -1022,7 +1022,8 @@ Client::startChat(QString userid)
             auto room_members = cache::roomMembers(room_id);
             if (std::find(room_members.begin(), room_members.end(), (userid).toStdString()) !=
                 room_members.end()) {
-                // view_manager_->rooms()->setCurrentRoom(QString::fromStdString(room_id));
+                nhlog::net()->info("Room is already exist");
+                emit roomCreated(QString::fromStdString(room_id));
                 return;
             }
         }
