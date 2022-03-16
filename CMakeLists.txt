@@ -15,11 +15,13 @@ include_directories(src)
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
+pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
+
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
 find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Gui Multimedia REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -52,6 +54,9 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
+	# src/voip/CallDevices.cpp
+	# src/voip/CallManager.cpp
+	src/voip/WebRTCSession.cpp
 	src/Cache.cpp
 	src/Client.cpp
 	src/EventAccessors.cpp
@@ -96,6 +101,9 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/DeviceVerificationFlow.h
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
+	# src/voip/CallDevices.h
+	# src/voip/CallManager.h
+	src/voip/WebRTCSession.h
 	src/Authentication.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
@@ -116,6 +124,9 @@ set(HEADERS
 	encryption/DeviceVerificationFlow.h
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
+	# src/voip/CallDevices.h
+	# src/voip/CallManager.h
+	src/voip/WebRTCSession.h
 	Authentication.h	
 	CacheCryptoStructs.h
 	CacheStructs.h
@@ -152,9 +163,11 @@ endif()
 
 set(DEP_LIBS 
 	MatrixClient::MatrixClient
+	PkgConfig::GSTREAMER
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
+	Qt5::Multimedia
 	Qt5::Network
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
@@ -166,6 +179,7 @@ foreach(HEADER ${HEADERS})
 	string(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})
 	install(FILES src/${HEADER} DESTINATION include/matrix-client-library/${DIR})
 endforeach(HEADER {HEADERS})
+target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
