@@ -67,6 +67,8 @@ UserSettings::load(std::optional<QString> profile)
     disableCertificateValidation_ =
       settings.value("disable_certificate_validation", true).toBool();
     
+    useStunServer_          = settings.value("user/use_stun_server", false).toBool();
+
     settings.beginGroup("secrets");
     QStringList secretKeys = settings.allKeys();
     for(auto const &s: secretKeys)
@@ -178,6 +180,16 @@ UserSettings::setDisableCertificateValidation(bool disabled)
 }
 
 void
+UserSettings::setUseStunServer(bool useStunServer)
+{
+    if (useStunServer == useStunServer_)
+        return;
+    useStunServer_ = useStunServer;
+    emit useStunServerChanged(useStunServer);
+    save();
+}
+
+void
 UserSettings::save()
 {
     settings.beginGroup("user");
@@ -197,6 +209,8 @@ UserSettings::save()
     settings.setValue(prefix + "user/online_key_backup", useOnlineKeyBackup_);
 
     settings.setValue("disable_certificate_validation", disableCertificateValidation_);
+
+    settings.setValue("use_stun_server", useStunServer_);
 
     QMap<QString, QString>::iterator i;
     for (i = secretsMap_.begin(); i != secretsMap_.end(); ++i) {

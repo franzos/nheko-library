@@ -30,6 +30,7 @@ class UserSettings : public QObject
     Q_PROPERTY(QString homeserver READ homeserver WRITE setHomeserver NOTIFY homeserverChanged)
     Q_PROPERTY(bool disableCertificateValidation READ disableCertificateValidation WRITE
                  setDisableCertificateValidation NOTIFY disableCertificateValidationChanged)
+    Q_PROPERTY(bool useStunServer READ useStunServer WRITE setUseStunServer NOTIFY useStunServerChanged)
     UserSettings();
 
 public:
@@ -59,6 +60,8 @@ public:
     void setDeviceId(QString deviceId);
     void setHomeserver(QString homeserver);
     void setDisableCertificateValidation(bool disabled);
+    void setUseStunServer(bool state);
+
     Presence presence() const { return presence_; }
     bool shareKeysWithTrustedUsers() const { return shareKeysWithTrustedUsers_; }
     bool onlyShareKeysWithVerifiedUsers() const { return onlyShareKeysWithVerifiedUsers_; }
@@ -69,6 +72,8 @@ public:
     QString deviceId() const { return deviceId_; }
     QString homeserver() const { return homeserver_; }
     bool disableCertificateValidation() const { return disableCertificateValidation_; }
+    bool useStunServer() const { return useStunServer_; }
+
     QString secret(const QString &key){
         return secretsMap_[key];
     }
@@ -89,6 +94,7 @@ signals:
     void deviceIdChanged(QString deviceId);
     void homeserverChanged(QString homeserver);
     void disableCertificateValidationChanged(bool disabled);
+    void useStunServerChanged(bool state);
 
 private:
     bool shareKeysWithTrustedUsers_;
@@ -101,6 +107,7 @@ private:
     QString accessToken_;
     QString deviceId_;
     QString homeserver_;
+    bool useStunServer_;
     QSettings settings;
     QMap<QString, QString> secretsMap_;
     static QSharedPointer<UserSettings> instance_;
