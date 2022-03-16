@@ -37,6 +37,7 @@ private slots:
     void loginCibaFlow(QString accessToken,QString username);
 private:
    CibaAuthentication *ciba; 
+   bool isCibaSupported(QString data);
 };
 
 
