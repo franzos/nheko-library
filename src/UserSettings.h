@@ -30,6 +30,12 @@ class UserSettings : public QObject
     Q_PROPERTY(QString homeserver READ homeserver WRITE setHomeserver NOTIFY homeserverChanged)
     Q_PROPERTY(bool disableCertificateValidation READ disableCertificateValidation WRITE
                  setDisableCertificateValidation NOTIFY disableCertificateValidationChanged)
+    Q_PROPERTY(QString microphone READ microphone WRITE setMicrophone NOTIFY microphoneChanged)
+    Q_PROPERTY(QString camera READ camera WRITE setCamera NOTIFY cameraChanged)
+    Q_PROPERTY(QString cameraResolution READ cameraResolution WRITE setCameraResolution NOTIFY
+                 cameraResolutionChanged)
+    Q_PROPERTY(QString cameraFrameRate READ cameraFrameRate WRITE setCameraFrameRate NOTIFY
+                 cameraFrameRateChanged)
     Q_PROPERTY(bool useStunServer READ useStunServer WRITE setUseStunServer NOTIFY useStunServerChanged)
     UserSettings();
 
@@ -60,6 +66,10 @@ public:
     void setDeviceId(QString deviceId);
     void setHomeserver(QString homeserver);
     void setDisableCertificateValidation(bool disabled);
+    void setMicrophone(QString microphone);
+    void setCamera(QString camera);
+    void setCameraResolution(QString resolution);
+    void setCameraFrameRate(QString frameRate);
     void setUseStunServer(bool state);
 
     Presence presence() const { return presence_; }
@@ -72,6 +82,10 @@ public:
     QString deviceId() const { return deviceId_; }
     QString homeserver() const { return homeserver_; }
     bool disableCertificateValidation() const { return disableCertificateValidation_; }
+    QString microphone() const { return microphone_; }
+    QString camera() const { return camera_; }
+    QString cameraResolution() const { return cameraResolution_; }
+    QString cameraFrameRate() const { return cameraFrameRate_; }
     bool useStunServer() const { return useStunServer_; }
 
     QString secret(const QString &key){
@@ -94,6 +108,10 @@ signals:
     void deviceIdChanged(QString deviceId);
     void homeserverChanged(QString homeserver);
     void disableCertificateValidationChanged(bool disabled);
+    void microphoneChanged(QString microphone);
+    void cameraChanged(QString camera);
+    void cameraResolutionChanged(QString resolution);
+    void cameraFrameRateChanged(QString frameRate);
     void useStunServerChanged(bool state);
 
 private:
@@ -107,6 +125,10 @@ private:
     QString accessToken_;
     QString deviceId_;
     QString homeserver_;
+    QString microphone_;
+    QString camera_;
+    QString cameraResolution_;
+    QString cameraFrameRate_;
     bool useStunServer_;
     QSettings settings;
     QMap<QString, QString> secretsMap_;

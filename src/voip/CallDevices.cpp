@@ -7,22 +7,19 @@
 #include <string_view>
 
 #include "CallDevices.h"
-#include "ChatPage.h"
 #include "Logging.h"
-#include "UserSettingsPage.h"
 
-#ifdef GSTREAMER_AVAILABLE
+#include <UserSettings.h>
+
 extern "C"
 {
 #include "gst/gst.h"
 }
-#endif
 
 CallDevices::CallDevices()
   : QObject()
 {}
 
-#ifdef GSTREAMER_AVAILABLE
 namespace {
 
 struct AudioSource
@@ -69,7 +66,7 @@ addFrameRate(std::vector<std::string> &rates, const FrameRate &rate)
 void
 setDefaultDevice(bool isVideo)
 {
-    auto settings = ChatPage::instance()->userSettings();
+    auto settings = UserSettings::instance();
     if (isVideo && settings->camera().isEmpty()) {
         const VideoSource &camera = videoSources_.front();
         settings->setCamera(QString::fromStdString(camera.name));
@@ -319,7 +316,7 @@ CallDevices::frameRates(const std::string &cameraName, const std::string &resolu
 GstDevice *
 CallDevices::audioDevice() const
 {
-    std::string name = ChatPage::instance()->userSettings()->microphone().toStdString();
+    std::string name = UserSettings::instance()->microphone().toStdString();
     if (auto it = std::find_if(audioSources_.cbegin(),
                                audioSources_.cend(),
                                [&name](const auto &s) { return s.name == name; });
@@ -335,7 +332,7 @@ CallDevices::audioDevice() const
 GstDevice *
 CallDevices::videoDevice(std::pair<int, int> &resolution, std::pair<int, int> &frameRate) const
 {
-    auto settings    = ChatPage::instance()->userSettings();
+    auto settings    = UserSettings::instance();
     std::string name = settings->camera().toStdString();
     if (auto s = getVideoSource(name); s) {
         nhlog::ui()->debug("WebRTC: camera: {}", name);
@@ -350,36 +347,3 @@ CallDevices::videoDevice(std::pair<int, int> &resolution, std::pair<int, int> &f
     }
 }
 
-#else
-
-bool
-CallDevices::haveMic() const
-{
-    return false;
-}
-
-bool
-CallDevices::haveCamera() const
-{
-    return false;
-}
-
-std::vector<std::string>
-CallDevices::names(bool, const std::string &) const
-{
-    return {};
-}
-
-std::vector<std::string>
-CallDevices::resolutions(const std::string &) const
-{
-    return {};
-}
-
-std::vector<std::string>
-CallDevices::frameRates(const std::string &, const std::string &) const
-{
-    return {};
-}
-
-#endif

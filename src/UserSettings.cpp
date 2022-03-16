@@ -67,6 +67,10 @@ UserSettings::load(std::optional<QString> profile)
     disableCertificateValidation_ =
       settings.value("disable_certificate_validation", true).toBool();
     
+    microphone_             = settings.value("user/microphone", QString()).toString();
+    camera_                 = settings.value("user/camera", QString()).toString();
+    cameraResolution_       = settings.value("user/camera_resolution", QString()).toString();
+    cameraFrameRate_        = settings.value("user/camera_frame_rate", QString()).toString();
     useStunServer_          = settings.value("user/use_stun_server", false).toBool();
 
     settings.beginGroup("secrets");
@@ -180,6 +184,46 @@ UserSettings::setDisableCertificateValidation(bool disabled)
 }
 
 void
+UserSettings::setMicrophone(QString microphone)
+{
+    if (microphone == microphone_)
+        return;
+    microphone_ = microphone;
+    emit microphoneChanged(microphone);
+    save();
+}
+
+void
+UserSettings::setCamera(QString camera)
+{
+    if (camera == camera_)
+        return;
+    camera_ = camera;
+    emit cameraChanged(camera);
+    save();
+}
+
+void
+UserSettings::setCameraResolution(QString resolution)
+{
+    if (resolution == cameraResolution_)
+        return;
+    cameraResolution_ = resolution;
+    emit cameraResolutionChanged(resolution);
+    save();
+}
+
+void
+UserSettings::setCameraFrameRate(QString frameRate)
+{
+    if (frameRate == cameraFrameRate_)
+        return;
+    cameraFrameRate_ = frameRate;
+    emit cameraFrameRateChanged(frameRate);
+    save();
+}
+
+void
 UserSettings::setUseStunServer(bool useStunServer)
 {
     if (useStunServer == useStunServer_)
@@ -209,7 +253,10 @@ UserSettings::save()
     settings.setValue(prefix + "user/online_key_backup", useOnlineKeyBackup_);
 
     settings.setValue("disable_certificate_validation", disableCertificateValidation_);
-
+    settings.setValue("microphone", microphone_);
+    settings.setValue("camera", camera_);
+    settings.setValue("camera_resolution", cameraResolution_);
+    settings.setValue("camera_frame_rate", cameraFrameRate_);
     settings.setValue("use_stun_server", useStunServer_);
 
     QMap<QString, QString>::iterator i;
