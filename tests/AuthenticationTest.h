@@ -80,26 +80,26 @@ private slots:
     }
 
 
-void loginWithCorrectCiba(){
-        auto loginCibaTest = new Authentication();
-        //QEventLoop eventLoop;
-        QObject::connect(loginCibaTest,  &Authentication::loginCibaOk, [&](UserInformation res){            
-            eventLoop.quit();
-        });
+// void loginWithCorrectCiba(){
+//         auto loginCibaTest = new Authentication();
+//         //QEventLoop eventLoop;
+//         QObject::connect(loginCibaTest,  &Authentication::loginCibaOk, [&](UserInformation res){            
+//             eventLoop.quit();
+//         });
 
  
-        QObject::connect(loginCibaTest,  &Authentication::loginCibaErrorOccurred, [&](const std::string &out){
-            QFAIL(out.c_str());
-            eventLoop.quit();
-        });              
+//         QObject::connect(loginCibaTest,  &Authentication::loginCibaErrorOccurred, [&](const std::string &out){
+//             QFAIL(out.c_str());
+//             eventLoop.quit();
+//         });              
       
 
-        QString userId = "ff.ss@pantherx.org";
-        QString server = "https://matrix.pantherx.dev";
-        loginCibaTest->loginWithCiba(userId,server); 
-        eventLoop.exec();  
+//         QString userId = "ff.ss@pantherx.org";
+//         QString server = "https://matrix.pantherx.dev";
+//         loginCibaTest->loginWithCiba(userId,server); 
+//         eventLoop.exec();  
          
-    }
+//     }
 
 
        
