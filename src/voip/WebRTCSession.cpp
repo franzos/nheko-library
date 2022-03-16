@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <QQmlEngine>
-#include <QQuickItem>
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -15,12 +13,11 @@
 #include <utility>
 
 #include "CallDevices.h"
-#include "ChatPage.h"
 #include "Logging.h"
-#include "UserSettingsPage.h"
 #include "WebRTCSession.h"
 
-#ifdef GSTREAMER_AVAILABLE
+#include <UserSettings.h>
+
 extern "C"
 {
 #include "gst/gst.h"
@@ -29,7 +26,6 @@ extern "C"
 #define GST_USE_UNSTABLE_API
 #include "gst/webrtc/webrtc.h"
 }
-#endif
 
 // https://github.com/vector-im/riot-web/issues/10173
 #define STUN_SERVER "stun://turn.matrix.org:3478"
@@ -44,13 +40,7 @@ WebRTCSession::WebRTCSession()
   : devices_(CallDevices::instance())
 {
     qRegisterMetaType<webrtc::CallType>();
-    qmlRegisterUncreatableMetaObject(
-      webrtc::staticMetaObject, "im.nheko", 1, 0, "CallType", "Can't instantiate enum");
-
     qRegisterMetaType<webrtc::State>();
-    qmlRegisterUncreatableMetaObject(
-      webrtc::staticMetaObject, "im.nheko", 1, 0, "WebRTCState", "Can't instantiate enum");
-
     connect(this, &WebRTCSession::stateChanged, this, &WebRTCSession::setState);
     init();
 }
@@ -58,7 +48,6 @@ WebRTCSession::WebRTCSession()
 bool
 WebRTCSession::init(std::string *errorMessage)
 {
-#ifdef GSTREAMER_AVAILABLE
     if (initialised_)
         return true;
 
@@ -81,13 +70,8 @@ WebRTCSession::init(std::string *errorMessage)
     g_free(version);
     devices_.init();
     return true;
-#else
-    (void)errorMessage;
-    return false;
-#endif
 }
 
-#ifdef GSTREAMER_AVAILABLE
 namespace {
 
 std::string localsdp_;
@@ -741,7 +725,7 @@ WebRTCSession::startPipeline(int opusPayloadType, int vp8PayloadType)
 
     webrtc_ = gst_bin_get_by_name(GST_BIN(pipe_), "webrtcbin");
 
-    if (ChatPage::instance()->userSettings()->useStunServer()) {
+    if (UserSettings::instance()->useStunServer()) {
         nhlog::ui()->info("WebRTC: setting STUN server: {}", STUN_SERVER);
         g_object_set(webrtc_, "stun-server", STUN_SERVER, nullptr);
     }
@@ -866,12 +850,12 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     if (callType_ == CallType::VIDEO && !devices_.haveCamera())
         return !isOffering_;
 
-    auto settings            = ChatPage::instance()->userSettings();
+    auto settings            = UserSettings::instance();
     GstElement *camerafilter = nullptr;
     GstElement *videoconvert = gst_element_factory_make("videoconvert", nullptr);
     GstElement *tee          = gst_element_factory_make("tee", "videosrctee");
     gst_bin_add_many(GST_BIN(pipe_), videoconvert, tee, nullptr);
-    if (callType_ == CallType::VIDEO || (settings->screenSharePiP() && devices_.haveCamera())) {
+    if (callType_ == CallType::VIDEO) {
         std::pair<int, int> resolution;
         std::pair<int, int> frameRate;
         GstDevice *device = devices_.videoDevice(resolution, frameRate);
@@ -902,59 +886,6 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         }
         if (callType_ == CallType::VIDEO && !gst_element_link(camerafilter, tee)) {
             nhlog::ui()->error("WebRTC: failed to link camerafilter -> tee");
-            return false;
-        }
-    }
-
-    if (callType_ == CallType::SCREEN) {
-        nhlog::ui()->debug("WebRTC: screen share frame rate: {} fps",
-                           settings->screenShareFrameRate());
-        nhlog::ui()->debug("WebRTC: screen share picture-in-picture: {}",
-                           settings->screenSharePiP());
-        nhlog::ui()->debug("WebRTC: screen share request remote camera: {}",
-                           settings->screenShareRemoteVideo());
-        nhlog::ui()->debug("WebRTC: screen share hide mouse cursor: {}",
-                           settings->screenShareHideCursor());
-
-        GstElement *ximagesrc = gst_element_factory_make("ximagesrc", "screenshare");
-        if (!ximagesrc) {
-            nhlog::ui()->error("WebRTC: failed to create ximagesrc");
-            return false;
-        }
-        g_object_set(ximagesrc, "use-damage", FALSE, nullptr);
-        g_object_set(ximagesrc, "xid", shareWindowId_, nullptr);
-        g_object_set(ximagesrc, "show-pointer", !settings->screenShareHideCursor(), nullptr);
-
-        GstCaps *caps          = gst_caps_new_simple("video/x-raw",
-                                            "framerate",
-                                            GST_TYPE_FRACTION,
-                                            settings->screenShareFrameRate(),
-                                            1,
-                                            nullptr);
-        GstElement *capsfilter = gst_element_factory_make("capsfilter", nullptr);
-        g_object_set(capsfilter, "caps", caps, nullptr);
-        gst_caps_unref(caps);
-        gst_bin_add_many(GST_BIN(pipe_), ximagesrc, capsfilter, nullptr);
-
-        if (settings->screenSharePiP() && devices_.haveCamera()) {
-            GstElement *compositor = gst_element_factory_make("compositor", nullptr);
-            g_object_set(compositor, "background", 1, nullptr);
-            gst_bin_add(GST_BIN(pipe_), compositor);
-            if (!gst_element_link_many(ximagesrc, compositor, capsfilter, tee, nullptr)) {
-                nhlog::ui()->error("WebRTC: failed to link screen share elements");
-                return false;
-            }
-
-            GstPad *srcpad    = gst_element_get_static_pad(camerafilter, "src");
-            remotePiPSinkPad_ = gst_element_get_request_pad(compositor, "sink_%u");
-            if (GST_PAD_LINK_FAILED(gst_pad_link(srcpad, remotePiPSinkPad_))) {
-                nhlog::ui()->error("WebRTC: failed to link camerafilter -> compositor");
-                gst_object_unref(srcpad);
-                return false;
-            }
-            gst_object_unref(srcpad);
-        } else if (!gst_element_link_many(ximagesrc, videoconvert, capsfilter, tee, nullptr)) {
-            nhlog::ui()->error("WebRTC: failed to link screen share elements");
             return false;
         }
     }
@@ -990,16 +921,6 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         return false;
     }
 
-    if (callType_ == CallType::SCREEN &&
-        !ChatPage::instance()->userSettings()->screenShareRemoteVideo()) {
-        GArray *transceivers;
-        g_signal_emit_by_name(webrtcbin, "get-transceivers", &transceivers);
-        GstWebRTCRTPTransceiver *transceiver =
-          g_array_index(transceivers, GstWebRTCRTPTransceiver *, 1);
-        transceiver->direction = GST_WEBRTC_RTP_TRANSCEIVER_DIRECTION_SENDONLY;
-        g_array_unref(transceivers);
-    }
-
     gst_object_unref(webrtcbin);
     return true;
 }
@@ -1010,8 +931,6 @@ WebRTCSession::haveLocalPiP() const
     if (state_ >= State::INITIATED) {
         if (callType_ == CallType::VOICE || isRemoteVideoRecvOnly_)
             return false;
-        else if (callType_ == CallType::SCREEN)
-            return true;
         else {
             GstElement *tee = gst_bin_get_by_name(GST_BIN(pipe_), "videosrctee");
             if (tee) {
@@ -1099,57 +1018,3 @@ WebRTCSession::end()
     if (state_ != State::DISCONNECTED)
         emit stateChanged(State::DISCONNECTED);
 }
-
-#else
-
-bool
-WebRTCSession::havePlugins(bool, std::string *)
-{
-    return false;
-}
-
-bool
-WebRTCSession::haveLocalPiP() const
-{
-    return false;
-}
-
-bool WebRTCSession::createOffer(webrtc::CallType, uint32_t) { return false; }
-
-bool
-WebRTCSession::acceptOffer(const std::string &)
-{
-    return false;
-}
-
-bool
-WebRTCSession::acceptAnswer(const std::string &)
-{
-    return false;
-}
-
-void
-WebRTCSession::acceptICECandidates(const std::vector<mtx::events::msg::CallCandidates::Candidate> &)
-{}
-
-bool
-WebRTCSession::isMicMuted() const
-{
-    return false;
-}
-
-bool
-WebRTCSession::toggleMicMute()
-{
-    return false;
-}
-
-void
-WebRTCSession::toggleLocalPiP()
-{}
-
-void
-WebRTCSession::end()
-{}
-
-#endif

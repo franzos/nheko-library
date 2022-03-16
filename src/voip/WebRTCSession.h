@@ -22,7 +22,6 @@ enum class CallType
 {
     VOICE,
     VIDEO,
-    SCREEN // localUser is sharing screen
 };
 Q_ENUM_NS(CallType)
 
