@@ -30,6 +30,7 @@ class UserSettings : public QObject
     Q_PROPERTY(QString homeserver READ homeserver WRITE setHomeserver NOTIFY homeserverChanged)
     Q_PROPERTY(bool disableCertificateValidation READ disableCertificateValidation WRITE
                  setDisableCertificateValidation NOTIFY disableCertificateValidationChanged)
+    Q_PROPERTY(QString ringtone READ ringtone WRITE setRingtone NOTIFY ringtoneChanged)
     Q_PROPERTY(QString microphone READ microphone WRITE setMicrophone NOTIFY microphoneChanged)
     Q_PROPERTY(QString camera READ camera WRITE setCamera NOTIFY cameraChanged)
     Q_PROPERTY(QString cameraResolution READ cameraResolution WRITE setCameraResolution NOTIFY
@@ -66,6 +67,7 @@ public:
     void setDeviceId(QString deviceId);
     void setHomeserver(QString homeserver);
     void setDisableCertificateValidation(bool disabled);
+    void setRingtone(QString ringtone);
     void setMicrophone(QString microphone);
     void setCamera(QString camera);
     void setCameraResolution(QString resolution);
@@ -82,6 +84,7 @@ public:
     QString deviceId() const { return deviceId_; }
     QString homeserver() const { return homeserver_; }
     bool disableCertificateValidation() const { return disableCertificateValidation_; }
+    QString ringtone() const { return ringtone_; }
     QString microphone() const { return microphone_; }
     QString camera() const { return camera_; }
     QString cameraResolution() const { return cameraResolution_; }
@@ -108,6 +111,7 @@ signals:
     void deviceIdChanged(QString deviceId);
     void homeserverChanged(QString homeserver);
     void disableCertificateValidationChanged(bool disabled);
+    void ringtoneChanged(QString ringtone);
     void microphoneChanged(QString microphone);
     void cameraChanged(QString camera);
     void cameraResolutionChanged(QString resolution);
@@ -125,6 +129,7 @@ private:
     QString accessToken_;
     QString deviceId_;
     QString homeserver_;
+    QString ringtone_;
     QString microphone_;
     QString camera_;
     QString cameraResolution_;

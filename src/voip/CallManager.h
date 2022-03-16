@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include <QMediaPlayer>
 #include <QObject>
 #include <QString>
 #include <QTimer>
@@ -61,7 +60,7 @@ public:
     static bool screenShareSupported();
 
 public slots:
-    void sendInvite(const QString &roomid, webrtc::CallType, unsigned int windowIndex = 0);
+    bool sendInvite(const QString &roomid, webrtc::CallType, unsigned int windowIndex = 0);
     void syncEvent(const mtx::events::collections::TimelineEvents &event);
     void toggleMicMute();
     void toggleLocalPiP() { session_.toggleLocalPiP(); }
@@ -98,7 +97,6 @@ private:
     std::vector<mtx::events::msg::CallCandidates::Candidate> remoteICECandidates_;
     std::vector<std::string> turnURIs_;
     QTimer turnServerTimer_;
-    QMediaPlayer player_;
     std::vector<std::pair<QString, uint32_t>> windows_;
 
     template<typename T>
@@ -112,6 +110,4 @@ private:
     QStringList devices(bool isVideo) const;
     void clear();
     void endCall();
-    void playRingtone(const QUrl &ringtone, bool repeat);
-    void stopRingtone();
 };

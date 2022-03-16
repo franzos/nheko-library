@@ -21,7 +21,7 @@ find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
 find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui Multimedia REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Gui REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -55,7 +55,7 @@ set(SRC_FILES
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
 	src/voip/CallDevices.cpp
-	# src/voip/CallManager.cpp
+	src/voip/CallManager.cpp
 	src/voip/WebRTCSession.cpp
 	src/Cache.cpp
 	src/Client.cpp
@@ -102,7 +102,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
 	src/voip/CallDevices.h
-	# src/voip/CallManager.h
+	src/voip/CallManager.h
 	src/voip/WebRTCSession.h
 	src/Authentication.h
 	src/CacheCryptoStructs.h
@@ -125,7 +125,7 @@ set(HEADERS
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
 	src/voip/CallDevices.h
-	# src/voip/CallManager.h
+	src/voip/CallManager.h
 	src/voip/WebRTCSession.h
 	Authentication.h	
 	CacheCryptoStructs.h
@@ -167,7 +167,6 @@ set(DEP_LIBS
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
-	Qt5::Multimedia
 	Qt5::Network
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx

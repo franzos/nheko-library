@@ -67,6 +67,7 @@ UserSettings::load(std::optional<QString> profile)
     disableCertificateValidation_ =
       settings.value("disable_certificate_validation", true).toBool();
     
+    ringtone_               = settings.value("user/ringtone", "Default").toString();
     microphone_             = settings.value("user/microphone", QString()).toString();
     camera_                 = settings.value("user/camera", QString()).toString();
     cameraResolution_       = settings.value("user/camera_resolution", QString()).toString();
@@ -184,6 +185,16 @@ UserSettings::setDisableCertificateValidation(bool disabled)
 }
 
 void
+UserSettings::setRingtone(QString ringtone)
+{
+    if (ringtone == ringtone_)
+        return;
+    ringtone_ = ringtone;
+    emit ringtoneChanged(ringtone);
+    save();
+}
+
+void
 UserSettings::setMicrophone(QString microphone)
 {
     if (microphone == microphone_)
@@ -253,6 +264,7 @@ UserSettings::save()
     settings.setValue(prefix + "user/online_key_backup", useOnlineKeyBackup_);
 
     settings.setValue("disable_certificate_validation", disableCertificateValidation_);
+    settings.setValue("ringtone", ringtone_);
     settings.setValue("microphone", microphone_);
     settings.setValue("camera", camera_);
     settings.setValue("camera_resolution", cameraResolution_);

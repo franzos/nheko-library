@@ -9,17 +9,16 @@
 #include <cstdlib>
 #include <memory>
 
-#include <QMediaPlaylist>
 #include <QUrl>
 
 #include "Cache.h"
 #include "CallDevices.h"
 #include "CallManager.h"
-#include "ChatPage.h"
 #include "Logging.h"
 #include "MatrixClient.h"
-#include "UserSettingsPage.h"
 #include "Utils.h"
+
+#include <UserSettings.h>
 
 #include "mtx/responses/turn_server.hpp"
 
@@ -28,12 +27,10 @@
 #include <xcb/xcb_ewmh.h>
 #endif
 
-#ifdef GSTREAMER_AVAILABLE
 extern "C"
 {
 #include "gst/gst.h"
 }
-#endif
 
 Q_DECLARE_METATYPE(std::vector<mtx::events::msg::CallCandidates::Candidate>)
 Q_DECLARE_METATYPE(mtx::events::msg::CallCandidates::Candidate)
@@ -70,7 +67,6 @@ CallManager::CallManager(QObject *parent)
           QTimer::singleShot(timeoutms_, this, [this, callid]() {
               if (session_.state() == webrtc::State::OFFERSENT && callid == callid_) {
                   hangUp(CallHangUp::Reason::InviteTimeOut);
-                  emit ChatPage::instance()->showNotification("The remote side failed to pick up.");
               }
           });
       });
@@ -115,14 +111,12 @@ CallManager::CallManager(QObject *parent)
     connect(&session_, &WebRTCSession::stateChanged, this, [this](webrtc::State state) {
         switch (state) {
         case webrtc::State::DISCONNECTED:
-            playRingtone(QUrl("qrc:/media/media/callend.ogg"), false);
             clear();
             break;
         case webrtc::State::ICEFAILED: {
             QString error("Call connection failed.");
             if (turnURIs_.empty())
                 error += " Your homeserver has no configured TURN server.";
-            emit ChatPage::instance()->showNotification(error);
             hangUp(CallHangUp::Reason::ICEFailed);
             break;
         }
@@ -134,58 +128,28 @@ CallManager::CallManager(QObject *parent)
 
     connect(
       &CallDevices::instance(), &CallDevices::devicesChanged, this, &CallManager::devicesChanged);
-
-    connect(
-      &player_, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
-          if (status == QMediaPlayer::LoadedMedia)
-              player_.play();
-      });
-
-    connect(&player_,
-            QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error),
-            [this](QMediaPlayer::Error error) {
-                stopRingtone();
-                switch (error) {
-                case QMediaPlayer::FormatError:
-                case QMediaPlayer::ResourceError:
-                    nhlog::ui()->error("WebRTC: valid ringtone file not found");
-                    break;
-                case QMediaPlayer::AccessDeniedError:
-                    nhlog::ui()->error("WebRTC: access to ringtone file denied");
-                    break;
-                default:
-                    nhlog::ui()->error("WebRTC: unable to play ringtone");
-                    break;
-                }
-            });
 }
 
-void
+bool
 CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int windowIndex)
 {
-    if (isOnCall())
-        return;
-    if (callType == CallType::SCREEN) {
-        if (!screenShareSupported())
-            return;
-        if (windows_.empty() || windowIndex >= windows_.size()) {
-            nhlog::ui()->error("WebRTC: window index out of range");
-            return;
-        }
+    Q_UNUSED(windowIndex)
+    if (isOnCall()){
+        nhlog::ui()->error("User is already onCall");
+        return false;
     }
 
     auto roomInfo = cache::singleRoomInfo(roomid.toStdString());
     if (roomInfo.member_count != 2) {
-        emit ChatPage::instance()->showNotification("Calls are limited to 1:1 rooms.");
-        return;
+        nhlog::ui()->error("Calls are limited to 1:1 rooms.");
+        return false;
     }
 
     std::string errorMessage;
     if (!session_.havePlugins(false, &errorMessage) ||
-        ((callType == CallType::VIDEO || callType == CallType::SCREEN) &&
-         !session_.havePlugins(true, &errorMessage))) {
-        emit ChatPage::instance()->showNotification(QString::fromStdString(errorMessage));
-        return;
+        (callType == CallType::VIDEO &&  !session_.havePlugins(true, &errorMessage))) {
+        nhlog::ui()->error(errorMessage);
+        return false;
     }
 
     callType_ = callType;
@@ -200,14 +164,14 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
       members.front().user_id == utils::localUser() ? members.back() : members.front();
     callParty_            = callee.user_id;
     callPartyDisplayName_ = callee.display_name.isEmpty() ? callee.user_id : callee.display_name;
-    callPartyAvatarUrl_   = QString::fromStdString(roomInfo.avatar_url);
+    callPartyAvatarUrl_   = roomInfo.avatar_url;
     emit newInviteState();
-    playRingtone(QUrl("qrc:/media/media/ringback.ogg"), true);
-    if (!session_.createOffer(callType,
-                              callType == CallType::SCREEN ? windows_[windowIndex].second : 0)) {
-        emit ChatPage::instance()->showNotification("Problem setting up call.");
+    if (!session_.createOffer(callType, 0)) {
+        nhlog::ui()->error("Problem setting up call.");
         endCall();
+        return false;
     }
+    return true;
 }
 
 namespace {
@@ -239,13 +203,9 @@ CallManager::hangUp(CallHangUp::Reason reason)
 void
 CallManager::syncEvent(const mtx::events::collections::TimelineEvents &event)
 {
-#ifdef GSTREAMER_AVAILABLE
     if (handleEvent<CallInvite>(event) || handleEvent<CallCandidates>(event) ||
         handleEvent<CallAnswer>(event) || handleEvent<CallHangUp>(event))
         return;
-#else
-    (void)event;
-#endif
 }
 
 template<typename T>
@@ -288,11 +248,7 @@ CallManager::handleEvent(const RoomEvent<CallInvite> &callInviteEvent)
         return;
     }
 
-    const QString &ringtone = ChatPage::instance()->userSettings()->ringtone();
-    if (ringtone != "Mute")
-        playRingtone(ringtone == "Default" ? QUrl("qrc:/media/media/ring.ogg")
-                                           : QUrl::fromLocalFile(ringtone),
-                     true);
+    const QString &ringtone = UserSettings::instance()->ringtone();
     roomid_ = QString::fromStdString(callInviteEvent.room_id);
     callid_ = callInviteEvent.content.call_id;
     remoteICECandidates_.clear();
@@ -302,7 +258,7 @@ CallManager::handleEvent(const RoomEvent<CallInvite> &callInviteEvent)
       members.front().user_id == utils::localUser() ? members.back() : members.front();
     callParty_            = caller.user_id;
     callPartyDisplayName_ = caller.display_name.isEmpty() ? caller.user_id : caller.display_name;
-    callPartyAvatarUrl_   = QString::fromStdString(roomInfo.avatar_url);
+    callPartyAvatarUrl_   = roomInfo.avatar_url;
 
     haveCallInvite_ = true;
     callType_       = isVideo ? CallType::VIDEO : CallType::VOICE;
@@ -316,18 +272,17 @@ CallManager::acceptInvite()
     if (!haveCallInvite_)
         return;
 
-    stopRingtone();
     std::string errorMessage;
     if (!session_.havePlugins(false, &errorMessage) ||
         (callType_ == CallType::VIDEO && !session_.havePlugins(true, &errorMessage))) {
-        emit ChatPage::instance()->showNotification(QString::fromStdString(errorMessage));
+        nhlog::ui()->error(errorMessage);
         hangUp();
         return;
     }
 
     session_.setTurnServers(turnURIs_);
     if (!session_.acceptOffer(inviteSDP_)) {
-        emit ChatPage::instance()->showNotification("Problem setting up call.");
+        nhlog::ui()->error("Problem setting up call.");
         hangUp();
         return;
     }
@@ -369,8 +324,7 @@ CallManager::handleEvent(const RoomEvent<CallAnswer> &callAnswerEvent)
     if (callAnswerEvent.sender == utils::localUser().toStdString() &&
         callid_ == callAnswerEvent.content.call_id) {
         if (!isOnCall()) {
-            emit ChatPage::instance()->showNotification("Call answered on another device.");
-            stopRingtone();
+            nhlog::ui()->debug("Call answered on another device.");
             haveCallInvite_ = false;
             emit newInviteState();
         }
@@ -378,9 +332,8 @@ CallManager::handleEvent(const RoomEvent<CallAnswer> &callAnswerEvent)
     }
 
     if (isOnCall() && callid_ == callAnswerEvent.content.call_id) {
-        stopRingtone();
         if (!session_.acceptAnswer(callAnswerEvent.content.sdp)) {
-            emit ChatPage::instance()->showNotification("Problem setting up call.");
+            nhlog::ui()->error("Problem setting up call.");
             hangUp();
         }
     }
@@ -408,11 +361,7 @@ CallManager::toggleMicMute()
 bool
 CallManager::callsSupported()
 {
-#ifdef GSTREAMER_AVAILABLE
     return true;
-#else
-    return false;
-#endif
 }
 
 bool
@@ -425,8 +374,8 @@ QStringList
 CallManager::devices(bool isVideo) const
 {
     QStringList ret;
-    const QString &defaultDevice = isVideo ? ChatPage::instance()->userSettings()->camera()
-                                           : ChatPage::instance()->userSettings()->microphone();
+    const QString &defaultDevice = isVideo ? UserSettings::instance()->camera()
+                                           : UserSettings::instance()->microphone();
     std::vector<std::string> devices =
       CallDevices::instance().names(isVideo, defaultDevice.toStdString());
     ret.reserve(devices.size());
@@ -463,7 +412,6 @@ CallManager::clear()
 void
 CallManager::endCall()
 {
-    stopRingtone();
     session_.end();
     clear();
 }
@@ -486,24 +434,6 @@ CallManager::retrieveTurnServer()
           }
           emit turnServerRetrieved(res);
       });
-}
-
-void
-CallManager::playRingtone(const QUrl &ringtone, bool repeat)
-{
-    static QMediaPlaylist playlist;
-    playlist.clear();
-    playlist.setPlaybackMode(repeat ? QMediaPlaylist::CurrentItemInLoop
-                                    : QMediaPlaylist::CurrentItemOnce);
-    playlist.addMedia(ringtone);
-    player_.setVolume(100);
-    player_.setPlaylist(&playlist);
-}
-
-void
-CallManager::stopRingtone()
-{
-    player_.setPlaylist(nullptr);
 }
 
 QStringList
@@ -569,7 +499,6 @@ CallManager::windowList()
     return ret;
 }
 
-#ifdef GSTREAMER_AVAILABLE
 namespace {
 
 GstElement *pipe_        = nullptr;
@@ -596,12 +525,10 @@ newBusMessage(GstBus *bus G_GNUC_UNUSED, GstMessage *msg, gpointer G_GNUC_UNUSED
     return TRUE;
 }
 }
-#endif
 
 void
 CallManager::previewWindow(unsigned int index) const
 {
-#ifdef GSTREAMER_AVAILABLE
     if (windows_.empty() || index >= windows_.size() || !gst_is_initialized())
         return;
 
@@ -644,9 +571,7 @@ CallManager::previewWindow(unsigned int index) const
     GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipe_));
     busWatchId_ = gst_bus_add_watch(bus, newBusMessage, nullptr);
     gst_object_unref(bus);
-#else
-    (void)index;
-#endif
+
 }
 
 namespace {
