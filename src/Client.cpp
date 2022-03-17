@@ -57,8 +57,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     connect(_authentication,
             &Authentication::loginCibaOk,
             this,
-            &Client::loginCibaCb,
-            Qt::QueuedConnection);
+            &Client::loginCibaCb);
     connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
         nhlog::net()->info("login failed: {}", msg);
         QString err =QString::fromStdString(msg);
@@ -1160,6 +1159,6 @@ void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setUserId(userInfo.userId);
     userSettings_.data()->setAccessToken(userInfo.accessToken);
     userSettings_.data()->setDeviceId(userInfo.deviceId);
-    userSettings_.data()->setHomeserver(userInfo.homeServer);
+    userSettings_.data()->setHomeserver(userInfo.homeServer);    
     emit loginOk(userInfo);
 }
