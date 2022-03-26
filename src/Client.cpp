@@ -19,6 +19,7 @@
 #include "UserProfile.h"
 #include "UserSettings.h"
 #include "encryption/Olm.h"
+#include "voip/CallManager.h"
 
 Client *Client::instance_  = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
@@ -36,6 +37,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
    userSettings_{userSettings}
 {
     instance_->enableLogger(true);
+    callManager_ = new CallManager(this);
     setObjectName("matrix_client");
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
     qRegisterMetaType<std::optional<RelatedInfo>>();

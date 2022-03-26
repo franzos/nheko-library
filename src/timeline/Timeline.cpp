@@ -109,23 +109,6 @@ Timeline::sendEncryptedMessage(mtx::events::RoomEvent<T> msg, mtx::events::Event
     }
 }
 
-template<class T>
-void
-Timeline::sendMessageEvent(const T &content, mtx::events::EventType eventType)
-{
-    if constexpr (std::is_same_v<T, mtx::events::msg::StickerImage>) {
-        mtx::events::Sticker msgCopy = {};
-        msgCopy.content              = content;
-        msgCopy.type                 = eventType;
-        emit newMessageToSend(msgCopy);
-    } else {
-        mtx::events::RoomEvent<T> msgCopy = {};
-        msgCopy.content                   = content;
-        msgCopy.type                      = eventType;
-        emit newMessageToSend(msgCopy);
-    }
-}
-
 struct SendMessageVisitor
 {
     explicit SendMessageVisitor(Timeline *timeline)
