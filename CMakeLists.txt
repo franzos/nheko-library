@@ -185,6 +185,12 @@ IF(BUILD_EXAMPLES)
 	find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets Qt5::Network)
+
+	add_executable(webrtc_example examples/webrtc.cpp)
+	target_link_libraries(webrtc_example matrix-client-library 
+										 Qt5::Gui 
+										 Qt5::Network
+										 PkgConfig::GSTREAMER)
 	message(" + \"examples\" will be built.")
 ENDIF()
 
