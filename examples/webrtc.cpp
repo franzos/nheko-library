@@ -56,10 +56,8 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(client, &Client::initiateFinished, [=]() {
         nhlog::ui()->info(">>> CLIENT INITIATED");
-        callMgr->refreshTurnServer();
     });
 
-    client->start();
 
     QObject::connect(callMgr, &CallManager::turnServerRetrieved, [=](const mtx::responses::TurnServer &turnInfo) {
         nhlog::ui()->info(">>> Turn server retrieved: {}", turnInfo.uris.size());
@@ -113,5 +111,7 @@ int main(int argc, char *argv[]) {
                          }
                      });
 
+
+    client->start();
     return app.exec();
 }

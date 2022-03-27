@@ -142,6 +142,9 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
 
     connect(this, &Client::leftRoom, this, &Client::removeRoom);
     connect(this, &Client::prepareTimelines, this, &Client::prepareTimelinesCB, Qt::QueuedConnection);
+    connect(this, &Client::initiateFinished, [this]() {
+       this->callManager()->refreshTurnServer(); 
+    });
     connect(this, &Client::notificationsRetrieved, this, &Client::sendNotifications);
     connect(this,
             &Client::highlightedNotifsRetrieved,
