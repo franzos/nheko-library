@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(client, &Client::loginOk, [=](const UserInformation &user) {
         nhlog::ui()->info(">>> LOGIN OK: {}", user.userId.toStdString());
+        client->start();
     });
     QObject::connect(client, &Client::initiateFinished, [=]() {
         nhlog::ui()->info(">>> CLIENT INITIATED");
