@@ -311,24 +311,24 @@ void Timeline::addEvents(const mtx::responses::Timeline &timeline){
                 e = result.event.value();
         }
 
-    //     if (std::holds_alternative<RoomEvent<msg::CallCandidates>>(e) ||
-    //         std::holds_alternative<RoomEvent<msg::CallInvite>>(e) ||
-    //         std::holds_alternative<RoomEvent<msg::CallAnswer>>(e) ||
-    //         std::holds_alternative<RoomEvent<msg::CallHangUp>>(e))
-    //         std::visit(
-    //           [this](auto &event) {
-    //               event.room_id = room_id_.toStdString();
-    //               if constexpr (std::is_same_v<std::decay_t<decltype(event)>,
-    //                                            RoomEvent<msg::CallAnswer>> ||
-    //                             std::is_same_v<std::decay_t<decltype(event)>,
-    //                                            RoomEvent<msg::CallHangUp>>)
-    //                   emit newCallEvent(event);
-    //               else {
-    //                   if (event.sender != http::client()->user_id().to_string())
-    //                       emit newCallEvent(event);
-    //               }
-    //           },
-    //           e);
+        if (std::holds_alternative<RoomEvent<msg::CallCandidates>>(e) ||
+            std::holds_alternative<RoomEvent<msg::CallInvite>>(e) ||
+            std::holds_alternative<RoomEvent<msg::CallAnswer>>(e) ||
+            std::holds_alternative<RoomEvent<msg::CallHangUp>>(e))
+            std::visit(
+              [this](auto &event) {
+                  event.room_id = _roomId.toStdString();
+                  if constexpr (std::is_same_v<std::decay_t<decltype(event)>,
+                                               RoomEvent<msg::CallAnswer>> ||
+                                std::is_same_v<std::decay_t<decltype(event)>,
+                                               RoomEvent<msg::CallHangUp>>)
+                      emit newCallEvent(event);
+                  else {
+                      if (event.sender != http::client()->user_id().to_string())
+                          emit newCallEvent(event);
+                  }
+              },
+              e);
     //     else if (std::holds_alternative<StateEvent<state::Avatar>>(e))
     //         emit roomAvatarUrlChanged();
     //     else if (std::holds_alternative<StateEvent<state::Name>>(e))

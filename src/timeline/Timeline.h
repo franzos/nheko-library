@@ -19,6 +19,7 @@ signals:
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
     void newMessageToSend(mtx::events::collections::TimelineEvents event);
     void addPendingMessageToStore(mtx::events::collections::TimelineEvents event);
+    void newCallEvent(const mtx::events::collections::TimelineEvents &event);
     void lastMessageChanged(const DescInfo &message);
     // void eventsChanged(int from, int to);
     void newEventsStored(int from, int len);
