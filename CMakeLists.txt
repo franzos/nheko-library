@@ -124,9 +124,9 @@ set(HEADERS
 	encryption/DeviceVerificationFlow.h
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
-	src/voip/CallDevices.h
-	src/voip/CallManager.h
-	src/voip/WebRTCSession.h
+	voip/CallDevices.h
+	voip/CallManager.h
+	voip/WebRTCSession.h
 	Authentication.h	
 	CacheCryptoStructs.h
 	CacheStructs.h
