@@ -5,6 +5,7 @@
 #include <mtx/responses/turn_server.hpp>
 
 #include "Client.h"
+#include "voip/CallDevices.h"
 #include "voip/CallManager.h"
 
 int main(int argc, char *argv[]) {
@@ -76,6 +77,22 @@ int main(int argc, char *argv[]) {
         }
     });
 
+    QObject::connect(callMgr, &CallManager::devicesChanged, [=]() {
+        auto defaultMic = UserSettings::instance()->microphone();
+        auto defaultCam = UserSettings::instance()->camera();
+        auto mics = CallDevices::instance().names(false, defaultMic.toStdString());
+        auto cams = CallDevices::instance().names(true, defaultCam.toStdString());
+        nhlog::ui()->info(">>> DEVICES CHANGED: mics: {} - cams: {}", mics.size(), cams.size());
+        if (mics.size() > 0) {
+            UserSettings::instance()->setMicrophone(QString::fromStdString(mics[0]));
+            nhlog::ui()->info("   - [mic]: {}", mics[0]);
+        }
+        if (cams.size() > 0) {
+            UserSettings::instance()->setCamera(QString::fromStdString(cams[0]));
+            nhlog::ui()->info("   - [cam]: {}", cams[0]);
+        }
+    });
+
     QObject::connect(callMgr,
                      qOverload<const QString &, const mtx::events::msg::CallInvite &>(&CallManager::newMessage),
                      [=](const QString &roomid, const mtx::events::msg::CallInvite &invite) {
@@ -111,7 +128,6 @@ int main(int argc, char *argv[]) {
                              timeline->sendMessageEvent(hangup, mtx::events::EventType::CallHangUp);
                          }
                      });
-
 
     client->start();
     return app.exec();
