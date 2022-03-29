@@ -85,8 +85,14 @@ int main(int argc, char *argv[]) {
         auto cams = CallDevices::instance().names(true, defaultCam.toStdString());
         nhlog::ui()->info(">>> DEVICES CHANGED: mics: {} - cams: {}", mics.size(), cams.size());
         if (mics.size() > 0) {
-            UserSettings::instance()->setMicrophone(QString::fromStdString(mics[0]));
-            nhlog::ui()->info("   - [mic]: {}", mics[0]);
+            for (const auto &mic : mics) {
+                auto q_mic = QString::fromStdString(mic);
+                if (!q_mic.toLower().startsWith("monitor")) {
+                    UserSettings::instance()->setMicrophone(q_mic);
+                    nhlog::ui()->info("   - [mic]: {}", mic);
+                    break;
+                }
+            }
         }
         if (cams.size() > 0) {
             UserSettings::instance()->setCamera(QString::fromStdString(cams[0]));
