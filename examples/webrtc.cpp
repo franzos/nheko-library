@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
             nhlog::ui()->info("   - {} : {}", roomid.toStdString(), rooms[roomid].name.toStdString());
             if (roomid == targetRoomId) {
                 targetFound = true;
+                QObject::connect(client->timeline(roomid), &Timeline::newCallEvent, callMgr, &CallManager::syncEvent, Qt::UniqueConnection);
             }
         }
         if (targetFound) {
