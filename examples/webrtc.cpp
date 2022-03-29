@@ -1,4 +1,6 @@
 
+#include <QCommandLineOption>
+#include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDebug>
 #include <mtx/responses/common.hpp>
@@ -10,6 +12,18 @@
 
 int main(int argc, char *argv[]) {
     QCoreApplication app{argc, argv};
+
+    QCoreApplication::setApplicationName("WebRTC example");
+    QCoreApplication::setApplicationVersion("1.0.0");
+    QCommandLineParser parser;
+    parser.setApplicationDescription("Example Application to perform video/voice calls using Nheko's WebRTC facilities");
+    parser.addHelpOption();
+    parser.addVersionOption();
+    parser.addOption({{"w", "wait-for-call"}, "Wait for an incoming call"});
+    parser.addOption({"video", "perform video call"});
+    parser.process(app);
+    auto waitForCall = parser.isSet("wait-for-call");
+    auto callType = parser.isSet("video") ? webrtc::CallType::VIDEO : webrtc::CallType::VOICE;
 
     QString deviceName = "voip-test";
     QString userId = "@reza_test02:pantherx.org";
@@ -60,7 +74,6 @@ int main(int argc, char *argv[]) {
         nhlog::ui()->info(">>> CLIENT INITIATED");
     });
 
-
     QObject::connect(callMgr, &CallManager::turnServerRetrieved, [=](const mtx::responses::TurnServer &turnInfo) {
         nhlog::ui()->info(">>> Turn server retrieved: {}", turnInfo.uris.size());
         auto rooms = client->joinedRoomList();
@@ -73,8 +86,14 @@ int main(int argc, char *argv[]) {
                 QObject::connect(client->timeline(roomid), &Timeline::newCallEvent, callMgr, &CallManager::syncEvent, Qt::UniqueConnection);
             }
         }
-        if (targetFound) {
-            callMgr->sendInvite(targetRoomId, webrtc::CallType::VOICE);
+        if (targetFound && !waitForCall) {
+            callMgr->sendInvite(targetRoomId, callType);
+        }
+    });
+
+    QObject::connect(callMgr, &CallManager::newInviteState, [=]() {
+        if (waitForCall) {
+            callMgr->acceptInvite();
         }
     });
 
