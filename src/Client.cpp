@@ -143,7 +143,11 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     connect(this, &Client::leftRoom, this, &Client::removeRoom);
     connect(this, &Client::prepareTimelines, this, &Client::prepareTimelinesCB, Qt::QueuedConnection);
     connect(this, &Client::initiateFinished, [this]() {
-       this->callManager()->refreshTurnServer(); 
+        this->callManager()->refreshTurnServer();
+        auto rooms = this->joinedRoomList();
+        for (const auto &roomid : rooms.keys()) {
+            QObject::connect(this->timeline(roomid), &Timeline::newCallEvent, callManager_, &CallManager::syncEvent, Qt::UniqueConnection);
+        }
     });
     connect(this, &Client::notificationsRetrieved, this, &Client::sendNotifications);
     connect(this,
@@ -632,6 +636,7 @@ Client::joinRoomVia(const QString &room_id,
           }
 
           emit joinedRoom(QString::fromStdString(roomId.room_id));
+          connect(this->timeline(room_id), &Timeline::newCallEvent, callManager_, &CallManager::syncEvent, Qt::UniqueConnection);
 
           // We remove any invites with the same room_id.
           try {
