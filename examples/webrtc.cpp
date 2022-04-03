@@ -1,8 +1,13 @@
 
+#include <gst/gst.h>
+
+#include <QApplication>
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QQmlApplicationEngine>
+#include <QQuickItem>
 #include <mtx/responses/common.hpp>
 #include <mtx/responses/turn_server.hpp>
 
@@ -11,7 +16,7 @@
 #include "voip/CallManager.h"
 
 int main(int argc, char *argv[]) {
-    QCoreApplication app{argc, argv};
+    QApplication app{argc, argv};
 
     QCoreApplication::setApplicationName("WebRTC example");
     QCoreApplication::setApplicationVersion("1.0.0");
@@ -25,6 +30,14 @@ int main(int argc, char *argv[]) {
     auto waitForCall = parser.isSet("wait-for-call");
     auto callType = parser.isSet("video") ? webrtc::CallType::VIDEO : webrtc::CallType::VOICE;
 
+    // Following section fixed the GstGLVideoItem import issue in QML file
+    gst_init(NULL, NULL);
+    GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
+    gst_object_unref(sink);
+
+    QQmlApplicationEngine engine;
+    engine.load(QUrl(QStringLiteral("qrc:/webrtc.qml")));
+
     QString deviceName = "voip-test";
     QString userId = "@reza_test02:pantherx.org";
     QString password = "98KoWG2KUjsuPcyvvnjKhd92";
@@ -33,6 +46,7 @@ int main(int argc, char *argv[]) {
     QString targetRoomId = "!LBljXrKlFDSGQDadbK:pantherx.org";
 
     auto *client = Client::instance();
+    auto *session = &WebRTCSession::instance();
     if (client == nullptr) {
         qCritical() << "Client is not initiated";
         return -1;
@@ -46,6 +60,9 @@ int main(int argc, char *argv[]) {
 
     UserSettings::instance()->clear();
     UserSettings::instance()->setUseStunServer(true);
+
+    auto *video = engine.rootObjects().first()->findChild<QQuickItem *>("videoCallItem");
+    nhlog::ui()->info(">>> WebRTC VIDEO: {}", video != nullptr ? std::string("FOUND") : std::string("NULL"));
 
     QObject::connect(client, &Client::initialSync, [=](const mtx::responses::Sync &sync) {
         Q_UNUSED(sync)
@@ -87,13 +104,20 @@ int main(int argc, char *argv[]) {
             }
         }
         if (targetFound && !waitForCall) {
+            // The order is important: 1. send invite 2. set session's video
             callMgr->sendInvite(targetRoomId, callType);
+            if (video != nullptr) {
+                session->setVideoItem(video);
+            }
         }
     });
 
     QObject::connect(callMgr, &CallManager::newInviteState, [=]() {
-        if (waitForCall) {
+        if (waitForCall || true) {
             callMgr->acceptInvite();
+            if (video != nullptr) {
+                session->setVideoItem(video);
+            }
         }
     });
 

@@ -182,15 +182,23 @@ target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
-	find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
+	find_package(Qt5 5.15 COMPONENTS Widgets Qml QuickControls2 QuickWidgets REQUIRED)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets Qt5::Network)
 
-	add_executable(webrtc_example examples/webrtc.cpp)
+	set(CMAKE_AUTOMOC ON)
+	set(CMAKE_AUTORCC ON)
+	set(CMAKE_AUTOUIC ON)
+	add_executable(webrtc_example examples/webrtc.cpp
+								examples/webrtc.qrc)
 	target_link_libraries(webrtc_example matrix-client-library 
 										 Qt5::Gui 
+										 Qt5::Widgets
+										 Qt5::Qml
+										 Qt5::QuickControls2
 										 Qt5::Network
 										 PkgConfig::GSTREAMER)
+	target_compile_definitions(webrtc_example PRIVATE GSTREAMER_AVAILABLE)
 	message(" + \"examples\" will be built.")
 ENDIF()
 
