@@ -19,6 +19,7 @@ signals:
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
     void newMessageToSend(mtx::events::collections::TimelineEvents event);
     void addPendingMessageToStore(mtx::events::collections::TimelineEvents event);
+    void newCallEvent(const mtx::events::collections::TimelineEvents &event);
     void lastMessageChanged(const DescInfo &message);
     // void eventsChanged(int from, int to);
     void newEventsStored(int from, int len);
@@ -48,10 +49,12 @@ public slots:
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
 
-private:
-    void addEvents(const mtx::responses::Timeline &timeline);
+public:
     template<class T>
     void sendMessageEvent(const T &content, mtx::events::EventType eventType);
+
+private:
+    void addEvents(const mtx::responses::Timeline &timeline);
 
     template<typename T>
     void sendEncryptedMessage(mtx::events::RoomEvent<T> msg, mtx::events::EventType eventType);
@@ -64,3 +67,22 @@ private:
     QStringList _typingUsers;
     friend struct SendMessageVisitor;
 };
+
+
+
+template<class T>
+void
+Timeline::sendMessageEvent(const T &content, mtx::events::EventType eventType)
+{
+    if constexpr (std::is_same_v<T, mtx::events::msg::StickerImage>) {
+        mtx::events::Sticker msgCopy = {};
+        msgCopy.content              = content;
+        msgCopy.type                 = eventType;
+        emit newMessageToSend(msgCopy);
+    } else {
+        mtx::events::RoomEvent<T> msgCopy = {};
+        msgCopy.content                   = content;
+        msgCopy.type                      = eventType;
+        emit newMessageToSend(msgCopy);
+    }
+}

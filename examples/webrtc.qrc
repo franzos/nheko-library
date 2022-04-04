@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>webrtc.qml</file>
+    </qresource>
+</RCC>

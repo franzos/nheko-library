@@ -33,6 +33,7 @@
 #include "encryption/VerificationManager.h"
 
 class UserSettings;
+class CallManager;
 
 namespace mtx::requests {
 struct CreateRoom;
@@ -80,6 +81,8 @@ public:
     Q_INVOKABLE void enableLogger(bool enable, bool enableDebugLogs = false){
         nhlog::init("matrix-client-library", enable, enableDebugLogs);    
     }
+
+    CallManager *callManager() { return callManager_; }
 
 public slots:
     QMap<QString, RoomInfo> joinedRoomList();
@@ -211,6 +214,8 @@ private:
     std::atomic_bool isConnected_;
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;
+
+    CallManager *callManager_;
 };
 
 template<class Collection>
