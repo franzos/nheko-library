@@ -55,6 +55,12 @@ CallManager::CallManager(QObject *parent)
     qRegisterMetaType<mtx::events::msg::CallCandidates::Candidate>();
     qRegisterMetaType<mtx::responses::TurnServer>();
 
+    // TODO: we need to check Nheko's approach that doesn't require the following
+    //       workaround to use the `qmlglsink` inside it's QML files
+    gst_init(NULL, NULL);
+    GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
+    gst_object_unref(sink);
+
     connect(
       &session_,
       &WebRTCSession::offerCreated,

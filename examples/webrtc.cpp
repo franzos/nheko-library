@@ -46,11 +46,6 @@ int main(int argc, char *argv[]) {
     auto waitForCall = parser.isSet("wait-for-call");
     auto callType = parser.isSet("video") ? webrtc::CallType::VIDEO : webrtc::CallType::VOICE;
 
-    // Following section fixed the GstGLVideoItem import issue in QML file
-    gst_init(NULL, NULL);
-    GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
-    gst_object_unref(sink);
-
     QString deviceName = "voip-test";
     QString userId = "@reza_test02:pantherx.org";
     QString password = "98KoWG2KUjsuPcyvvnjKhd92";
