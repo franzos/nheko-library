@@ -15,6 +15,22 @@
 #include "voip/CallDevices.h"
 #include "voip/CallManager.h"
 
+class WebRTCHandler : public QObject {
+    Q_OBJECT
+   public:
+    explicit WebRTCHandler(Client *client, QObject *parent = nullptr)
+        : QObject(parent),
+          client_(client) {}
+
+    Q_INVOKABLE void hangup() {
+        client_->callManager()->hangUp();
+    }
+
+   private:
+    Client *client_;
+};
+#include "webrtc.moc"
+
 int main(int argc, char *argv[]) {
     QApplication app{argc, argv};
 
@@ -35,9 +51,6 @@ int main(int argc, char *argv[]) {
     GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
     gst_object_unref(sink);
 
-    QQmlApplicationEngine engine;
-    engine.load(QUrl(QStringLiteral("qrc:/webrtc.qml")));
-
     QString deviceName = "voip-test";
     QString userId = "@reza_test02:pantherx.org";
     QString password = "98KoWG2KUjsuPcyvvnjKhd92";
@@ -46,6 +59,7 @@ int main(int argc, char *argv[]) {
     QString targetRoomId = "!LBljXrKlFDSGQDadbK:pantherx.org";
 
     auto *client = Client::instance();
+    WebRTCHandler webrtc{client};
     auto *session = &WebRTCSession::instance();
     if (client == nullptr) {
         qCritical() << "Client is not initiated";
@@ -60,6 +74,14 @@ int main(int argc, char *argv[]) {
 
     UserSettings::instance()->clear();
     UserSettings::instance()->setUseStunServer(true);
+
+    QQmlApplicationEngine engine;
+    qmlRegisterSingletonInstance<WebRTCHandler>("examples.webrtc", 1, 0, "WebRTCHandler", &webrtc);
+    QObject::connect(&engine, &QQmlEngine::quit, [&app, client]() {
+        client->stop();
+        app.exit(0);
+    });
+    engine.load(QUrl(QStringLiteral("qrc:/webrtc.qml")));
 
     auto *video = engine.rootObjects().first()->findChild<QQuickItem *>("videoCallItem");
     nhlog::ui()->info(">>> WebRTC VIDEO: {}", video != nullptr ? std::string("FOUND") : std::string("NULL"));
