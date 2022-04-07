@@ -135,6 +135,7 @@ set(HEADERS
 	UserProfile.h	
 	UserSettings.h	
 	Authentication.h	
+	Application.h
 	RestRequest.h
 	Cache.h	
 	EventAccessors.h

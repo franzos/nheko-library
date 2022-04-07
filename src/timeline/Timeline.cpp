@@ -341,7 +341,7 @@ void Timeline::addEvents(const mtx::responses::Timeline &timeline){
     //     } else if (std::holds_alternative<StateEvent<state::Member>>(e)) {
     //         emit roomAvatarUrlChanged();
     //         emit roomNameChanged();
-    //         emit roomMemberCountChanged();
+    //         emit CountChanged();
     //     } else if (std::holds_alternative<StateEvent<state::Encryption>>(e)) {
     //         this->isEncrypted_ = cache::isRoomEncrypted(room_id_.toStdString());
     //         emit encryptionChanged();

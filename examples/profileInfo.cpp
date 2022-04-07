@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
     QObject::connect(client,  &Client::dropToLogin, [&](const QString &msg){
         QString deviceName = "test";
         QString userId = "@hamzeh_test02:pantherx.org";
-        QString password = "5wn685g7mN"; 
+        QString password = "powwow-babbling-deviator"; 
         QString serverAddress = "https://matrix.pantherx.org";   
         qWarning() << msg;
         if(!onetimeLogin)
