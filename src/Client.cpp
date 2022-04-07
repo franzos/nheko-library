@@ -20,6 +20,7 @@
 #include "UserSettings.h"
 #include "encryption/Olm.h"
 #include "voip/CallManager.h"
+#include "Application.h"
 
 Client *Client::instance_  = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
@@ -1171,4 +1172,8 @@ void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setDeviceId(userInfo.deviceId);
     userSettings_.data()->setHomeserver(userInfo.homeServer);    
     emit loginOk(userInfo);
+}
+
+QString Client::getLibraryVersion(){
+    return QString::fromStdString(VERSION_LIBRARY);
 }
