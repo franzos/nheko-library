@@ -1,5 +1,10 @@
 ### Matrix Client Library
 
+### For make release
+
+* Update the version number in `Application.h` file
+* Update the `CHANGELOG` file
+
 #### Dependencies
  * `mtxclient`          : Matrix Client Library - [link](https://github.com/Nheko-Reborn/mtxclient)
  * `sqlitecpp`          : Database - [link](https://github.com/SRombauts/SQLiteCpp)
