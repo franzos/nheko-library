@@ -108,6 +108,7 @@ public slots:
     UserInformation userInformation();
     void logout();
     std::string serverDiscovery(QString userId);
+    QString getLibraryVersion();
 
 
 signals:
@@ -213,9 +214,8 @@ private:
     VerificationManager *_verificationManager = nullptr;
     std::atomic_bool isConnected_;
     // Global user settings.
-    QSharedPointer<UserSettings> userSettings_;
-
     CallManager *callManager_;
+    QSharedPointer<UserSettings> userSettings_;    
 };
 
 template<class Collection>
