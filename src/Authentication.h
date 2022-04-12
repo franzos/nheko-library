@@ -38,6 +38,7 @@ private slots:
 private:
    CibaAuthentication *ciba; 
    bool isCibaSupported(QString data);
+   QString cibaServer;
 };
 
 
