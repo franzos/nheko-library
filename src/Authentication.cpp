@@ -93,6 +93,7 @@ std::string Authentication::serverDiscovery(std::string userId){
 }
 
 bool Authentication::loginWithCiba(QString username,QString server){
+    cibaServer = server;
     connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
     qDebug()<<"START LOGIN CIBA";
     ciba = new CibaAuthentication(server);
@@ -156,7 +157,7 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
             QJsonObject jsonObj = userJson.object();
             userInfo.accessToken = jsonObj["access_token"].toString();
             userInfo.userId = jsonObj["user_id"].toString();
-            userInfo.homeServer = jsonObj.value("well_known").toObject().value("m.homeserver").toObject().value("base_url").toString();
+            userInfo.homeServer = cibaServer;
             userInfo.deviceId = jsonObj["device_id"].toString();
             emit loginCibaOk(userInfo);
         }else{
