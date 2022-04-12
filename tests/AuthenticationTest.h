@@ -78,8 +78,7 @@ private slots:
         loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
-
-
+    
 // void loginWithCorrectCiba(){
 //         auto loginCibaTest = new Authentication();
 //         //QEventLoop eventLoop;
@@ -100,7 +99,5 @@ private slots:
 //         eventLoop.exec();  
          
 //     }
-
-
        
 };

@@ -156,9 +156,8 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
             QJsonObject jsonObj = userJson.object();
             userInfo.accessToken = jsonObj["access_token"].toString();
             userInfo.userId = jsonObj["user_id"].toString();
-            userInfo.homeServer = jsonObj["home_server"].toString();
+            userInfo.homeServer = jsonObj.value("well_known").toObject().value("m.homeserver").toObject().value("base_url").toString();
             userInfo.deviceId = jsonObj["device_id"].toString();
-            qDebug()<<"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ loginCibaFlow emit loginciba";
             emit loginCibaOk(userInfo);
         }else{
             std::string msg = "Connection error";
