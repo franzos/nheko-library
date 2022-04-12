@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 
+## [0.0.32]
+### Updated
+
+* Update to work with `mtxclient`@0.0.7.
+
+
+
 ## [0.0.31]
 ### Changed
 
