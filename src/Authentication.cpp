@@ -93,11 +93,10 @@ std::string Authentication::serverDiscovery(std::string userId){
 }
 
 bool Authentication::loginWithCiba(QString username,QString server){
+    cibaServer = server;
     connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
-    qDebug()<<"START LOGIN CIBA";
     ciba = new CibaAuthentication(server);
     auto res = ciba->availableLogin();
-    qDebug()<<"SEnd AVAILABA LOGIN "<<res.status;
     if(res.status==200 || res.status==201){
         if(isCibaSupported(res.jsonRespnse)) {   
             auto idResp = ciba->loginRequest(username);
@@ -156,9 +155,8 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
             QJsonObject jsonObj = userJson.object();
             userInfo.accessToken = jsonObj["access_token"].toString();
             userInfo.userId = jsonObj["user_id"].toString();
-            userInfo.homeServer = jsonObj["home_server"].toString();
+            userInfo.homeServer = cibaServer;
             userInfo.deviceId = jsonObj["device_id"].toString();
-            qDebug()<<"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ loginCibaFlow emit loginciba";
             emit loginCibaOk(userInfo);
         }else{
             std::string msg = "Connection error";

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.33]
+### Changed
+
+* Update CIBA login with new changes in server.
+* Update to work with `mtxclient`@0.0.7.
+
+
+## [0.0.32]
+### Changed
+
+* Library version is added.
+
 
 ## [0.0.31]
 ### Changed
