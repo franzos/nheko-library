@@ -95,10 +95,8 @@ std::string Authentication::serverDiscovery(std::string userId){
 bool Authentication::loginWithCiba(QString username,QString server){
     cibaServer = server;
     connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
-    qDebug()<<"START LOGIN CIBA";
     ciba = new CibaAuthentication(server);
     auto res = ciba->availableLogin();
-    qDebug()<<"SEnd AVAILABA LOGIN "<<res.status;
     if(res.status==200 || res.status==201){
         if(isCibaSupported(res.jsonRespnse)) {   
             auto idResp = ciba->loginRequest(username);
