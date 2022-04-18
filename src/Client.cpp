@@ -39,6 +39,43 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
 {
     instance_->enableLogger(true);
     callManager_ = new CallManager(this);
+    connect(callManager_,
+                qOverload<const QString &, const mtx::events::msg::CallInvite &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::msg::CallInvite &invite) {
+                    nhlog::ui()->info("CALL INVITE: callid: {} - room: {}", invite.call_id, roomid.toStdString());
+                    if (auto timeline = this->timeline(roomid)) {
+                        timeline->sendMessageEvent(invite, mtx::events::EventType::CallInvite);
+                    }
+                });
+
+    connect(callManager_,
+                qOverload<const QString &, const mtx::events::msg::CallCandidates &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::msg::CallCandidates &candidate) {
+                    nhlog::ui()->info("CALL CANDIDATE: callid: {} - room: {}", candidate.call_id, roomid.toStdString());
+                    if (auto timeline = this->timeline(roomid)) {
+                        timeline->sendMessageEvent(candidate, mtx::events::EventType::CallCandidates);
+                    }
+                });
+
+    connect(callManager_,
+                qOverload<const QString &, const mtx::events::msg::CallAnswer &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::msg::CallAnswer &answer) {
+                    nhlog::ui()->info("CALL ANSWER: callid: {} - room: {}", answer.call_id, roomid.toStdString());
+                    if (auto timeline = this->timeline(roomid)) {
+                        timeline->sendMessageEvent(answer, mtx::events::EventType::CallAnswer);
+                    }
+                });
+
+    connect(callManager_,
+                qOverload<const QString &, const mtx::events::msg::CallHangUp &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::msg::CallHangUp &hangup) {
+                    nhlog::ui()->info("CALL HANGUP: callid: {} - room: {}", hangup.call_id, roomid.toStdString());
+                    if (auto timeline = this->timeline(roomid)) {
+                        timeline->sendMessageEvent(hangup, mtx::events::EventType::CallHangUp);
+                    }
+                });
+
+
     setObjectName("matrix_client");
     qRegisterMetaType<std::optional<mtx::crypto::EncryptedFile>>();
     qRegisterMetaType<std::optional<RelatedInfo>>();
