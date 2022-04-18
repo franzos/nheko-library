@@ -1126,6 +1126,9 @@ void Client::syncTimelines(const mtx::responses::Rooms &rooms){
         addTimeline(QString::fromStdString(r.first));
         syncTimeline(QString::fromStdString(r.first), r.second);
     }
+    for(auto const &r: rooms.invite){
+        addTimeline(QString::fromStdString(r.first));
+    }
     for(auto const &r: rooms.leave){
         removeTimeline(QString::fromStdString(r.first));
     }
