@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 * Check user id format in login.
 * Fixing issue to sync room after accept invitation.
+* Update UserInformation structure
 
 
 ## [0.0.33]
