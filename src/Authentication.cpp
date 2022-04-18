@@ -13,6 +13,11 @@
 
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
+    if((userId[0] != '@') || (userId.find(':') == std::string::npos) ){
+        std::string s ="The UerId format is wrong ";
+        emit loginErrorOccurred(s);
+        return;
+    }
     http::client()->set_server(serverAddress);
     mtx::identifiers::User user;
     user = mtx::identifiers::parse<mtx::identifiers::User>(userId);        
@@ -166,7 +171,6 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
         std::string msg = "Connection error";
         emit loginCibaErrorOccurred(msg); 
     }
-
 }
 
 bool Authentication::isCibaSupported(QString data){
