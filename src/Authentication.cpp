@@ -13,7 +13,7 @@
 
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
-    if(userId[0] != '@' | userId.find(':') == std::string::npos ){
+    if((userId[0] != '@') || (userId.find(':') == std::string::npos) ){
         std::string s ="The UerId format is wrong ";
         emit loginErrorOccurred(s);
         return;
