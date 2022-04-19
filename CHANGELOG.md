@@ -4,13 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.35]
+### Changed
+
+* Update UserInformation structure
+
 
 ## [0.0.34]
 ### Fixed
 
 * Check user id format in login.
 * Fixing issue to sync room after accept invitation.
-* Update UserInformation structure
 
 
 ## [0.0.33]
