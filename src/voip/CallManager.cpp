@@ -27,10 +27,12 @@
 #include <xcb/xcb_ewmh.h>
 #endif
 
+#ifdef GSTREAMER_AVAILABLE
 extern "C"
 {
 #include "gst/gst.h"
 }
+#endif
 
 Q_DECLARE_METATYPE(std::vector<mtx::events::msg::CallCandidates::Candidate>)
 Q_DECLARE_METATYPE(mtx::events::msg::CallCandidates::Candidate)
@@ -55,11 +57,14 @@ CallManager::CallManager(QObject *parent)
     qRegisterMetaType<mtx::events::msg::CallCandidates::Candidate>();
     qRegisterMetaType<mtx::responses::TurnServer>();
 
+
+#ifdef GSTREAMER_AVAILABLE
     // TODO: we need to check Nheko's approach that doesn't require the following
     //       workaround to use the `qmlglsink` inside it's QML files
     gst_init(NULL, NULL);
     GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
     gst_object_unref(sink);
+#endif
 
     connect(
       &session_,
@@ -209,9 +214,13 @@ CallManager::hangUp(CallHangUp::Reason reason)
 void
 CallManager::syncEvent(const mtx::events::collections::TimelineEvents &event)
 {
+#ifdef GSTREAMER_AVAILABLE
     if (handleEvent<CallInvite>(event) || handleEvent<CallCandidates>(event) ||
         handleEvent<CallAnswer>(event) || handleEvent<CallHangUp>(event))
         return;
+#else
+    (void)event;
+#endif
 }
 
 template<typename T>
@@ -367,7 +376,11 @@ CallManager::toggleMicMute()
 bool
 CallManager::callsSupported()
 {
+#ifdef GSTREAMER_AVAILABLE
     return true;
+#else
+    return false;
+#endif
 }
 
 bool
@@ -505,6 +518,7 @@ CallManager::windowList()
     return ret;
 }
 
+#ifdef GSTREAMER_AVAILABLE
 namespace {
 
 GstElement *pipe_        = nullptr;
@@ -531,10 +545,12 @@ newBusMessage(GstBus *bus G_GNUC_UNUSED, GstMessage *msg, gpointer G_GNUC_UNUSED
     return TRUE;
 }
 }
+#endif
 
 void
 CallManager::previewWindow(unsigned int index) const
 {
+#ifdef GSTREAMER_AVAILABLE
     if (windows_.empty() || index >= windows_.size() || !gst_is_initialized())
         return;
 
@@ -577,7 +593,9 @@ CallManager::previewWindow(unsigned int index) const
     GstBus *bus = gst_pipeline_get_bus(GST_PIPELINE(pipe_));
     busWatchId_ = gst_bus_add_watch(bus, newBusMessage, nullptr);
     gst_object_unref(bus);
-
+#else
+    (void)index;
+#endif
 }
 
 namespace {
