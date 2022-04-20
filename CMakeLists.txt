@@ -15,7 +15,10 @@ include_directories(src)
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
-pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
+option(VOIP "Whether to enable the voip support. disable this if you don't have the gstreamer" ON)
+if(VOIP)
+	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
+endif()
 
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
@@ -164,7 +167,6 @@ endif()
 
 set(DEP_LIBS 
 	MatrixClient::MatrixClient
-	PkgConfig::GSTREAMER
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
@@ -179,7 +181,12 @@ foreach(HEADER ${HEADERS})
 	string(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})
 	install(FILES src/${HEADER} DESTINATION include/matrix-client-library/${DIR})
 endforeach(HEADER {HEADERS})
-target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
+
+if(TARGET PkgConfig::GSTREAMER)
+	target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
+	target_link_libraries(matrix-client-library PUBLIC PkgConfig::GSTREAMER)
+endif()
+
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
@@ -187,19 +194,22 @@ IF(BUILD_EXAMPLES)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets Qt5::Network)
 
-	set(CMAKE_AUTOMOC ON)
-	set(CMAKE_AUTORCC ON)
-	set(CMAKE_AUTOUIC ON)
-	add_executable(webrtc_example examples/webrtc.cpp
-								examples/webrtc.qrc)
-	target_link_libraries(webrtc_example matrix-client-library 
-										 Qt5::Gui 
-										 Qt5::Widgets
-										 Qt5::Qml
-										 Qt5::QuickControls2
-										 Qt5::Network
-										 PkgConfig::GSTREAMER)
-	target_compile_definitions(webrtc_example PRIVATE GSTREAMER_AVAILABLE)
+	if(VOIP)
+		set(CMAKE_AUTOMOC ON)
+		set(CMAKE_AUTORCC ON)
+		set(CMAKE_AUTOUIC ON)
+		add_executable(webrtc_example examples/webrtc.cpp
+									examples/webrtc.qrc)
+		target_link_libraries(webrtc_example matrix-client-library
+											Qt5::Gui 
+											Qt5::Widgets
+											Qt5::Qml
+											Qt5::QuickControls2
+											Qt5::Network
+											PkgConfig::GSTREAMER)
+		target_compile_definitions(webrtc_example PRIVATE GSTREAMER_AVAILABLE)
+	endif(VOIP)
+	
 	message(" + \"examples\" will be built.")
 ENDIF()
 
