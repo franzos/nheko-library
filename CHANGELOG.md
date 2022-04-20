@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.36]
+### Changed
+
+* VOIP Support in Build configuration.
+
+
 ## [0.0.35]
 ### Changed
 
