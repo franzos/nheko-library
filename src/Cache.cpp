@@ -40,7 +40,9 @@ static const std::string_view CURRENT_ONLINE_BACKUP_VERSION("current_online_back
 
 constexpr size_t MAX_RESTORED_MESSAGES = 30'000;
 
-constexpr auto DB_SIZE    = 1024ULL * 1024ULL * 1024ULL; // 1 GB
+// Adjust the DB size to be  multiplication of 32MB
+// https://git.pantherx.org/development/mobile/matrix-client/-/issues/67#note_42854
+constexpr auto DB_SIZE    = 960ULL * 1024ULL * 1024ULL; // 960MB
 constexpr auto MAX_DBS    = 32384UL;
 constexpr auto BATCH_SIZE = 100;
 
