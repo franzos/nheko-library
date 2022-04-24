@@ -11,6 +11,9 @@
 #include "Utils.h"
 #include "CibaAuthentication.h"
 
+Authentication::Authentication(QObject *parent): QObject(parent) {
+    connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
+}
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
     if((userId[0] != '@') || (userId.find(':') == std::string::npos) ){
@@ -61,12 +64,11 @@ std::string Authentication::serverDiscovery(std::string userId){
         // showError(error_matrixid_label_,
         //           tr("You have entered an invalid Matrix ID  e.g @joe:matrix.org"));
         return " ";
-}
+    }
 
-  QString homeServer = QString::fromStdString(user.hostname());
-  http::client()->set_server(user.hostname());
-  http::client()->well_known(   
-    [this](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
+    QString homeServer = QString::fromStdString(user.hostname());
+    http::client()->set_server(user.hostname());
+    http::client()->well_known([this](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
         if (err) {
             if (err->status_code == 404) {
                 nhlog::net()->info("Autodiscovery: No .well-known.");
@@ -94,22 +96,21 @@ std::string Authentication::serverDiscovery(std::string userId){
         //http::client()->set_server(res.homeserver.base_url);
         //homeServer = res.homeserver.base_url;
     });
-   return homeServer.toStdString();
+    return homeServer.toStdString();
 }
 
 bool Authentication::loginWithCiba(QString username,QString server){
     cibaServer = server;
-    connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
     ciba = new CibaAuthentication(server);
     auto res = ciba->availableLogin();
     if(res.status==200 || res.status==201){
         if(isCibaSupported(res.jsonRespnse)) {   
             auto idResp = ciba->loginRequest(username);
-            if(idResp.status==200 || idResp.status==201){
+            if(idResp.status==200 || idResp.status==201) {
                 QJsonDocument idJsonResponse = QJsonDocument::fromJson(idResp.jsonRespnse.toUtf8());
                 QString requestId = "";
                 QJsonObject jsonObj = idJsonResponse.object();
-                if(jsonObj.contains("auth_req_id")){
+                if(jsonObj.contains("auth_req_id")) {
                     requestId = jsonObj["auth_req_id"].toString();
                     auto thread = new QThread();
                     auto context = new QObject() ;
@@ -134,16 +135,15 @@ bool Authentication::loginWithCiba(QString username,QString server){
                     // thread.wait();  
                     return true;                 
                 }
-                        
             }
-        }else{
+        } else {
             std::string msg = "Ciba is not supported";
             emit loginCibaErrorOccurred(msg);
         }
     }  
-std::string msg = "Connection or Json error";
-emit loginCibaErrorOccurred(msg);
- return false;  
+    std::string msg = "Connection or Json error";
+    emit loginCibaErrorOccurred(msg);
+    return false;  
 }
 
 void Authentication::loginCibaFlow(QString accessToken,QString username){
@@ -163,25 +163,25 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
             userInfo.homeServer = cibaServer;
             userInfo.deviceId = jsonObj["device_id"].toString();
             emit loginCibaOk(userInfo);
-        }else{
+        } else {
             std::string msg = "Connection error";
             emit loginCibaErrorOccurred(msg); 
         }
-    }else{
+    } else {
         std::string msg = "Connection error";
         emit loginCibaErrorOccurred(msg); 
     }
 }
 
 bool Authentication::isCibaSupported(QString data){
-QJsonDocument jsonResponse = QJsonDocument::fromJson(data.toUtf8());
-        auto object = jsonResponse.object();
-        QJsonValue value = object.value("flows");
-        QJsonArray array = value.toArray();
-        foreach (const QJsonValue & v, array) {   
-            QString type =  v.toObject().value("type").toString();
-            if (type.contains("cm.ciba_auth"))
-                return true;
-        }
-return false;
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(data.toUtf8());
+    auto object = jsonResponse.object();
+    QJsonValue value = object.value("flows");
+    QJsonArray array = value.toArray();
+    foreach (const QJsonValue & v, array) {   
+        QString type =  v.toObject().value("type").toString();
+        if (type.contains("cm.ciba_auth"))
+            return true;
+    }
+    return false;
 }
