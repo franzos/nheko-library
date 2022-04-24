@@ -4,9 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.39]
+### Fixed
+
+* re-try login with ciba issue fixing.
+
+
 ## [0.0.37]
 ### Fixed
+
 * Update Cache DB_SIZE to prevent crash during the start on Android
+
 
 ## [0.0.36]
 ### Changed
