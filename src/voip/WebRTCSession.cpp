@@ -18,6 +18,7 @@
 
 #include <UserSettings.h>
 
+#ifdef GSTREAMER_AVAILABLE
 extern "C"
 {
 #include "gst/gst.h"
@@ -26,6 +27,7 @@ extern "C"
 #define GST_USE_UNSTABLE_API
 #include "gst/webrtc/webrtc.h"
 }
+#endif
 
 // https://github.com/vector-im/riot-web/issues/10173
 #define STUN_SERVER "stun://turn.matrix.org:3478"
@@ -48,6 +50,7 @@ WebRTCSession::WebRTCSession()
 bool
 WebRTCSession::init(std::string *errorMessage)
 {
+#ifdef GSTREAMER_AVAILABLE
     if (initialised_)
         return true;
 
@@ -70,8 +73,13 @@ WebRTCSession::init(std::string *errorMessage)
     g_free(version);
     devices_.init();
     return true;
+#else
+    (void)errorMessage;
+    return false;
+#endif
 }
 
+#ifdef GSTREAMER_AVAILABLE
 namespace {
 
 std::string localsdp_;
@@ -1018,3 +1026,57 @@ WebRTCSession::end()
     if (state_ != State::DISCONNECTED)
         emit stateChanged(State::DISCONNECTED);
 }
+
+#else
+
+bool
+WebRTCSession::havePlugins(bool, std::string *)
+{
+    return false;
+}
+
+bool
+WebRTCSession::haveLocalPiP() const
+{
+    return false;
+}
+
+bool WebRTCSession::createOffer(webrtc::CallType, uint32_t) { return false; }
+
+bool
+WebRTCSession::acceptOffer(const std::string &)
+{
+    return false;
+}
+
+bool
+WebRTCSession::acceptAnswer(const std::string &)
+{
+    return false;
+}
+
+void
+WebRTCSession::acceptICECandidates(const std::vector<mtx::events::msg::CallCandidates::Candidate> &)
+{}
+
+bool
+WebRTCSession::isMicMuted() const
+{
+    return false;
+}
+
+bool
+WebRTCSession::toggleMicMute()
+{
+    return false;
+}
+
+void
+WebRTCSession::toggleLocalPiP()
+{}
+
+void
+WebRTCSession::end()
+{}
+
+#endif

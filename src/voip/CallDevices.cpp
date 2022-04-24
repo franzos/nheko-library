@@ -11,15 +11,18 @@
 
 #include <UserSettings.h>
 
+#ifdef GSTREAMER_AVAILABLE
 extern "C"
 {
 #include "gst/gst.h"
 }
+#endif
 
 CallDevices::CallDevices()
   : QObject()
 {}
 
+#ifdef GSTREAMER_AVAILABLE
 namespace {
 
 struct AudioSource
@@ -346,4 +349,36 @@ CallDevices::videoDevice(std::pair<int, int> &resolution, std::pair<int, int> &f
         return nullptr;
     }
 }
+#else
 
+bool
+CallDevices::haveMic() const
+{
+    return false;
+}
+
+bool
+CallDevices::haveCamera() const
+{
+    return false;
+}
+
+std::vector<std::string>
+CallDevices::names(bool, const std::string &) const
+{
+    return {};
+}
+
+std::vector<std::string>
+CallDevices::resolutions(const std::string &) const
+{
+    return {};
+}
+
+std::vector<std::string>
+CallDevices::frameRates(const std::string &, const std::string &) const
+{
+    return {};
+}
+
+#endif

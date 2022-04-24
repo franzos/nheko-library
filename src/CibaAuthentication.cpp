@@ -56,8 +56,8 @@ RestRequestResponse CibaAuthentication::registeration(QString accessToken){
     QString urlRegistration = serverAddress+"/_synapse/client/cm_login/register";
     headers.insert("Content-Type", "application/json");   
     headers.insert("Authorization", "Bearer " + accessToken);    
-   output.status= restRequest.get(urlRegistration,headers,output.jsonRespnse);
-   return output;
+    output.status= restRequest.get(urlRegistration,headers,output.jsonRespnse);
+    return output;
 }
 
 RestRequestResponse CibaAuthentication::login(QString accessToken,QString user){

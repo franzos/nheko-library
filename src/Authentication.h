@@ -26,6 +26,7 @@ class Authentication: public QObject{
  Q_OBJECT
 
 public:
+    Authentication(QObject *parent = nullptr);
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
     bool loginWithCiba(QString username,QString server);
@@ -43,9 +44,9 @@ signals:
 private slots:
     void loginCibaFlow(QString accessToken,QString username);
 private:
-   CibaAuthentication *ciba; 
-   bool isCibaSupported(QString data);
-   QString cibaServer;
+    CibaAuthentication *ciba; 
+    bool isCibaSupported(QString data);
+    QString cibaServer;
 };
 
 
