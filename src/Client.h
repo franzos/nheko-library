@@ -124,6 +124,7 @@ signals:
 
     void notificationsRetrieved(const mtx::responses::Notifications &);
     void highlightedNotifsRetrieved(const mtx::responses::Notifications &, const QPoint widgetPos);
+    void showNotification(const QString &msg);
 
     //
     void userDisplayNameReady(const QString &name);
