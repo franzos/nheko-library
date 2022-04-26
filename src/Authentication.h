@@ -7,20 +7,7 @@
 #include <mtx/requests.hpp>
 #include "MatrixClient.h"
 #include "CibaAuthentication.h"
-
-struct UserInformation{
-    Q_GADGET
-    public:
-    QString userId;
-    QString accessToken;
-    QString deviceId;
-    QString homeServer;
-       
-    Q_PROPERTY(QString userId MEMBER userId)
-    Q_PROPERTY(QString accessToken MEMBER accessToken)
-    Q_PROPERTY(QString deviceId MEMBER deviceId)
-    Q_PROPERTY(QString homeServer MEMBER homeServer)
-};
+#include "UserInformation.h"
 
 class Authentication: public QObject{
  Q_OBJECT

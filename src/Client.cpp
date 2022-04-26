@@ -1125,6 +1125,24 @@ UserInformation Client::userInformation(){
     return result;
 }
 
+void Client::userInformation(const QString &mxid){
+    http::client()->get_profile(
+     mxid.toStdString(), [this, mxid](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
+        if (err) {
+            auto s = utils::httpMtxErrorToString(err);            
+            nhlog::net()->warn(s.toStdString());
+            emit userInfoLoadingFailed(s);
+            return;
+        }
+
+        UserInformation userinfo;
+        userinfo.userId = mxid;
+        userinfo.displayName = QString::fromStdString(res.display_name);
+        userinfo.avatarUrl   = QString::fromStdString(res.avatar_url);
+        emit userInfoLoaded(userinfo);
+    });
+}
+
 void Client::logout(){
     _authentication->logout();
 }

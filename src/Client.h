@@ -106,6 +106,7 @@ public slots:
     void loginWithCiba(QString username,QString server);
     bool hasValidUser();
     UserInformation userInformation();
+    void userInformation(const QString &mxid);
     void logout();
     std::string serverDiscovery(QString userId);
     QString getLibraryVersion();
@@ -129,6 +130,9 @@ signals:
     //
     void userDisplayNameReady(const QString &name);
     void userAvatarReady(const QString &avatar);
+    void userInfoLoaded(const UserInformation &userinfo);
+    void userInfoLoadingFailed(const QString &message);
+
     // sync signals
     void trySyncCb();
     void tryDelayedSyncCb();
