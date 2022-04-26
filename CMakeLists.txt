@@ -117,6 +117,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Authentication.h
 	src/CibaAuthentication.h
 	src/RestRequest.h
+	src/UserInformation.h
 )
 
 set(HEADERS 
@@ -147,6 +148,7 @@ set(HEADERS
 	UIA.h
 	Utils.h
 	CibaAuthentication.h
+	UserInformation.h
 )
 
 set(MATRIX_LIB_DEPS
