@@ -699,6 +699,7 @@ Client::createRoom(const mtx::requests::CreateRoom &req)
           }
 
           nhlog::net()->info("Room {} created.",res.room_id.to_string());
+          QObject::connect(this->timeline(QString::fromStdString(res.room_id.to_string())), &Timeline::newCallEvent, callManager_, &CallManager::syncEvent, Qt::UniqueConnection);
           emit roomCreated(QString::fromStdString(res.room_id.to_string()));
       });
 }
