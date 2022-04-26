@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -14,6 +15,7 @@
 #include "Cache.h"
 #include "CallDevices.h"
 #include "CallManager.h"
+#include "../Client.h"
 #include "Logging.h"
 #include "MatrixClient.h"
 #include "Utils.h"
@@ -78,6 +80,8 @@ CallManager::CallManager(QObject *parent)
           QTimer::singleShot(timeoutms_, this, [this, callid]() {
               if (session_.state() == webrtc::State::OFFERSENT && callid == callid_) {
                   hangUp(CallHangUp::Reason::InviteTimeOut);
+                  emit Client::instance()->showNotification(
+                    QStringLiteral("The remote side failed to pick up."));
               }
           });
       });
@@ -128,6 +132,8 @@ CallManager::CallManager(QObject *parent)
             QString error("Call connection failed.");
             if (turnURIs_.empty())
                 error += " Your homeserver has no configured TURN server.";
+            nhlog::ui()->error(error.toStdString());
+            emit Client::instance()->showNotification(error);
             hangUp(CallHangUp::Reason::ICEFailed);
             break;
         }
@@ -153,6 +159,8 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
     auto roomInfo = cache::singleRoomInfo(roomid.toStdString());
     if (roomInfo.member_count != 2) {
         nhlog::ui()->error("Calls are limited to 1:1 rooms.");
+        emit Client::instance()->showNotification(
+          QStringLiteral("Calls are limited to 1:1 rooms."));
         return false;
     }
 
@@ -160,6 +168,7 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
     if (!session_.havePlugins(false, &errorMessage) ||
         (callType == CallType::VIDEO &&  !session_.havePlugins(true, &errorMessage))) {
         nhlog::ui()->error(errorMessage);
+        emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
         return false;
     }
 
@@ -179,6 +188,7 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
     emit newInviteState();
     if (!session_.createOffer(callType, 0)) {
         nhlog::ui()->error("Problem setting up call.");
+        emit Client::instance()->showNotification(QStringLiteral("Problem setting up call."));
         endCall();
         return false;
     }
@@ -291,6 +301,7 @@ CallManager::acceptInvite()
     if (!session_.havePlugins(false, &errorMessage) ||
         (callType_ == CallType::VIDEO && !session_.havePlugins(true, &errorMessage))) {
         nhlog::ui()->error(errorMessage);
+        emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
         hangUp();
         return;
     }
@@ -298,6 +309,7 @@ CallManager::acceptInvite()
     session_.setTurnServers(turnURIs_);
     if (!session_.acceptOffer(inviteSDP_)) {
         nhlog::ui()->error("Problem setting up call.");
+        emit Client::instance()->showNotification(QStringLiteral("Problem setting up call."));
         hangUp();
         return;
     }
@@ -340,6 +352,8 @@ CallManager::handleEvent(const RoomEvent<CallAnswer> &callAnswerEvent)
         callid_ == callAnswerEvent.content.call_id) {
         if (!isOnCall()) {
             nhlog::ui()->debug("Call answered on another device.");
+            emit Client::instance()->showNotification(
+              QStringLiteral("Call answered on another device."));
             haveCallInvite_ = false;
             emit newInviteState();
         }
@@ -349,6 +363,7 @@ CallManager::handleEvent(const RoomEvent<CallAnswer> &callAnswerEvent)
     if (isOnCall() && callid_ == callAnswerEvent.content.call_id) {
         if (!session_.acceptAnswer(callAnswerEvent.content.sdp)) {
             nhlog::ui()->error("Problem setting up call.");
+            emit Client::instance()->showNotification(QStringLiteral("Problem setting up call."));
             hangUp();
         }
     }

@@ -699,6 +699,7 @@ Client::createRoom(const mtx::requests::CreateRoom &req)
           }
 
           nhlog::net()->info("Room {} created.",res.room_id.to_string());
+          QObject::connect(this->timeline(QString::fromStdString(res.room_id.to_string())), &Timeline::newCallEvent, callManager_, &CallManager::syncEvent, Qt::UniqueConnection);
           emit roomCreated(QString::fromStdString(res.room_id.to_string()));
       });
 }
@@ -1122,6 +1123,24 @@ UserInformation Client::userInformation(){
     result.homeServer       = UserSettings::instance()->homeserver();
 
     return result;
+}
+
+void Client::userInformation(const QString &mxid){
+    http::client()->get_profile(
+     mxid.toStdString(), [this, mxid](const mtx::responses::Profile &res, mtx::http::RequestErr err) {
+        if (err) {
+            auto s = utils::httpMtxErrorToString(err);            
+            nhlog::net()->warn(s.toStdString());
+            emit userInfoLoadingFailed(s);
+            return;
+        }
+
+        UserInformation userinfo;
+        userinfo.userId = mxid;
+        userinfo.displayName = QString::fromStdString(res.display_name);
+        userinfo.avatarUrl   = QString::fromStdString(res.avatar_url);
+        emit userInfoLoaded(userinfo);
+    });
 }
 
 void Client::logout(){

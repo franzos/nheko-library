@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+
+## [0.0.5]
+### Changed
+
+* Check user existence method added.
+
+
+## [0.0.40]
+### Fixed
+
+* Send CallManager errors via showNotification signal.
+* Fixing issue in Call just after creating chat and user accepted the invitation.
+
+
 ## [0.0.39]
 ### Fixed
 
