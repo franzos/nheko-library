@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Fixed
 
 * Send CallManager errors via showNotification signal.
+* Fixing issue in Call just after creating chat and user accepted the invitation.
 
 
 ## [0.0.39]
