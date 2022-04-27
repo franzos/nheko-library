@@ -38,6 +38,7 @@ QString
 avatarUrl(const QString &room_id, const QString &user_id);
 
 // presence
+mtx::events::presence::Presence presence(const std::string &user_id);
 mtx::presence::PresenceState
 presenceState(const std::string &user_id);
 std::string

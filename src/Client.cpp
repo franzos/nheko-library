@@ -83,6 +83,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
     _verificationManager = new VerificationManager(this);
+    _presenceEmitter = new PresenceEmitter(this);
     _authentication = new Authentication();
     connect(_authentication,
             &Authentication::logoutOk,
@@ -559,6 +560,7 @@ Client::startInitialSync()
             startInitialSync();
             return;
         }
+        _presenceEmitter->sync(res.presence);
         emit trySyncCb();
         emit prepareTimelines();
         auto up = new UserProfile("",utils::localUser());
@@ -594,6 +596,7 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
             syncTimelines(res.rooms);
             emit newUpdated(res);
         }
+        _presenceEmitter->sync(res.presence);
         // if we process a lot of syncs (1 every 200ms), this means we clean the
         // db every 100s
         static int syncCounter = 0;

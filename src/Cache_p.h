@@ -43,6 +43,7 @@ public:
     QString avatarUrl(const QString &room_id, const QString &user_id);
 
     // presence
+    mtx::events::presence::Presence presence(const std::string &user_id);
     mtx::presence::PresenceState presenceState(const std::string &user_id);
     std::string statusMessage(const std::string &user_id);
 
@@ -675,6 +676,7 @@ private:
     lmdb::dbi invitesDb_;
     lmdb::dbi readReceiptsDb_;
     lmdb::dbi notificationsDb_;
+    lmdb::dbi presenceDb_;
 
     lmdb::dbi devicesDb_;
     lmdb::dbi deviceKeysDb_;

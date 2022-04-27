@@ -24,7 +24,7 @@ find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
 find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Gui QuickControls2 QuickWidgets Svg REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -63,8 +63,11 @@ set(SRC_FILES
 	src/Cache.cpp
 	src/Client.cpp
 	src/EventAccessors.cpp
+	src/JdenticonProvider.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
+	src/MxcImageProvider.cpp
+	src/PresenceEmitter.cpp
 	src/UIA.cpp
 	src/UserProfile.cpp
 	src/UserSettings.cpp
@@ -110,7 +113,10 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Authentication.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
+	src/JdenticonProvider.h
 	src/Client.h
+	src/MxcImageProvider.h
+	src/PresenceEmitter.h
 	src/UIA.h
 	src/UserProfile.h	
 	src/UserSettings.h	
@@ -143,8 +149,12 @@ set(HEADERS
 	RestRequest.h
 	Cache.h	
 	EventAccessors.h
+	jdenticoninterface.h
+	JdenticonProvider.h
+	MxcImageProvider.h
 	Logging.h
 	MatrixClient.h
+	PresenceEmitter.h
 	UIA.h
 	Utils.h
 	CibaAuthentication.h
@@ -173,6 +183,8 @@ set(DEP_LIBS
 	spdlog::spdlog
 	Qt5::Gui
 	Qt5::Network
+	Qt5::QuickControls2
+	Qt5::Svg
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
@@ -192,7 +204,7 @@ endif()
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
-	find_package(Qt5 5.15 COMPONENTS Widgets Qml QuickControls2 QuickWidgets REQUIRED)
+	find_package(Qt5 5.15 COMPONENTS Widgets Qml QuickControls2 QuickWidgets Svg REQUIRED)
 	add_executable(profileInfo examples/profileInfo.cpp)
 	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets Qt5::Network)
 
