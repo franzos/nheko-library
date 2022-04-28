@@ -76,7 +76,7 @@ public:
     }
 
     VerificationManager *verificationManager() { return _verificationManager; }
-    PresenceEmitter *presenceEmitter() { return _presenceEmitter; }
+    Q_INVOKABLE PresenceEmitter *presenceEmitter() { return _presenceEmitter; }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();

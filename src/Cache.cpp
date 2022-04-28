@@ -2147,9 +2147,9 @@ Cache::getRoomName(lmdb::txn &txn, lmdb::dbi &statesdb, lmdb::dbi &membersdb)
     if (total == 2)
         return first_member;
     else if (total > 2)
-        return QString("%1 and %2 others").arg(first_member).arg(total - 1);
+        return tr("%1 and %n other(s)", "", (int)total - 1).arg(first_member);
 
-    return "Empty Room";
+    return tr("Empty Room");
 }
 
 mtx::events::state::JoinRule
@@ -2236,7 +2236,7 @@ Cache::getRoomVersion(lmdb::txn &txn, lmdb::dbi &statesdb)
     }
 
     nhlog::db()->warn("m.room.create event is missing room version, assuming version \"1\"");
-    return QString("1");
+    return QStringLiteral("1");
 }
 
 bool
@@ -4219,6 +4219,7 @@ Cache::verificationStatus_(const std::string &user_id, lmdb::txn &txn)
         }
 
         status.user_verified = trustlevel;
+
         verification_storage.status[user_id] = status;
         if (!verifyAtLeastOneSig(theirKeys->self_signing_keys, master_keys, user_id))
             return status;
@@ -4447,6 +4448,14 @@ QString
 avatarUrl(const QString &room_id, const QString &user_id)
 {
     return instance_->avatarUrl(room_id, user_id);
+}
+
+mtx::events::presence::Presence
+presence(const std::string &user_id)
+{
+    if (!instance_)
+        return {};
+    return instance_->presence(user_id);
 }
 
 // user cache stores user keys

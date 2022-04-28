@@ -83,7 +83,6 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
     _verificationManager = new VerificationManager(this);
-    _presenceEmitter = new PresenceEmitter(this);
     _authentication = new Authentication();
     connect(_authentication,
             &Authentication::logoutOk,
@@ -299,6 +298,7 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
             nhlog::db()->debug("Database is not ready. waiting ...");
         }
         nhlog::db()->info("database ready");
+        _presenceEmitter = new PresenceEmitter(this);
 
         const bool isInitialized = cache::isInitialized();
         const auto cacheVersion  = cache::formatVersion();
@@ -809,7 +809,7 @@ Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 QString
 Client::status() const
 {
-    return QString::fromStdString(cache::statusMessage(utils::localUser().toStdString()));
+    return QString::fromStdString(cache::presence(utils::localUser().toStdString()).status_msg);
 }
 
 void
