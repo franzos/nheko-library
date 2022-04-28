@@ -806,7 +806,7 @@ Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 QString
 Client::status() const
 {
-    return QString::fromStdString(cache::statusMessage(utils::localUser().toStdString()));
+    return QString::fromStdString(cache::presence(utils::localUser().toStdString()).status_msg);
 }
 
 void
