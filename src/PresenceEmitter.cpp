@@ -7,7 +7,7 @@
 
 #include <QCache>
 #include <Utils.h>
-
+#include "Logging.h"
 #include "Cache.h"
 
 namespace {
@@ -51,6 +51,7 @@ PresenceEmitter::sync(
     for (const auto &p : presences_) {
         auto id = QString::fromStdString(p.sender);
         presences.remove(id);
+        nhlog::ui()->info("Emit presenceChanged for user: " + p.sender + " -> " + presenceToStr(p.content.presence).toStdString());
         emit presenceChanged(std::move(id));
     }
 }
