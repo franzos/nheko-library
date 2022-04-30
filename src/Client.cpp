@@ -298,6 +298,7 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
             nhlog::db()->debug("Database is not ready. waiting ...");
         }
         nhlog::db()->info("database ready");
+        _presenceEmitter = new PresenceEmitter(this);
 
         const bool isInitialized = cache::isInitialized();
         const auto cacheVersion  = cache::formatVersion();
@@ -559,6 +560,7 @@ Client::startInitialSync()
             startInitialSync();
             return;
         }
+        _presenceEmitter->sync(res.presence);
         emit trySyncCb();
         emit prepareTimelines();
         auto up = new UserProfile("",utils::localUser());
@@ -594,6 +596,7 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
             syncTimelines(res.rooms);
             emit newUpdated(res);
         }
+        _presenceEmitter->sync(res.presence);
         // if we process a lot of syncs (1 every 200ms), this means we clean the
         // db every 100s
         static int syncCounter = 0;
@@ -806,7 +809,7 @@ Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 QString
 Client::status() const
 {
-    return QString::fromStdString(cache::statusMessage(utils::localUser().toStdString()));
+    return QString::fromStdString(cache::presence(utils::localUser().toStdString()).status_msg);
 }
 
 void

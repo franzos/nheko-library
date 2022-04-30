@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2017 Konstantinos Sideris <siderisk@auth.gr>
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -61,6 +62,7 @@ constexpr auto SYNC_STATE_DB("sync_state");
 //! Read receipts per room/event.
 constexpr auto READ_RECEIPTS_DB("read_receipts");
 constexpr auto NOTIFICATIONS_DB("sent_notifications");
+constexpr auto PRESENCE_DB("presence");
 
 //! Encryption related databases.
 
@@ -228,6 +230,7 @@ Cache::setup()
                         .arg(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
                         .arg(QString::fromUtf8(localUserId_.toUtf8().toHex()))
                         .arg(QString::fromUtf8(settings->profile().toUtf8().toHex()));
+
     bool isInitial = !QFile::exists(cacheDirectory_);
 
     env_ = lmdb::env::create();
@@ -258,7 +261,8 @@ Cache::setup()
 
         QDir stateDir(cacheDirectory_);
 
-        for (const auto &file : stateDir.entryList(QDir::NoDotAndDotDot)) {
+        auto eList = stateDir.entryList(QDir::NoDotAndDotDot);
+        for (const auto &file : qAsConst(eList)) {
             if (!stateDir.remove(file))
                 throw std::runtime_error(("Unable to delete file " + file).toStdString().c_str());
         }
@@ -273,6 +277,7 @@ Cache::setup()
     invitesDb_        = lmdb::dbi::open(txn, INVITES_DB, MDB_CREATE);
     readReceiptsDb_   = lmdb::dbi::open(txn, READ_RECEIPTS_DB, MDB_CREATE);
     notificationsDb_  = lmdb::dbi::open(txn, NOTIFICATIONS_DB, MDB_CREATE);
+    presenceDb_       = lmdb::dbi::open(txn, PRESENCE_DB, MDB_CREATE);
 
     // Device management
     devicesDb_    = lmdb::dbi::open(txn, DEVICES_DB, MDB_CREATE);
@@ -1102,6 +1107,44 @@ Cache::calculateRoomReadStatus(const std::string &room_id)
 }
 
 void
+Cache::updateState(const std::string &room, const mtx::responses::StateEvents &state)
+{
+    auto txn         = lmdb::txn::begin(env_);
+    auto statesdb    = getStatesDb(txn, room);
+    auto stateskeydb = getStatesKeyDb(txn, room);
+    auto membersdb   = getMembersDb(txn, room);
+    auto eventsDb    = getEventsDb(txn, room);
+
+    saveStateEvents(txn, statesdb, stateskeydb, membersdb, eventsDb, room, state.events);
+
+    RoomInfo updatedInfo;
+    updatedInfo.name       = getRoomName(txn, statesdb, membersdb);
+    updatedInfo.topic      = getRoomTopic(txn, statesdb);
+    updatedInfo.avatar_url = getRoomAvatarUrl(txn, statesdb, membersdb);
+    updatedInfo.version    = getRoomVersion(txn, statesdb);
+    updatedInfo.is_space   = getRoomIsSpace(txn, statesdb);
+
+    {
+        std::string_view data;
+        if (roomsDb_.get(txn, room, data)) {
+            try {
+                RoomInfo tmp     = json::parse(std::string_view(data.data(), data.size()));
+                updatedInfo.tags = tmp.tags;
+            } catch (const json::exception &e) {
+                nhlog::db()->warn("failed to parse room info: room_id ({}), {}: {}",
+                                  room,
+                                  std::string(data.data(), data.size()),
+                                  e.what());
+            }
+        }
+    }
+
+    roomsDb_.put(txn, room, json(updatedInfo).dump());
+    updateSpaces(txn, {room}, {room});
+    txn.commit();
+}
+
+void
 Cache::saveState(const mtx::responses::Sync &res)
 {
     using namespace mtx::events;
@@ -1118,6 +1161,16 @@ Cache::saveState(const mtx::responses::Sync &res)
         for (const auto &ev : res.account_data.events)
             std::visit(
               [&txn, &accountDataDb](const auto &event) {
+                  if constexpr (std::is_same_v<
+                                  std::remove_cv_t<std::remove_reference_t<decltype(event)>>,
+                                  AccountDataEvent<
+                                    mtx::events::account_data::nheko_extensions::HiddenEvents>>) {
+                      if (!event.content.hidden_event_types) {
+                          accountDataDb.del(txn, "im.nheko.hidden_events");
+                          return;
+                      }
+                  }
+
                   auto j = json(event);
                   accountDataDb.put(txn, j["type"].get<std::string>(), j.dump());
               },
@@ -1192,6 +1245,15 @@ Cache::saveState(const mtx::responses::Sync &res)
             for (const auto &evt : room.second.account_data.events) {
                 std::visit(
                   [&txn, &accountDataDb](const auto &event) {
+                      if constexpr (std::is_same_v<
+                                      std::remove_cv_t<std::remove_reference_t<decltype(event)>>,
+                                      AccountDataEvent<mtx::events::account_data::nheko_extensions::
+                                                         HiddenEvents>>) {
+                          if (!event.content.hidden_event_types) {
+                              accountDataDb.del(txn, "im.nheko.hidden_events");
+                              return;
+                          }
+                      }
                       auto j = json(event);
                       accountDataDb.put(txn, j["type"].get<std::string>(), j.dump());
                   },
@@ -1208,6 +1270,8 @@ Cache::saveState(const mtx::responses::Sync &res)
                 if (auto fr = std::get_if<
                       mtx::events::AccountDataEvent<mtx::events::account_data::FullyRead>>(&evt)) {
                     nhlog::db()->debug("Fully read: {}", fr->content.event_id);
+                    emit removeNotification(QString::fromStdString(room.first),
+                                            QString::fromStdString(fr->content.event_id));
                 }
             }
         }
@@ -1321,7 +1385,7 @@ Cache::saveInvite(lmdb::txn &txn,
             auto display_name =
               msg->content.display_name.empty() ? msg->state_key : msg->content.display_name;
 
-            MemberInfo tmp{display_name, msg->content.avatar_url};
+            MemberInfo tmp{display_name, msg->content.avatar_url, msg->content.is_direct};
 
             membersdb.put(txn, msg->state_key, json(tmp).dump());
         } else {
@@ -1344,9 +1408,7 @@ Cache::savePresence(
   const std::vector<mtx::events::Event<mtx::events::presence::Presence>> &presenceUpdates)
 {
     for (const auto &update : presenceUpdates) {
-        auto presenceDb = getPresenceDb(txn);
-
-        presenceDb.put(txn, update.sender, json(update.content).dump());
+        presenceDb_.put(txn, update.sender, json(update.content).dump());
     }
 }
 
@@ -1538,16 +1600,12 @@ Cache::getTimelineMessages(lmdb::txn &txn, const std::string &room_id, uint64_t 
 
     auto cursor = lmdb::cursor::open(txn, orderDb);
     if (index == std::numeric_limits<uint64_t>::max()) {
-        if (cursor.get(indexVal, event_id, forward ? MDB_FIRST : MDB_LAST)) {
-            index = lmdb::from_sv<uint64_t>(indexVal);
-        } else {
+        if (!cursor.get(indexVal, event_id, forward ? MDB_FIRST : MDB_LAST)) {
             messages.end_of_cache = true;
             return messages;
         }
     } else {
-        if (cursor.get(indexVal, event_id, MDB_SET)) {
-            index = lmdb::from_sv<uint64_t>(indexVal);
-        } else {
+        if (!cursor.get(indexVal, event_id, MDB_SET)) {
             messages.end_of_cache = true;
             return messages;
         }
@@ -1631,7 +1689,7 @@ Cache::replaceEvent(const std::string &room_id,
     {
         eventsDb.del(txn, event_id);
         eventsDb.put(txn, event_id, event_json);
-        for (auto relation : mtx::accessors::relations(event.data).relations) {
+        for (const auto &relation : mtx::accessors::relations(event.data).relations) {
             relationsDb.put(txn, relation.event_id, event_id);
         }
     }
@@ -2089,9 +2147,9 @@ Cache::getRoomName(lmdb::txn &txn, lmdb::dbi &statesdb, lmdb::dbi &membersdb)
     if (total == 2)
         return first_member;
     else if (total > 2)
-        return QString("%1 and %2 others").arg(first_member).arg(total - 1);
+        return tr("%1 and %n other(s)", "", (int)total - 1).arg(first_member);
 
-    return "Empty Room";
+    return tr("Empty Room");
 }
 
 mtx::events::state::JoinRule
@@ -2178,7 +2236,7 @@ Cache::getRoomVersion(lmdb::txn &txn, lmdb::dbi &statesdb)
     }
 
     nhlog::db()->warn("m.room.create event is missing room version, assuming version \"1\"");
-    return QString("1");
+    return QStringLiteral("1");
 }
 
 bool
@@ -2434,15 +2492,16 @@ Cache::getMembers(const std::string &room_id, std::size_t startIndex, std::size_
 std::vector<RoomMember>
 Cache::getMembersFromInvite(const std::string &room_id, std::size_t startIndex, std::size_t len)
 {
-    auto txn    = ro_txn(env_);
+    auto txn = ro_txn(env_);
+    std::vector<RoomMember> members;
+
+    try {
     auto db     = getInviteMembersDb(txn, room_id);
     auto cursor = lmdb::cursor::open(txn, db);
 
     std::size_t currentIndex = 0;
 
     const auto endIndex = std::min(startIndex + len, db.size(txn));
-
-    std::vector<RoomMember> members;
 
     std::string_view user_id, user_data;
     while (cursor.get(user_id, user_data, MDB_NEXT)) {
@@ -2457,7 +2516,8 @@ Cache::getMembersFromInvite(const std::string &room_id, std::size_t startIndex, 
         try {
             MemberInfo tmp = json::parse(user_data);
             members.emplace_back(RoomMember{QString::fromStdString(std::string(user_id)),
-                                            QString::fromStdString(tmp.name)});
+                                                QString::fromStdString(tmp.name),
+                                                tmp.is_direct});
         } catch (const json::exception &e) {
             nhlog::db()->warn("{}", e.what());
         }
@@ -2466,6 +2526,9 @@ Cache::getMembersFromInvite(const std::string &room_id, std::size_t startIndex, 
     }
 
     cursor.close();
+    } catch (const lmdb::error &e) {
+        nhlog::db()->warn("Failed to retrieve members {}", e.what());
+    }
 
     return members;
 }
@@ -2505,6 +2568,28 @@ Cache::savePendingMessage(const std::string &room_id,
     pending.put(txn, lmdb::to_sv(now), mtx::accessors::event_id(message.data));
 
     txn.commit();
+}
+std::vector<std::string>
+Cache::pendingEvents(const std::string &room_id)
+{
+    auto txn     = ro_txn(env_);
+    auto pending = getPendingMessagesDb(txn, room_id);
+
+    std::vector<std::string> related_ids;
+
+    try {
+        {
+            auto pendingCursor = lmdb::cursor::open(txn, pending);
+            std::string_view tsIgnored, pendingTxn;
+            while (pendingCursor.get(tsIgnored, pendingTxn, MDB_NEXT)) {
+                related_ids.emplace_back(pendingTxn.data(), pendingTxn.size());
+            }
+        }
+    } catch (const lmdb::error &e) {
+        nhlog::db()->error("pending events error: {}", e.what());
+    }
+
+    return related_ids;
 }
 
 std::optional<mtx::events::collections::TimelineEvent>
@@ -3261,16 +3346,19 @@ Cache::getImagePacks(const std::string &room_id, std::optional<bool> stickers)
     auto addPack = [&infos, stickers](const mtx::events::msc2545::ImagePack &pack,
                                       const std::string &source_room,
                                       const std::string &state_key) {
-        if (!pack.pack || !stickers.has_value() ||
-            (stickers.value() ? pack.pack->is_sticker() : pack.pack->is_emoji())) {
+        bool pack_matches = !stickers.has_value() ||
+                            (stickers.value() ? pack.pack->is_sticker() : pack.pack->is_emoji());
+
             ImagePackInfo info;
             info.source_room = source_room;
             info.state_key   = state_key;
             info.pack.pack   = pack.pack;
 
             for (const auto &img : pack.images) {
-                if (stickers.has_value() && img.second.overrides_usage() &&
-                    (stickers ? !img.second.is_sticker() : !img.second.is_emoji()))
+            if (stickers.has_value() &&
+                (img.second.overrides_usage()
+                   ? (stickers.value() ? !img.second.is_sticker() : !img.second.is_emoji())
+                   : !pack_matches))
                     continue;
 
                 info.pack.images.insert(img);
@@ -3278,7 +3366,6 @@ Cache::getImagePacks(const std::string &room_id, std::optional<bool> stickers)
 
             if (!info.pack.images.empty())
                 infos.push_back(std::move(info));
-        }
     };
 
     // packs from account data
@@ -3514,7 +3601,7 @@ Cache::displayName(const QString &room_id, const QString &user_id)
 static bool
 isDisplaynameSafe(const std::string &s)
 {
-    for (QChar c : QString::fromStdString(s).toUcs4()) {
+    for (QChar c : QString::fromStdString(s).toStdU32String()) {
         if (c.isPrint() && !c.isSpace())
             return false;
     }
@@ -3538,56 +3625,28 @@ Cache::avatarUrl(const QString &room_id, const QString &user_id)
         info && !info->avatar_url.empty())
         return QString::fromStdString(info->avatar_url);
 
-    return "";
+    return QString();
 }
 
-mtx::presence::PresenceState
-Cache::presenceState(const std::string &user_id)
+mtx::events::presence::Presence
+Cache::presence(const std::string &user_id)
 {
+    mtx::events::presence::Presence presence_{};
+    presence_.presence = mtx::presence::PresenceState::offline;
+
     if (user_id.empty())
-        return {};
+        return presence_;
 
     std::string_view presenceVal;
 
-    auto txn = lmdb::txn::begin(env_);
-    auto db  = getPresenceDb(txn);
-    auto res = db.get(txn, user_id, presenceVal);
-
-    mtx::presence::PresenceState state = mtx::presence::offline;
+    auto txn = ro_txn(env_);
+    auto res = presenceDb_.get(txn, user_id, presenceVal);
 
     if (res) {
-        mtx::events::presence::Presence presence =
-          json::parse(std::string_view(presenceVal.data(), presenceVal.size()));
-        state = presence.presence;
+        presence_ = json::parse(std::string_view(presenceVal.data(), presenceVal.size()));
     }
 
-    txn.commit();
-
-    return state;
-}
-
-std::string
-Cache::statusMessage(const std::string &user_id)
-{
-    if (user_id.empty())
-        return {};
-
-    std::string_view presenceVal;
-
-    auto txn = lmdb::txn::begin(env_);
-    auto db  = getPresenceDb(txn);
-    auto res = db.get(txn, user_id, presenceVal);
-
-    std::string status_msg;
-
-    if (res) {
-        mtx::events::presence::Presence presence = json::parse(presenceVal);
-        status_msg                               = presence.status_msg;
-    }
-
-    txn.commit();
-
-    return status_msg;
+    return presence_;
 }
 
 void
@@ -4096,7 +4155,7 @@ Cache::verificationStatus_(const std::string &user_id, lmdb::txn &txn)
 
     auto updateUnverifiedDevices = [&status](auto &theirDeviceKeys) {
         int currentVerifiedDevices = 0;
-        for (auto device_id : status.verified_devices) {
+        for (const auto &device_id : status.verified_devices) {
             if (theirDeviceKeys.count(device_id))
                 currentVerifiedDevices++;
         }
@@ -4160,6 +4219,7 @@ Cache::verificationStatus_(const std::string &user_id, lmdb::txn &txn)
         }
 
         status.user_verified = trustlevel;
+
         verification_storage.status[user_id] = status;
         if (!verifyAtLeastOneSig(theirKeys->self_signing_keys, master_keys, user_id))
             return status;
@@ -4242,6 +4302,8 @@ to_json(json &j, const MemberInfo &info)
 {
     j["name"]       = info.name;
     j["avatar_url"] = info.avatar_url;
+    if (info.is_direct)
+        j["is_direct"] = info.is_direct;
 }
 
 void
@@ -4249,6 +4311,7 @@ from_json(const json &j, MemberInfo &info)
 {
     info.name       = j.at("name");
     info.avatar_url = j.at("avatar_url");
+    info.is_direct  = j.value("is_direct", false);
 }
 
 void
@@ -4357,9 +4420,9 @@ init(const QString &user_id)
     qRegisterMetaType<RoomSearchResult>();
     qRegisterMetaType<RoomInfo>();
     qRegisterMetaType<QMap<QString, RoomInfo>>();
-    qRegisterMetaType<std::map<QString, RoomInfo>>(); // TODO  - maybe should be deleted
-    qRegisterMetaType<std::map<QString, mtx::responses::Timeline>>(); // TODO - review
-    qRegisterMetaType<mtx::responses::QueryKeys>(); // TODO - review
+    qRegisterMetaType<std::map<QString, RoomInfo>>();
+    qRegisterMetaType<std::map<QString, mtx::responses::Timeline>>();
+    qRegisterMetaType<mtx::responses::QueryKeys>();
 
     instance_ = std::make_unique<Cache>(user_id);
 }
@@ -4387,17 +4450,12 @@ avatarUrl(const QString &room_id, const QString &user_id)
     return instance_->avatarUrl(room_id, user_id);
 }
 
-mtx::presence::PresenceState
-presenceState(const std::string &user_id)
+mtx::events::presence::Presence
+presence(const std::string &user_id)
 {
     if (!instance_)
         return {};
-    return instance_->presenceState(user_id);
-}
-std::string
-statusMessage(const std::string &user_id)
-{
-    return instance_->statusMessage(user_id);
+    return instance_->presence(user_id);
 }
 
 // user cache stores user keys
@@ -4571,7 +4629,7 @@ roomMembers(const std::string &room_id)
     return instance_->roomMembers(room_id);
 }
 
-//! Check if the given user has power leve greater than than
+//! Check if the given user has power level greater than
 //! lowest power level of the given events.
 bool
 hasEnoughPowerLevel(const std::vector<mtx::events::EventType> &eventTypes,

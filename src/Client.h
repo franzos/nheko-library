@@ -31,6 +31,7 @@
 #include "Utils.h"
 #include "timeline/Timeline.h"
 #include "encryption/VerificationManager.h"
+#include "PresenceEmitter.h"
 
 class UserSettings;
 class CallManager;
@@ -75,6 +76,7 @@ public:
     }
 
     VerificationManager *verificationManager() { return _verificationManager; }
+    Q_INVOKABLE PresenceEmitter *presenceEmitter() { return _presenceEmitter; }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
@@ -217,6 +219,7 @@ private:
 
     QTimer connectivityTimer_;
     VerificationManager *_verificationManager = nullptr;
+    PresenceEmitter *_presenceEmitter = nullptr;
     std::atomic_bool isConnected_;
     // Global user settings.
     CallManager *callManager_;

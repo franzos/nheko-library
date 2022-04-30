@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -26,6 +27,7 @@ struct RoomMember
 {
     QString user_id;
     QString display_name;
+    bool is_direct = false;
 };
 
 //! Used to uniquely identify a list of read receipts.
@@ -99,6 +101,7 @@ struct MemberInfo
 {
     std::string name;
     std::string avatar_url;
+    bool is_direct = false;
 };
 
 void

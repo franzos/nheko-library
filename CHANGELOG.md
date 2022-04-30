@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.51]
+### Changed
+
+* Avatar support.
+* Check user presence support.
+
 
 ## [0.0.5]
 ### Changed
