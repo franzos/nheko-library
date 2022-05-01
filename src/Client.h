@@ -83,7 +83,8 @@ public:
     Q_INVOKABLE void enableLogger(bool enable, bool enableDebugLogs = false){
         nhlog::init("matrix-client-library", enable, enableDebugLogs);    
     }
-
+    Q_INVOKABLE QVariantMap loginOptions(QString server);
+    
     CallManager *callManager() { return callManager_; }
 
 public slots:
