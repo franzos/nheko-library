@@ -50,13 +50,10 @@ using FrameRate = std::pair<int, int>;
 std::optional<FrameRate>
 getFrameRate(const GValue *value)
 {
-    if (GST_VALUE_HOLDS_FRACTION(value)) {
         gint num = gst_value_get_fraction_numerator(value);
         gint den = gst_value_get_fraction_denominator(value);
         return FrameRate{num, den};
     }
-    return std::nullopt;
-}
 
 void
 addFrameRate(std::vector<std::string> &rates, const FrameRate &rate)
@@ -71,13 +68,26 @@ setDefaultDevice(bool isVideo)
 {
     auto settings = UserSettings::instance();
     if (isVideo && settings->camera().isEmpty()) {
+        if(videoSources_.size()){
         const VideoSource &camera = videoSources_.front();
         settings->setCamera(QString::fromStdString(camera.name));
+            if(camera.caps.size()){
         settings->setCameraResolution(QString::fromStdString(camera.caps.front().resolution));
-        settings->setCameraFrameRate(
-          QString::fromStdString(camera.caps.front().frameRates.front()));
+                if(camera.caps.front().frameRates.size()){
+                    settings->setCameraFrameRate(QString::fromStdString(camera.caps.front().frameRates.front()));
+                } else {
+                    nhlog::dev()->warn("Camera framerates is empty {}", camera.name);
+                }
+            } else {
+                nhlog::dev()->warn("Camera caps is empty {}", camera.name);
+            }
+        } else 
+            nhlog::dev()->warn("Video source is not available!");
     } else if (!isVideo && settings->microphone().isEmpty()) {
+        if(audioSources_.size()) 
         settings->setMicrophone(QString::fromStdString(audioSources_.front().name));
+        else 
+            nhlog::dev()->warn("Audio source is not available!");
     }
 }
 
@@ -89,7 +99,7 @@ addDevice(GstDevice *device)
 
     gchar *name  = gst_device_get_display_name(device);
     gchar *type  = gst_device_get_device_class(device);
-    bool isVideo = !std::strncmp(type, "Video", 5);
+    bool isVideo = (QString(type).contains("Video",Qt::CaseSensitive));
     g_free(type);
     nhlog::ui()->debug("WebRTC: {} device added: {}", isVideo ? "video" : "audio", name);
     if (!isVideo) {
@@ -122,20 +132,22 @@ addDevice(GstDevice *device)
                                   G_TYPE_INT,
                                   &heightpx,
                                   nullptr)) {
+                gchar * struct_string = gst_structure_to_string(structure);
+                nhlog::dev()->info("\t Device info: {}" , struct_string);
                 VideoSource::Caps caps;
                 caps.resolution     = std::to_string(widthpx) + "x" + std::to_string(heightpx);
-                const GValue *value = gst_structure_get_value(structure, "framerate");
-                if (auto fr = getFrameRate(value); fr)
-                    addFrameRate(caps.frameRates, *fr);
-                else if (GST_VALUE_HOLDS_FRACTION_RANGE(value)) {
+                const GValue *framerates = gst_structure_get_value(structure, "framerate");
+                if (GST_VALUE_HOLDS_FRACTION (framerates)){
+                    addFrameRate(caps.frameRates, *getFrameRate(framerates));
+                } else if (GST_VALUE_HOLDS_FRACTION_RANGE(framerates)) {
                     addFrameRate(caps.frameRates,
-                                 *getFrameRate(gst_value_get_fraction_range_min(value)));
+                                 *getFrameRate(gst_value_get_fraction_range_min(framerates)));
                     addFrameRate(caps.frameRates,
-                                 *getFrameRate(gst_value_get_fraction_range_max(value)));
-                } else if (GST_VALUE_HOLDS_LIST(value)) {
-                    guint nRates = gst_value_list_get_size(value);
+                                 *getFrameRate(gst_value_get_fraction_range_max(framerates)));
+                } else if (GST_VALUE_HOLDS_LIST(framerates)) {
+                    guint nRates = gst_value_list_get_size(framerates);
                     for (guint j = 0; j < nRates; ++j) {
-                        const GValue *rate = gst_value_list_get_value(value, j);
+                        const GValue *rate = gst_value_list_get_value(framerates, j);
                         if (auto frate = getFrameRate(rate); frate)
                             addFrameRate(caps.frameRates, *frate);
                     }
@@ -260,6 +272,7 @@ CallDevices::init()
         caps = gst_caps_new_empty_simple("video/x-raw");
         gst_device_monitor_add_filter(monitor, "Video/Source", caps);
         gst_device_monitor_add_filter(monitor, "Video/Duplex", caps);
+        // gst_device_monitor_add_filter(monitor, "Source/Video", caps);
         gst_caps_unref(caps);
 
         GstBus *bus = gst_device_monitor_get_bus(monitor);

@@ -53,6 +53,12 @@ int main(int argc, char *argv[]) {
     QString targetUserId = "@r.majd:pantherx.org";
     QString targetRoomId = "!LBljXrKlFDSGQDadbK:pantherx.org";
 
+    // QString userId = "@fakhri_test02:pantherx.org";
+    // QString password = "6RCNv5xKc5";
+    // QString serverAddress = "https://matrix.pantherx.org";
+    // QString targetUserId = "@h.nasajpour:pantherx.org";
+    // QString targetRoomId = "!kTlpmNnBLwuvTqhCQp:pantherx.org";
+    
     auto *client = Client::instance();
     WebRTCHandler webrtc{client};
     auto *session = &WebRTCSession::instance();
