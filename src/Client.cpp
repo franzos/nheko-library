@@ -1239,3 +1239,21 @@ void Client::loginCibaCb(UserInformation userInfo){
 QString Client::getLibraryVersion(){
     return QString::fromStdString(VERSION_LIBRARY);
 }
+
+QVariantMap Client::loginOptions(QString server){
+    auto ciba = new CibaAuthentication(server);
+    auto res = ciba->availableLogin();
+    QJsonDocument jsonResponse = QJsonDocument::fromJson(res.jsonRespnse.toUtf8());
+    QVariantMap opt;
+    auto object = jsonResponse.object();
+    QJsonValue value = object.value("flows");
+    QJsonArray array = value.toArray();
+    foreach (const QJsonValue & v, array) {   
+        QString type =  v.toObject().value("type").toString();
+        if (type.contains("cm.ciba_auth") || type.contains("m.login.password"))
+            opt.insert(type,"Available");
+        else
+            opt.insert(type,"NotAvailable");
+    } 
+    return opt;
+  }

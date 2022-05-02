@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.53]
+### Changed
+
+* Bug fixing in detecting video and audio devices.
+* Bug fixing in retriving the Video devices.
+* Bug fixing in reading the `framerate` from video devices.
+* Add some warning log messages to `CallDevices.cpp`.
+
+
+## [0.0.52]
+### Changed
+
+* get login Options.
+
 ## [0.0.51]
 ### Changed
 
