@@ -22,6 +22,7 @@
 #include <QMap>
 #include <QPoint>
 #include <QTimer>
+#include <QStandardPaths>
 
 #include "Authentication.h"
 #include "UserSettings.h"
@@ -81,7 +82,9 @@ public:
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
     Q_INVOKABLE void enableLogger(bool enable, bool enableDebugLogs = false){
-        nhlog::init("matrix-client-library", enable, enableDebugLogs);    
+        nhlog::init(QStringLiteral("%1/matrix-client-library.log")
+                      .arg(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                      .toStdString(), enable, enableDebugLogs);    
     }
     Q_INVOKABLE QVariantMap loginOptions(QString server);
     
