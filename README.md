@@ -1,4 +1,4 @@
-### Matrix Client Library
+# Matrix Client Library
 
 ### For make release
 
@@ -14,7 +14,7 @@
  * `spdlog`             : Logger
  * `nlohmann_json`      : JSON library - __TODO__ : Maybe we have to replace it with Qt Built-in Json library 
 
-#### How to build
+## How to build
 
 ```bash
 mkdir build
@@ -23,7 +23,7 @@ qmake ..
 make
 ```
 
-##### Build Options
+## Build Options
 **1.** Building as `shared` or `static`  
 The library will be built as `shared` library, we can set `-DSTATIC_LIB=ON` and run `cmake` to build as `static`:
 
@@ -38,10 +38,6 @@ The `examples` won't be built as default, so you can run `qmake` as follow to bu
 cmake -DBUILD_EXAMPLES=ON ..
 ```
 
-```bash
-qmake -config BUILD_EXAMPLES ..
-```
-
 **3.** Building without `tests`
 The `tests` won't be built as default, so you can run `qmake` as follow to enable the building the tests:
 
@@ -49,18 +45,14 @@ The `tests` won't be built as default, so you can run `qmake` as follow to enabl
 cmake -DBUILD_TESTS=ON ..
 ```
 
-```bash
-qmake -config BUILD_TESTS ..
-```
-
-#### STEPS
-### 1. create instatnce 
+## Integration
+#### 1. create instance 
 ```
 Client *client;
 client = Client::instance();
 ```
 
-### 2. Enable/Disable logs
+#### 2. Enable/Disable logs
 The logs is enabled as default with `info` level. We can disable it via:
 ```cpp
 client->enableLogger(false);
@@ -73,27 +65,30 @@ client->enableLogger(true, true);
 The second `true` is related to `enable debug logs`.
 
 
-### 3. Login with password
+#### 3. Login with password
 ```cpp
 client->loginWithPassword(deviceName, userId, password, serverAddress); 
 
 ```
 the result will be informed with 2 signal `Client::loginOk` and `Client::loginErrorOccurred`
 
-### 4. Client process should be start
+#### 4. Client process should be start
 ```cpp
  client->start();
 ```
 if client is not loged in already will recieve `Client::dropToLogin` signale 
 
 
-### 5. Get Room Lists
+#### 5. Get Room Lists
 ```
 std::map<QString, RoomInfo> Client::joinedRoomList()
 ```
 
 
+## Stored files/folders
 
-
-
-
+* `Config` : `~/.config/matrix-client-library/APP_NAME.conf`
+* `DB`: `~/.local/share/matrix-client-library/APP_NAME/APP_NAME_HASH/`
+* `Log`: `~/.local/share/matrix-client-library/APP_NAME/matrix-client-library.log`
+* `Cache` (qml and media): `~/.cache/matrix-client-library/APP_NAME/`
+* `Cache Info`: `~/.cache/matrix-client-library/APP_NAME/info`
