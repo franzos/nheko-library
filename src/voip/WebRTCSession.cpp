@@ -472,7 +472,11 @@ linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
             nhlog::ui()->error("WebRTC: unable to link new pad");
         else {
             if (session->callType() == CallType::VOICE ||
-                (haveAudioStream_ && (haveVideoStream_ || session->isRemoteVideoRecvOnly()))) {
+                // UPDATED by Hamzeh
+                //  removed checking the `haveAudioStream_` flag
+                //  https://git.pantherx.org/development/mobile/matrix-client/-/issues/83
+                //  BE AWARE OF THIS LINE IN MERGING WITH UPSTREAM (NHEKO)
+                (haveVideoStream_ || session->isRemoteVideoRecvOnly())) {
                 emit session->stateChanged(State::CONNECTED);
                 if (haveVideoStream_) {
                     keyFrameRequestData_.pipe      = pipe;
