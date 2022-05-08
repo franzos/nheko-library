@@ -56,47 +56,37 @@ void Authentication::logout(){
 
 
 
-std::string Authentication::serverDiscovery(std::string userId){
+void Authentication::serverDiscovery(std::string userId){
     mtx::identifiers::User user;    
     try {
         user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
     } catch (const std::exception &) {
         // showError(error_matrixid_label_,
         //           tr("You have entered an invalid Matrix ID  e.g @joe:matrix.org"));
-        return " ";
+        // return " ";
     }
 
-    QString homeServer = QString::fromStdString(user.hostname());
+   
+    std::string  homeServer = user.hostname();
     http::client()->set_server(user.hostname());
-    http::client()->well_known([this](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
+    http::client()->well_known([this,homeServer](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
         if (err) {
-            if (err->status_code == 404) {
-                nhlog::net()->info("Autodiscovery: No .well-known.");
-                // checkHomeserverVersion();
-                return;
-            }
+            auto s = utils::httpMtxErrorToString(err).toStdString();     
+            // emit logoutErrorOccurred(s);
 
-            if (!err->parse_error.empty()) {
-                // emit versionErrorCb(tr("Autodiscovery failed. Received malformed response."));
-                nhlog::net()->error("Autodiscovery failed. Received malformed response.");
-                return;
-            }
-
-            // emit versionErrorCb(tr("Autodiscovery failed. Unknown error when "
-            //                        "requesting .well-known."));
-            nhlog::net()->error("Autodiscovery failed. Unknown error when "
-                                "requesting .well-known. {} {}",
-                                err->status_code,
-                                err->error_code);
+                          
+            nhlog::net()->error("Autodiscovery failed. ",
+                                s);
             
             return;
         }
 
         nhlog::net()->info("Autodiscovery: Discovered '" + res.homeserver.base_url + "'");
-        //http::client()->set_server(res.homeserver.base_url);
-        //homeServer = res.homeserver.base_url;
+        http::client()->set_server(res.homeserver.base_url);
+        emit serverChanged(res.homeserver.base_url);
+        // homeServer = res.homeserver.base_url;
     });
-    return homeServer.toStdString();
+    // return homeServer;
 }
 
 bool Authentication::loginWithCiba(QString username,QString server){

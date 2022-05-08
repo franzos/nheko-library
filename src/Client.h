@@ -114,7 +114,7 @@ public slots:
     UserInformation userInformation();
     void userInformation(const QString &mxid);
     void logout();
-    std::string serverDiscovery(QString userId);
+    void serverDiscovery(QString userId);
     QString getLibraryVersion();
 
 

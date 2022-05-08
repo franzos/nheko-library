@@ -1150,8 +1150,8 @@ void Client::logout(){
     _authentication->logout();
 }
 
-std::string Client::serverDiscovery(QString userId){
-    return _authentication->serverDiscovery(userId.toStdString());
+void Client::serverDiscovery(QString userId){
+    _authentication->serverDiscovery(userId.toStdString());
 }
 
 void Client::start(QString userId, QString homeServer, QString token){

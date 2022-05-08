@@ -17,7 +17,7 @@ public:
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
     bool loginWithCiba(QString username,QString server);
-    std::string serverDiscovery(std::string userId);
+    void serverDiscovery(std::string userId);
 
 signals:
     void loginOk(const mtx::responses::Login &res);
@@ -27,6 +27,7 @@ signals:
     void loginCibaOk(UserInformation userInfo);
     void loginCibaErrorOccurred(std::string &msg);
     void cibaStatusChanged(QString accessToken,QString username);
+    void serverChanged(std::string homeserver);
 
 private slots:
     void loginCibaFlow(QString accessToken,QString username);
