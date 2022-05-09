@@ -25,19 +25,16 @@ void Authentication::loginWithPassword(std::string deviceName, std::string userI
     mtx::identifiers::User user;
     user = mtx::identifiers::parse<mtx::identifiers::User>(userId);        
     http::client()->login(          
-    user.localpart(),
-    password,
-    deviceName,
-    [this](const mtx::responses::Login &res, mtx::http::RequestErr err) {
-        if (err) {
-            auto s = utils::httpMtxErrorToString(err).toStdString();
-            emit loginErrorOccurred(s);
-            return;
-        }
-        if (res.well_known) {
-            http::client()->set_server(res.well_known->homeserver.base_url);
-        }
-        emit loginOk(res);
+        user.localpart(),
+        password,
+        deviceName,
+        [this](const mtx::responses::Login &res, mtx::http::RequestErr err) {
+            if (err) {
+                auto s = utils::httpMtxErrorToString(err).toStdString();
+                emit loginErrorOccurred(s);
+                return;
+            }
+            emit loginOk(res);
     });
 
 }
@@ -61,32 +58,24 @@ void Authentication::serverDiscovery(std::string userId){
     try {
         user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
     } catch (const std::exception &) {
-        // showError(error_matrixid_label_,
-        //           tr("You have entered an invalid Matrix ID  e.g @joe:matrix.org"));
-        // return " ";
+            
+        emit discoverryErrorOccurred("You have entered an invalid Matrix ID");
     }
 
-   
     std::string  homeServer = user.hostname();
     http::client()->set_server(user.hostname());
     http::client()->well_known([this,homeServer](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
         if (err) {
             auto s = utils::httpMtxErrorToString(err).toStdString();     
-            // emit logoutErrorOccurred(s);
-
-                          
+            emit discoverryErrorOccurred(s);
             nhlog::net()->error("Autodiscovery failed. ",
-                                s);
-            
-            return;
+                                s);  
+        } else{
+            nhlog::net()->info("Autodiscovery: Discovered '" + res.homeserver.base_url + "'");
+            http::client()->set_server(res.homeserver.base_url);
+            emit serverChanged(res.homeserver.base_url);
         }
-
-        nhlog::net()->info("Autodiscovery: Discovered '" + res.homeserver.base_url + "'");
-        http::client()->set_server(res.homeserver.base_url);
-        emit serverChanged(res.homeserver.base_url);
-        // homeServer = res.homeserver.base_url;
     });
-    // return homeServer;
 }
 
 bool Authentication::loginWithCiba(QString username,QString server){

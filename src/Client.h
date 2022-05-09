@@ -125,6 +125,9 @@ signals:
     void logoutErrorOccurred(const QString &msg);
     void logoutOk();    
     void dropToLogin(const QString &msg);
+    void serverChanged(QString homeserver);
+    void discoverryErrorOccurred(QString err);
+
     //
     void connectionLost();
     void connectionRestored();

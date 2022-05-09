@@ -28,6 +28,7 @@ signals:
     void loginCibaErrorOccurred(std::string &msg);
     void cibaStatusChanged(QString accessToken,QString username);
     void serverChanged(std::string homeserver);
+    void discoverryErrorOccurred(std::string err);
 
 private slots:
     void loginCibaFlow(QString accessToken,QString username);
