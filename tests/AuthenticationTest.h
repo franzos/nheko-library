@@ -44,11 +44,7 @@ private slots:
         eventLoop.exec();  
          
     }
-    // void discovery(){        
-    //     std::string server = loginTest->serverDiscovery("@fakhri_test01:pantherx.org");
-    //     QCOMPARE(server,"https://matrix.pantherx.org");  
-    //     eventLoop.quit();     
-    // }
+    
     void logout(){  
         QObject::connect(loginTest,  &Authentication::logoutOk, [&](){
             QVERIFY(1 == 1);
@@ -57,6 +53,22 @@ private slots:
         loginTest->logout();        
         eventLoop.exec();
     }    
+
+     void discovery(){      
+
+        QObject::connect(loginTest,  &Authentication::serverChanged, [&](std::string server){
+            QCOMPARE(server,"https://matrix.ones-now.com");
+            eventLoop.quit();
+        }); 
+
+        QObject::connect(loginTest,  &Authentication::discoverryErrorOccurred, [&](std::string server){
+            
+            eventLoop.quit();
+        }); 
+
+        loginTest->serverDiscovery("@huser.test-703:ones-now.com");
+        eventLoop.exec();     
+    }
 
     void loginWithIncorrectPassword(){
         Authentication *loginTestWrong = new Authentication();

@@ -114,6 +114,17 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit logoutErrorOccurred(err);
     });
 
+    QObject::connect(_authentication, &Authentication::serverChanged, [&](std::string server){
+           nhlog::net()->info("Discovered: {}" ,server); 
+           emit serverChanged(QString::fromStdString(server));
+        }); 
+
+    QObject::connect(_authentication, &Authentication::discoverryErrorOccurred, [&](std::string err){
+            QString msg =QString::fromStdString(err);
+            emit discoverryErrorOccurred(msg);            
+        }); 
+
+
     connect(this,
             &Client::downloadedSecrets,
             this,
@@ -153,6 +164,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
           });
     });
 
+     
     // connect(
     //   view_manager_,
     //   &TimelineViewManager::inviteUsers,
@@ -1150,8 +1162,8 @@ void Client::logout(){
     _authentication->logout();
 }
 
-std::string Client::serverDiscovery(QString userId){
-    return _authentication->serverDiscovery(userId.toStdString());
+void Client::serverDiscovery(QString userId){
+    _authentication->serverDiscovery(userId.toStdString());
 }
 
 void Client::start(QString userId, QString homeServer, QString token){

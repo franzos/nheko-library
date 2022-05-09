@@ -114,7 +114,7 @@ public slots:
     UserInformation userInformation();
     void userInformation(const QString &mxid);
     void logout();
-    std::string serverDiscovery(QString userId);
+    void serverDiscovery(QString userId);
     QString getLibraryVersion();
 
 
@@ -125,6 +125,9 @@ signals:
     void logoutErrorOccurred(const QString &msg);
     void logoutOk();    
     void dropToLogin(const QString &msg);
+    void serverChanged(QString homeserver);
+    void discoverryErrorOccurred(QString err);
+
     //
     void connectionLost();
     void connectionRestored();

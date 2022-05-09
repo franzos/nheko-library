@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.0.56]
+### Changed
+
+* Adding server discovery.
+
 ## [0.0.55]
 ### Fixed
 
