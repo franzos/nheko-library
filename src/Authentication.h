@@ -17,7 +17,7 @@ public:
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
     bool loginWithCiba(QString username,QString server);
-    void serverDiscovery(std::string userId);
+    void serverDiscovery(std::string hostName);
 
 signals:
     void loginOk(const mtx::responses::Login &res);

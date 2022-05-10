@@ -57,7 +57,7 @@ private slots:
      void discovery(){      
 
         QObject::connect(loginTest,  &Authentication::serverChanged, [&](std::string server){
-            QCOMPARE(server,"https://matrix.ones-now.com");
+            QCOMPARE(server,"https://matrix.pantherx.org");
             eventLoop.quit();
         }); 
 
@@ -66,7 +66,15 @@ private slots:
             eventLoop.quit();
         }); 
 
-        loginTest->serverDiscovery("@huser.test-703:ones-now.com");
+        std::string userId ="@fakhri_test01:pantherx.org";
+
+         mtx::identifiers::User user;    
+        // try {
+            user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
+        // } catch (const std::exception &) {                
+        //     emit discoverryErrorOccurred("You have entered an invalid Matrix ID");
+        // }
+        loginTest->serverDiscovery(user.hostname());
         eventLoop.exec();     
     }
 

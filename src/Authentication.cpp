@@ -53,18 +53,9 @@ void Authentication::logout(){
 
 
 
-void Authentication::serverDiscovery(std::string userId){
-    mtx::identifiers::User user;    
-    try {
-        user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
-    } catch (const std::exception &) {
-            
-        emit discoverryErrorOccurred("You have entered an invalid Matrix ID");
-    }
-
-    std::string  homeServer = user.hostname();
-    http::client()->set_server(user.hostname());
-    http::client()->well_known([this,homeServer](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
+void Authentication::serverDiscovery(std::string hostName){   
+    http::client()->set_server(hostName);
+    http::client()->well_known([this,hostName](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
         if (err) {
             auto s = utils::httpMtxErrorToString(err).toStdString();     
             emit discoverryErrorOccurred(s);
