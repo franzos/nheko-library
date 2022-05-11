@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
+## [0.0.58]
+### Changed
+
+* Adding exteract host name from user Id
+
 ## [0.0.57]
 ### Changed
 
