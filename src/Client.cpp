@@ -1162,8 +1162,8 @@ void Client::logout(){
     _authentication->logout();
 }
 
-void Client::serverDiscovery(QString userId){
-    _authentication->serverDiscovery(userId.toStdString());
+void Client::serverDiscovery(QString hostName){
+    _authentication->serverDiscovery(hostName.toStdString());
 }
 
 void Client::start(QString userId, QString homeServer, QString token){
@@ -1268,4 +1268,31 @@ QVariantMap Client::loginOptions(QString server){
             opt.insert(type,"NotAvailable");
     } 
     return opt;
+  }
+
+  QString Client::extractHostName(QString userId){
+      if(!userId.isEmpty()){
+        if(userId.startsWith("@")){
+            mtx::identifiers::User user;    
+            try {
+                user = mtx::identifiers::parse<mtx::identifiers::User>(userId.toStdString());
+                return QString::fromStdString(user.hostname());
+            } catch (const std::exception &) {                
+                return "";
+            }
+        }else{
+            try
+            {
+                auto list = userId.split("@");
+                if(list.size()>1)
+                    return list[1];
+
+            }
+            catch(const std::exception& e)
+            {
+                return "";
+            }   
+        }
+      }      
+      return "";
   }

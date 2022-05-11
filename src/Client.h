@@ -114,8 +114,11 @@ public slots:
     UserInformation userInformation();
     void userInformation(const QString &mxid);
     void logout();
-    void serverDiscovery(QString userId);
+    void serverDiscovery(QString hostName);
     QString getLibraryVersion();
+    QString extractHostName(QString userId);
+
+
 
 
 signals:
