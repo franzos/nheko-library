@@ -1262,11 +1262,13 @@ QVariantMap Client::loginOptions(QString server){
     QJsonArray array = value.toArray();
     foreach (const QJsonValue & v, array) {   
         QString type =  v.toObject().value("type").toString();
-        if (type.contains("cm.ciba_auth") || type.contains("m.login.password"))
-            opt.insert(type,"Available");
-        else
-            opt.insert(type,"NotAvailable");
-    } 
+        if (type.contains("cm.ciba_auth")) {
+            opt.insert("CIBA","Available");
+        }else if(type.contains("m.login.password")){
+            opt.insert("PASSWORD","Available");
+        }
+    }
+        
     return opt;
   }
 
