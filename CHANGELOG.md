@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
+## [0.0.59]
+### Changed
+
+* Login options correction
+
 ## [0.0.58]
 ### Changed
 
