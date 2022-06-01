@@ -9,14 +9,15 @@
 CibaAuthentication::CibaAuthentication(){
 }
 
-bool CibaAuthentication::loginRequest(const QString &serverAddress, const QString &username){
+void CibaAuthentication::loginRequest(const QString &serverAddress, const QString &username){
     RestRequest restRequest;
     QString requestId = "";
     QMap<QString, QString> headers;
     QMap<QString, QString> data;
     headers.insert("Content-Type", "application/json");   
     data.insert("login_hint_token", username);       
-    QString urlLoginRequest = serverAddress+"/_synapse/client/cm_login/ciba";
+    _serverAddress = serverAddress;
+    QString urlLoginRequest = _serverAddress+"/_synapse/client/cm_login/ciba";
     QString response;
     int resCode = restRequest.post( urlLoginRequest , headers,{}, data, response);
     if(resCode==200 || resCode==201) {
@@ -42,19 +43,21 @@ bool CibaAuthentication::loginRequest(const QString &serverAddress, const QStrin
                     }        
                 });
                 thread->start();
-                return true;  
+                return;  
             }
         }
+        response = "Response error (" + response + ")";
     }
-    return false;
+    emit loginError(response);
 }
 
 QString CibaAuthentication::checkStatus(const QString &requestId){
     RestRequest restRequest;
     QString response;
     QMap<QString, QString> headers;
-    QString urlCheckStatus = serverAddress+"/_synapse/client/cm_login/ciba_status/"+requestId;
-    restRequest.get(urlCheckStatus,headers,response);
+    QString urlCheckStatus = _serverAddress+"/_synapse/client/cm_login/ciba_status/"+requestId;
+    int code = restRequest.get(urlCheckStatus,headers,response);
+    qDebug() << response << code;
     QJsonDocument statusResponse = QJsonDocument::fromJson(response.toUtf8());
     QJsonObject jsonObj = statusResponse.object();
     if(jsonObj.contains("access_token")){
@@ -67,7 +70,7 @@ RestRequestResponse CibaAuthentication::checkRegistration(QString accessToken){
     RestRequest restRequest;
     RestRequestResponse output;
     QMap<QString, QString> headers;
-    QString urlRegistration = serverAddress+"/_synapse/client/cm_login/exists";
+    QString urlRegistration = _serverAddress+"/_synapse/client/cm_login/exists";
     headers.insert("Content-Type", "application/json");   
     headers.insert("Authorization", "Bearer " + accessToken);  
     output.status = restRequest.get(urlRegistration,headers,output.jsonRespnse);    
@@ -78,7 +81,7 @@ RestRequestResponse CibaAuthentication::registeration(QString accessToken){
     RestRequest restRequest;
     RestRequestResponse output;
     QMap<QString, QString> headers;
-    QString urlRegistration = serverAddress+"/_synapse/client/cm_login/register";
+    QString urlRegistration = _serverAddress+"/_synapse/client/cm_login/register";
     headers.insert("Content-Type", "application/json");   
     headers.insert("Authorization", "Bearer " + accessToken);    
     output.status= restRequest.get(urlRegistration,headers,output.jsonRespnse);
@@ -93,7 +96,7 @@ RestRequestResponse CibaAuthentication::login(QString accessToken,QString user){
     headers.insert("Content-Type", "application/json");  
     QString data = "{\"type\":\"cm.ciba_auth\",\"identifier\":{\"type\":\"m.id.user\",\"user\":\""+user+"\"},\"token\":\""+accessToken+"\"}";
       
-    QString urlLoginRequest = serverAddress+"/_matrix/client/r0/login";
+    QString urlLoginRequest = _serverAddress+"/_matrix/client/r0/login";
     output.status = restRequest.post( urlLoginRequest , headers, data, output.jsonRespnse);
     return output;
 }

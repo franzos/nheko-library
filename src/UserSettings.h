@@ -25,6 +25,7 @@ class UserSettings : public QObject
                  useOnlineKeyBackupChanged)
     Q_PROPERTY(QString profile READ profile WRITE setProfile NOTIFY profileChanged)
     Q_PROPERTY(QString userId READ userId WRITE setUserId NOTIFY userIdChanged)
+    Q_PROPERTY(QString cmUserId READ cmUserId WRITE setCMUserId NOTIFY cmUserIdChanged)
     Q_PROPERTY(QString accessToken READ accessToken WRITE setAccessToken NOTIFY accessTokenChanged)
     Q_PROPERTY(QString deviceId READ deviceId WRITE setDeviceId NOTIFY deviceIdChanged)
     Q_PROPERTY(QString homeserver READ homeserver WRITE setHomeserver NOTIFY homeserverChanged)
@@ -63,6 +64,7 @@ public:
     void setUseOnlineKeyBackup(bool state);
     void setProfile(QString profile);
     void setUserId(QString userId);
+    void setCMUserId(QString userId);
     void setAccessToken(QString accessToken);
     void setDeviceId(QString deviceId);
     void setHomeserver(QString homeserver);
@@ -80,6 +82,7 @@ public:
     bool useOnlineKeyBackup() const { return useOnlineKeyBackup_; }
     QString profile() const { return profile_; }
     QString userId() const { return userId_; }
+    QString cmUserId() const { return cmUserId_; }
     QString accessToken() const { return accessToken_; }
     QString deviceId() const { return deviceId_; }
     QString homeserver() const { return homeserver_; }
@@ -107,6 +110,7 @@ signals:
     void useOnlineKeyBackupChanged(bool state);
     void profileChanged(QString profile);
     void userIdChanged(QString userId);
+    void cmUserIdChanged(QString cmUserId);
     void accessTokenChanged(QString accessToken);
     void deviceIdChanged(QString deviceId);
     void homeserverChanged(QString homeserver);
@@ -126,6 +130,7 @@ private:
     bool disableCertificateValidation_ = true;
     QString profile_;
     QString userId_;
+    QString cmUserId_;
     QString accessToken_;
     QString deviceId_;
     QString homeserver_;

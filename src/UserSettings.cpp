@@ -56,6 +56,7 @@ UserSettings::load(std::optional<QString> profile)
     accessToken_   = settings.value(prefix + "auth/access_token", "").toString();
     homeserver_    = settings.value(prefix + "auth/home_server", "").toString();
     userId_        = settings.value(prefix + "auth/user_id", "").toString();
+    cmUserId_      = settings.value(prefix + "auth/cm_user_id", "").toString();
     deviceId_      = settings.value(prefix + "auth/device_id", "").toString();
 
     shareKeysWithTrustedUsers_ =
@@ -141,6 +142,15 @@ UserSettings::setUserId(QString userId)
         return;
     userId_ = userId;
     emit userIdChanged(userId_);
+    save();
+}
+
+void
+UserSettings::setCMUserId(QString userId){
+    if (userId == cmUserId_)
+        return;
+    cmUserId_ = userId;
+    emit cmUserIdChanged(cmUserId_);
     save();
 }
 
@@ -255,6 +265,7 @@ UserSettings::save()
     settings.setValue(prefix + "auth/access_token", accessToken_);
     settings.setValue(prefix + "auth/home_server", homeserver_);
     settings.setValue(prefix + "auth/user_id", userId_);
+    settings.setValue(prefix + "auth/cm_user_id", cmUserId_);
     settings.setValue(prefix + "auth/device_id", deviceId_);
 
     settings.setValue(prefix + "user/automatically_share_keys_with_trusted_users",

@@ -16,19 +16,19 @@ public:
     Authentication(QObject *parent = nullptr);
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
-    bool loginWithCiba(QString username,QString server);
+    void loginWithCiba(QString username,QString server);
     void serverDiscovery(std::string hostName);
     QVariantMap availableLogin(const QString &server);
 
 signals:
     void loginOk(const mtx::responses::Login &res);
-    void loginErrorOccurred(std::string &msg);
+    void loginErrorOccurred(const std::string &msg);
     void logoutOk();    
-    void logoutErrorOccurred(std::string &msg);
+    void logoutErrorOccurred(const std::string &msg);
     void loginCibaOk(UserInformation userInfo);
-    void loginCibaErrorOccurred(std::string &msg);
-    void serverChanged(std::string homeserver);
-    void discoveryErrorOccurred(std::string err);
+    void loginCibaErrorOccurred(const std::string &msg);
+    void serverChanged(const std::string &homeserver);
+    void discoveryErrorOccurred(const std::string &err);
 
 private slots:
     void loginCibaFlow(QString accessToken,QString username);

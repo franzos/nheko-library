@@ -15,7 +15,7 @@ class CibaAuthentication: public QObject{
 
 public:
     CibaAuthentication();
-    bool loginRequest(const QString &serverAddress, const QString &user);
+    void loginRequest(const QString &serverAddress, const QString &user);
     RestRequestResponse checkRegistration(QString accessToken);
     RestRequestResponse registeration(QString accessToken);
     RestRequestResponse login(QString accessToken,QString user);  
@@ -25,5 +25,5 @@ signals:
 
 private:
     QString checkStatus(const QString &requestId);
-    QString serverAddress;  
+    QString _serverAddress;  
 };

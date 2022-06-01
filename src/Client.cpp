@@ -98,33 +98,48 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             &Authentication::loginCibaOk,
             this,
             &Client::loginCibaCb);
-    connect(_authentication, &Authentication::loginErrorOccurred, [&](std::string &msg) {
+    connect(_authentication, &Authentication::loginErrorOccurred, [&](const std::string &msg) {
         nhlog::net()->info("login failed: {}", msg);
         QString err =QString::fromStdString(msg);
         emit loginErrorOccurred(err);
     });
-    connect(_authentication, &Authentication::loginCibaErrorOccurred, [&](std::string &msg) {
+    connect(_authentication, &Authentication::loginCibaErrorOccurred, [&](const std::string &msg) {
         nhlog::net()->info("login failed: {}", msg);
         QString err =QString::fromStdString(msg);
         emit loginErrorOccurred(err);
     });
-    connect(_authentication, &Authentication::logoutErrorOccurred, [&](std::string &msg) {
+    connect(_authentication, &Authentication::logoutErrorOccurred, [&](const std::string &msg) {
         nhlog::net()->info("logout failed: {}" ,msg);
         QString err =QString::fromStdString(msg);
         emit logoutErrorOccurred(err);
     });
+    connect(_authentication, &Authentication::serverChanged, [&](const std::string &server){
+        nhlog::net()->info("Discovered: {}" ,server); 
+        emit serverChanged(QString::fromStdString(server));
+    }); 
 
-    QObject::connect(_authentication, &Authentication::serverChanged, [&](std::string server){
-           nhlog::net()->info("Discovered: {}" ,server); 
-           emit serverChanged(QString::fromStdString(server));
-        }); 
+    connect(_authentication, &Authentication::discoveryErrorOccurred, [&](const std::string &err){
+        QString msg =QString::fromStdString(err);
+        emit discoveryErrorOccurred(msg);            
+    }); 
+    // -------------------- to get CM user info
+    _cmUserInfo = new CMUserInfo();
+    connect(_cmUserInfo, &CMUserInfo::userInfoUpdated, [&](const CMUserInformation &info){
+        emit cmUserInfoUpdated(info);
+    });
+    connect(_cmUserInfo, &CMUserInfo::userInfoFailure, [&](const QString &message){
+        emit cmUserInfoFailure(message);
+    });
 
-    QObject::connect(_authentication, &Authentication::discoveryErrorOccurred, [&](std::string err){
-            QString msg =QString::fromStdString(err);
-            emit discoveryErrorOccurred(msg);            
-        }); 
-
-
+    _cibaAuthForUserInfo = new CibaAuthentication();
+    connect(_cibaAuthForUserInfo, &CibaAuthentication::loginOk, [&](const QString &accessToken, const QString &username){
+        Q_UNUSED(username);
+        _cmUserInfo->update(accessToken);
+    });
+    connect(_cibaAuthForUserInfo, &CibaAuthentication::loginError, [&](const QString &message){
+        emit cmUserInfoFailure(message);
+    });
+    //
     connect(this,
             &Client::downloadedSecrets,
             this,
@@ -946,6 +961,10 @@ Client::getProfileInfo(QString userid)
       });
 }
 
+void Client::getCMuserInfo() {
+    _cibaAuthForUserInfo->loginRequest(UserSettings::instance()->homeserver(),UserSettings::instance()->cmUserId());
+}
+
 void
 Client::getBackupVersion()
 {
@@ -1116,9 +1135,7 @@ Client::startChat(QString userid)
 }
 
 void Client::loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress){
-    
     _authentication->loginWithPassword(deviceName.toStdString(), userId.toStdString(), password.toStdString(), serverAddress.toStdString());
-   
 }
 
 bool Client::hasValidUser(){
@@ -1132,9 +1149,10 @@ UserInformation Client::userInformation(){
     using namespace mtx::identifiers;
     UserInformation result;    
     // res.user_id    = parse<User>(http::client()->user_id().to_string());
-    result.userId         = UserSettings::instance()->userId();
-    result.deviceId        = UserSettings::instance()->deviceId();
-    result.accessToken    = UserSettings::instance()->accessToken();
+    result.cmUserId         = UserSettings::instance()->cmUserId();
+    result.userId           = UserSettings::instance()->userId();
+    result.deviceId         = UserSettings::instance()->deviceId();
+    result.accessToken      = UserSettings::instance()->accessToken();
     result.homeServer       = UserSettings::instance()->homeserver();
 
     return result;
@@ -1237,11 +1255,12 @@ void Client::removeTimeline(const QString &roomID){
 }
 
 void Client::loginWithCiba(QString username,QString server){
-     _authentication->loginWithCiba(username,server);
+    _authentication->loginWithCiba(username,server);
 }
 
 void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setUserId(userInfo.userId);
+    userSettings_.data()->setCMUserId(userInfo.cmUserId);
     userSettings_.data()->setAccessToken(userInfo.accessToken);
     userSettings_.data()->setDeviceId(userInfo.deviceId);
     userSettings_.data()->setHomeserver(userInfo.homeServer);    

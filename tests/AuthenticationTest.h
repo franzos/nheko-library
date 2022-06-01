@@ -55,14 +55,13 @@ private slots:
     }    
 
      void discovery(){      
-
-        QObject::connect(loginTest,  &Authentication::serverChanged, [&](std::string server){
+        QObject::connect(loginTest,  &Authentication::serverChanged, [&](const std::string &server){
             QCOMPARE(server,"https://matrix.pantherx.org");
             eventLoop.quit();
         }); 
 
-        QObject::connect(loginTest,  &Authentication::discoveryErrorOccurred, [&](std::string server){
-            
+        QObject::connect(loginTest,  &Authentication::discoveryErrorOccurred, [&](const std::string error){
+            qDebug() << QString::fromStdString(error);
             eventLoop.quit();
         }); 
 
@@ -87,7 +86,7 @@ private slots:
         });
 
         QObject::connect(loginTestWrong,  &Authentication::loginErrorOccurred, [&](const std::string &out){            
-            qDebug()<<"INVALID Password";       
+            qDebug()<<"INVALID Password" << QString::fromStdString(out);       
             eventLoop.quit();
         });
 

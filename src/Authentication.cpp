@@ -14,6 +14,9 @@
 Authentication::Authentication(QObject *parent): 
     QObject(parent), _ciba(new CibaAuthentication()){
         connect(_ciba,&CibaAuthentication::loginOk,this,&Authentication::loginCibaFlow);
+        connect(_ciba,&CibaAuthentication::loginError,[&](const QString &message){
+            emit loginCibaErrorOccurred(message.toStdString());
+        });
 }
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
@@ -57,8 +60,7 @@ void Authentication::serverDiscovery(std::string hostName){
         if (err) {
             auto s = utils::httpMtxErrorToString(err).toStdString();     
             emit discoveryErrorOccurred(s);
-            nhlog::net()->error("Autodiscovery failed. ",
-                                s);  
+            nhlog::net()->error("Autodiscovery failed. " + s);  
         } else{
             nhlog::net()->info("Autodiscovery: Discovered '" + res.homeserver.base_url + "'");
             http::client()->set_server(res.homeserver.base_url);
@@ -67,21 +69,21 @@ void Authentication::serverDiscovery(std::string hostName){
     });
 }
 
-bool Authentication::loginWithCiba(QString username,QString server){
+void Authentication::loginWithCiba(QString username,QString server){
     cibaServer = server;
+    std::string errMsg;
     auto opts = availableLogin(server);
     if(!opts.isEmpty()){
         if(isCibaSupported(opts)) {   
-            if(_ciba->loginRequest(server, username))
-                return true;
+            _ciba->loginRequest(server, username);
+            return;
         } else {
-            std::string msg = "Ciba is not supported";
-            emit loginCibaErrorOccurred(msg);
+            errMsg = "Ciba is not supported";
         }
-    }  
-    std::string msg = "Connection or Json error";
-    emit loginCibaErrorOccurred(msg);
-    return false;  
+    } else {
+        errMsg = "Connection or Json error";
+    }
+    emit loginCibaErrorOccurred(errMsg);
 }
 
 void Authentication::loginCibaFlow(QString accessToken,QString username){
@@ -98,6 +100,7 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
             QJsonObject jsonObj = userJson.object();
             userInfo.accessToken = jsonObj["access_token"].toString();
             userInfo.userId = jsonObj["user_id"].toString();
+            userInfo.cmUserId = username;
             userInfo.homeServer = cibaServer;
             userInfo.deviceId = jsonObj["device_id"].toString();
             emit loginCibaOk(userInfo);

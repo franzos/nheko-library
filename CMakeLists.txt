@@ -57,11 +57,13 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
+	src/rest/HttpRequest.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
 	src/voip/WebRTCSession.cpp
 	src/Cache.cpp
 	src/Client.cpp
+	src/CMUserInfo.cpp
 	src/EventAccessors.cpp
 	src/JdenticonProvider.cpp
 	src/Logging.cpp
@@ -107,6 +109,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/DeviceVerificationFlow.h
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
+	src/rest/HttpRequest.h
 	src/voip/CallDevices.h
 	src/voip/CallManager.h
 	src/voip/WebRTCSession.h
@@ -115,6 +118,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Cache_p.h
 	src/JdenticonProvider.h
 	src/Client.h
+	src/CMUserInfo.h
 	src/MxcImageProvider.h
 	src/PresenceEmitter.h
 	src/UIA.h
@@ -134,6 +138,7 @@ set(HEADERS
 	encryption/DeviceVerificationFlow.h
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
+	rest/HttpRequest.h
 	voip/CallDevices.h
 	voip/CallManager.h
 	voip/WebRTCSession.h
@@ -142,6 +147,7 @@ set(HEADERS
 	CacheStructs.h
 	Cache_p.h
 	Client.h
+	CMUserInfo.h
 	UserProfile.h	
 	UserSettings.h	
 	Authentication.h	

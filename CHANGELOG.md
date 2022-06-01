@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
+
+## [0.0.61]
+### Changed
+
+* Update CIBA authentication to re-use it in other places.
+* Add get CM user information method.
+
+
 ## [0.0.60]
 ### Changed
 

@@ -33,6 +33,7 @@
 #include "timeline/Timeline.h"
 #include "encryption/VerificationManager.h"
 #include "PresenceEmitter.h"
+#include "CMUserInfo.h"
 
 class UserSettings;
 class CallManager;
@@ -79,6 +80,7 @@ public:
     VerificationManager *verificationManager() { return _verificationManager; }
     Q_INVOKABLE PresenceEmitter *presenceEmitter() { return _presenceEmitter; }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
+    Q_INVOKABLE void getCMuserInfo();
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
     Q_INVOKABLE void enableLogger(bool enable, bool enableDebugLogs = false){
@@ -118,9 +120,6 @@ public slots:
     QString getLibraryVersion();
     QString extractHostName(QString userId);
 
-
-
-
 signals:
     // Authentication signals
     void loginOk(const UserInformation &user);
@@ -144,6 +143,8 @@ signals:
     void userAvatarReady(const QString &avatar);
     void userInfoLoaded(const UserInformation &userinfo);
     void userInfoLoadingFailed(const QString &message);
+    void cmUserInfoUpdated(const CMUserInformation &info);
+    void cmUserInfoFailure(const QString &message);
 
     // sync signals
     void trySyncCb();
@@ -196,8 +197,10 @@ private slots:
     void prepareTimelinesCB();
 
 private:
-    static Client *instance_;
-    Authentication *_authentication;
+    static Client       *instance_;
+    Authentication      *_authentication;
+    CibaAuthentication  *_cibaAuthForUserInfo;
+    CMUserInfo          *_cmUserInfo;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
 
