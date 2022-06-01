@@ -22,7 +22,6 @@ public:
 signals:
     void loginOk(const QString &accessToken,const QString &username);
     void loginError(const QString &message);
-
 private:
     QString checkStatus(const QString &requestId);
     QString _serverAddress;  

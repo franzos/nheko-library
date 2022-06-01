@@ -26,19 +26,18 @@ void CibaAuthentication::loginRequest(const QString &serverAddress, const QStrin
         if(jsonObj.contains("auth_req_id")) {
             requestId = jsonObj["auth_req_id"].toString();
             if(!requestId.isEmpty()) {
-                auto thread = new QThread();
+                auto thread = new QThread(this);
                 auto context = new QObject() ;
                 context->moveToThread(thread);
-                QObject::connect(thread, &QThread::started, context, [&,requestId,username]() { 
-                    bool isPenging = true;
-                    while(isPenging){     
+                QObject::connect(thread, &QThread::started, context, [&,this,requestId,username]() { 
+                    while(1){     
                         auto accessToken = checkStatus(requestId);    
                         if(accessToken.isEmpty()){
                             sleep(5);
                         } else {
-                            isPenging = false;
-                            nhlog::net()->warn("CIBA login done for " + username.toStdString());
+                            nhlog::net()->info("CIBA login done for " + username.toStdString());
                             emit loginOk(accessToken,username); 
+                            break;
                         }
                     }        
                 });
@@ -56,8 +55,7 @@ QString CibaAuthentication::checkStatus(const QString &requestId){
     QString response;
     QMap<QString, QString> headers;
     QString urlCheckStatus = _serverAddress+"/_synapse/client/cm_login/ciba_status/"+requestId;
-    int code = restRequest.get(urlCheckStatus,headers,response);
-    qDebug() << response << code;
+    restRequest.get(urlCheckStatus,headers,response);
     QJsonDocument statusResponse = QJsonDocument::fromJson(response.toUtf8());
     QJsonObject jsonObj = statusResponse.object();
     if(jsonObj.contains("access_token")){
