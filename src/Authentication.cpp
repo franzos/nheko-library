@@ -9,10 +9,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include "Utils.h"
-#include "CibaAuthentication.h"
+#include "RestRequest.h"
 
-Authentication::Authentication(QObject *parent): QObject(parent) {
-    connect(this,&Authentication::cibaStatusChanged,this,&Authentication::loginCibaFlow);
+Authentication::Authentication(QObject *parent): 
+    QObject(parent), _ciba(new CibaAuthentication()){
+        connect(_ciba,&CibaAuthentication::loginOk,this,&Authentication::loginCibaFlow);
 }
 
 void Authentication::loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress){
@@ -39,7 +40,6 @@ void Authentication::loginWithPassword(std::string deviceName, std::string userI
 
 }
 
-
 void Authentication::logout(){
     http::client()->logout([this](const mtx::responses::Logout &, mtx::http::RequestErr err) {
         if (err) {
@@ -51,14 +51,12 @@ void Authentication::logout(){
     });
 }
 
-
-
 void Authentication::serverDiscovery(std::string hostName){   
     http::client()->set_server(hostName);
     http::client()->well_known([this,hostName](const mtx::responses::WellKnown &res, mtx::http::RequestErr err) {             
         if (err) {
             auto s = utils::httpMtxErrorToString(err).toStdString();     
-            emit discoverryErrorOccurred(s);
+            emit discoveryErrorOccurred(s);
             nhlog::net()->error("Autodiscovery failed. ",
                                 s);  
         } else{
@@ -71,41 +69,11 @@ void Authentication::serverDiscovery(std::string hostName){
 
 bool Authentication::loginWithCiba(QString username,QString server){
     cibaServer = server;
-    ciba = new CibaAuthentication(server);
-    auto res = ciba->availableLogin();
-    if(res.status==200 || res.status==201){
-        if(isCibaSupported(res.jsonRespnse)) {   
-            auto idResp = ciba->loginRequest(username);
-            if(idResp.status==200 || idResp.status==201) {
-                QJsonDocument idJsonResponse = QJsonDocument::fromJson(idResp.jsonRespnse.toUtf8());
-                QString requestId = "";
-                QJsonObject jsonObj = idJsonResponse.object();
-                if(jsonObj.contains("auth_req_id")) {
-                    requestId = jsonObj["auth_req_id"].toString();
-                    auto thread = new QThread();
-                    auto context = new QObject() ;
-                    context->moveToThread(thread);
-                    QObject::connect(thread, &QThread::started, context, [&,requestId,username]() { 
-                        bool isPenging = true;
-                        while(isPenging){                                    
-                            auto statusRsp = ciba->checkStatus(requestId);    
-                            QJsonDocument statusResponse = QJsonDocument::fromJson(statusRsp.jsonRespnse.toUtf8());
-                            QJsonObject jsonObj = statusResponse.object();
-                            if(jsonObj.contains("access_token")){
-                                QString token = jsonObj["access_token"].toString();
-                                emit cibaStatusChanged(token,username); 
-                                isPenging = false;
-                            }else{
-                                sleep(5);
-                            }   
-                        }        
-                    });
-                    thread->start();
-                    //thread.quit();
-                    // thread.wait();  
-                    return true;                 
-                }
-            }
+    auto opts = availableLogin(server);
+    if(!opts.isEmpty()){
+        if(isCibaSupported(opts)) {   
+            if(_ciba->loginRequest(server, username))
+                return true;
         } else {
             std::string msg = "Ciba is not supported";
             emit loginCibaErrorOccurred(msg);
@@ -117,13 +85,13 @@ bool Authentication::loginWithCiba(QString username,QString server){
 }
 
 void Authentication::loginCibaFlow(QString accessToken,QString username){
-    auto res = ciba->checkRegistration(accessToken);
+    auto res = _ciba->checkRegistration(accessToken);
     if(res.status == 200 || res.status == 201){
         QJsonDocument jsonResponse = QJsonDocument::fromJson(res.jsonRespnse.toUtf8());
         QJsonObject jsonObj = jsonResponse.object();
         if(!jsonObj.contains("exists"))
-           ciba->registeration(accessToken);
-        auto loginRes = ciba->login(accessToken,username);
+           _ciba->registeration(accessToken);
+        auto loginRes = _ciba->login(accessToken,username);
         if(loginRes.status == 200 || loginRes.status == 201){
             UserInformation userInfo;
             QJsonDocument userJson = QJsonDocument::fromJson(loginRes.jsonRespnse.toUtf8());
@@ -143,15 +111,34 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
     }
 }
 
-bool Authentication::isCibaSupported(QString data){
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(data.toUtf8());
-    auto object = jsonResponse.object();
-    QJsonValue value = object.value("flows");
-    QJsonArray array = value.toArray();
-    foreach (const QJsonValue & v, array) {   
-        QString type =  v.toObject().value("type").toString();
-        if (type.contains("cm.ciba_auth"))
+QVariantMap Authentication::availableLogin(const QString &server){
+    RestRequest restRequest;
+    QVariantMap opt;
+    QString urlAvailableLogin = server+"/_matrix/client/r0/login";
+    QString response;
+    int resCode = restRequest.get( urlAvailableLogin , {}, response);
+    if(resCode==200 || resCode==201){
+        QJsonDocument jsonResponse = QJsonDocument::fromJson(response.toUtf8());
+        auto object = jsonResponse.object();
+        QJsonValue value = object.value("flows");
+        QJsonArray array = value.toArray();
+        foreach (const QJsonValue & v, array) {   
+            QString type =  v.toObject().value("type").toString();
+            if (type.contains("cm.ciba_auth")) {
+                opt.insert("CIBA","Available");
+            }else if(type.contains("m.login.password")){
+                opt.insert("PASSWORD","Available");
+            }
+        }  
+    }
+    return opt;
+}
+
+bool Authentication::isCibaSupported(const QVariantMap &loginOpts){
+    for(auto const o: loginOpts.toStdMap()){
+        if((o.first=="CIBA")){
             return true;
+        }
     }
     return false;
 }

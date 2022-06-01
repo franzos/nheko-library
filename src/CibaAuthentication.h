@@ -1,8 +1,8 @@
-#ifndef MATRIX_CLIENT_LIBRARY_CIBA_AUTHENTICATION_H
-#define MATRIX_CLIENT_LIBRARY_CIBA_AUTHENTICATION_H
+#pragma once
 
 #include <QObject>
 #include <QString>
+
 
 struct RestRequestResponse
 {
@@ -10,23 +10,20 @@ struct RestRequestResponse
     int status;
 };
 
-
 class CibaAuthentication: public QObject{
  Q_OBJECT
 
 public:
-    CibaAuthentication(QString server);
-    RestRequestResponse availableLogin();
-    RestRequestResponse loginRequest(QString user);
-    RestRequestResponse checkStatus(QString requestId);
+    CibaAuthentication();
+    bool loginRequest(const QString &serverAddress, const QString &user);
     RestRequestResponse checkRegistration(QString accessToken);
     RestRequestResponse registeration(QString accessToken);
     RestRequestResponse login(QString accessToken,QString user);  
+signals:
+    void loginOk(const QString &accessToken,const QString &username);
+    void loginError(const QString &message);
+
 private:
-    QString serverAddress;
-    
-    
+    QString checkStatus(const QString &requestId);
+    QString serverAddress;  
 };
-
-#endif //MATRIX_CLIENT_LIBRARY_CIBA_AUTHENTICATION_H
-

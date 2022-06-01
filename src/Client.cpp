@@ -119,9 +119,9 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
            emit serverChanged(QString::fromStdString(server));
         }); 
 
-    QObject::connect(_authentication, &Authentication::discoverryErrorOccurred, [&](std::string err){
+    QObject::connect(_authentication, &Authentication::discoveryErrorOccurred, [&](std::string err){
             QString msg =QString::fromStdString(err);
-            emit discoverryErrorOccurred(msg);            
+            emit discoveryErrorOccurred(msg);            
         }); 
 
 
@@ -1253,27 +1253,11 @@ QString Client::getLibraryVersion(){
 }
 
 QVariantMap Client::loginOptions(QString server){
-    auto ciba = new CibaAuthentication(server);
-    auto res = ciba->availableLogin();
-    QJsonDocument jsonResponse = QJsonDocument::fromJson(res.jsonRespnse.toUtf8());
-    QVariantMap opt;
-    auto object = jsonResponse.object();
-    QJsonValue value = object.value("flows");
-    QJsonArray array = value.toArray();
-    foreach (const QJsonValue & v, array) {   
-        QString type =  v.toObject().value("type").toString();
-        if (type.contains("cm.ciba_auth")) {
-            opt.insert("CIBA","Available");
-        }else if(type.contains("m.login.password")){
-            opt.insert("PASSWORD","Available");
-        }
-    }
-        
-    return opt;
-  }
+    return _authentication->availableLogin(server);
+}
 
-  QString Client::extractHostName(QString userId){
-      if(!userId.isEmpty()){
+QString Client::extractHostName(QString userId){
+    if(!userId.isEmpty()){
         if(userId.startsWith("@")){
             mtx::identifiers::User user;    
             try {
@@ -1295,6 +1279,6 @@ QVariantMap Client::loginOptions(QString server){
                 return "";
             }   
         }
-      }      
-      return "";
-  }
+    }      
+    return "";
+}

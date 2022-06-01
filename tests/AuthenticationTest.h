@@ -61,7 +61,7 @@ private slots:
             eventLoop.quit();
         }); 
 
-        QObject::connect(loginTest,  &Authentication::discoverryErrorOccurred, [&](std::string server){
+        QObject::connect(loginTest,  &Authentication::discoveryErrorOccurred, [&](std::string server){
             
             eventLoop.quit();
         }); 
@@ -72,7 +72,7 @@ private slots:
         // try {
             user = mtx::identifiers::parse<mtx::identifiers::User>(userId);
         // } catch (const std::exception &) {                
-        //     emit discoverryErrorOccurred("You have entered an invalid Matrix ID");
+        //     emit discoveryErrorOccurred("You have entered an invalid Matrix ID");
         // }
         loginTest->serverDiscovery(user.hostname());
         eventLoop.exec();     

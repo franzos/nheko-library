@@ -129,7 +129,7 @@ signals:
     void logoutOk();    
     void dropToLogin(const QString &msg);
     void serverChanged(QString homeserver);
-    void discoverryErrorOccurred(QString err);
+    void discoveryErrorOccurred(QString err);
 
     //
     void connectionLost();

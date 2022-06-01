@@ -18,24 +18,25 @@ public:
     void logout();
     bool loginWithCiba(QString username,QString server);
     void serverDiscovery(std::string hostName);
+    QVariantMap availableLogin(const QString &server);
 
 signals:
     void loginOk(const mtx::responses::Login &res);
     void loginErrorOccurred(std::string &msg);
-    void logoutErrorOccurred(std::string &msg);
     void logoutOk();    
+    void logoutErrorOccurred(std::string &msg);
     void loginCibaOk(UserInformation userInfo);
     void loginCibaErrorOccurred(std::string &msg);
-    void cibaStatusChanged(QString accessToken,QString username);
     void serverChanged(std::string homeserver);
-    void discoverryErrorOccurred(std::string err);
+    void discoveryErrorOccurred(std::string err);
 
 private slots:
     void loginCibaFlow(QString accessToken,QString username);
+    
 private:
-    CibaAuthentication *ciba; 
-    bool isCibaSupported(QString data);
+    bool isCibaSupported(const QVariantMap &loginOpts);
     QString cibaServer;
+    CibaAuthentication *_ciba; 
 };
 
 

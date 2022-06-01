@@ -1,41 +1,66 @@
 #include "CibaAuthentication.h"
 #include <QJsonArray>
 #include <QMap>
+#include <QThread>
+#include <unistd.h>
 #include "RestRequest.h"
+#include "Logging.h"
 
-CibaAuthentication::CibaAuthentication(QString server){
-    serverAddress = server;
+CibaAuthentication::CibaAuthentication(){
 }
 
-RestRequestResponse CibaAuthentication::availableLogin(){
-    RestRequestResponse output;
+bool CibaAuthentication::loginRequest(const QString &serverAddress, const QString &username){
     RestRequest restRequest;
-    QMap<QString, QString> headers;
-    QString urlAvailableLogin = serverAddress+"/_matrix/client/r0/login";
-    output.status = restRequest.get( urlAvailableLogin , headers, output.jsonRespnse);
-    return output;
-}
-
-RestRequestResponse CibaAuthentication::loginRequest(QString user){
-    RestRequest restRequest;
-    RestRequestResponse output;
+    QString requestId = "";
     QMap<QString, QString> headers;
     QMap<QString, QString> data;
-    QMap<QString, QString> items;
     headers.insert("Content-Type", "application/json");   
-    data.insert("login_hint_token", user);       
+    data.insert("login_hint_token", username);       
     QString urlLoginRequest = serverAddress+"/_synapse/client/cm_login/ciba";
-    output.status = restRequest.post( urlLoginRequest , headers,items, data, output.jsonRespnse);
-    return output;
+    QString response;
+    int resCode = restRequest.post( urlLoginRequest , headers,{}, data, response);
+    if(resCode==200 || resCode==201) {
+        QJsonDocument idJsonResponse = QJsonDocument::fromJson(response.toUtf8());
+        QJsonObject jsonObj = idJsonResponse.object();
+        if(jsonObj.contains("auth_req_id")) {
+            requestId = jsonObj["auth_req_id"].toString();
+            if(!requestId.isEmpty()) {
+                auto thread = new QThread();
+                auto context = new QObject() ;
+                context->moveToThread(thread);
+                QObject::connect(thread, &QThread::started, context, [&,requestId,username]() { 
+                    bool isPenging = true;
+                    while(isPenging){     
+                        auto accessToken = checkStatus(requestId);    
+                        if(accessToken.isEmpty()){
+                            sleep(5);
+                        } else {
+                            isPenging = false;
+                            nhlog::net()->warn("CIBA login done for " + username.toStdString());
+                            emit loginOk(accessToken,username); 
+                        }
+                    }        
+                });
+                thread->start();
+                return true;  
+            }
+        }
+    }
+    return false;
 }
 
-RestRequestResponse CibaAuthentication::checkStatus(QString requestId){
+QString CibaAuthentication::checkStatus(const QString &requestId){
     RestRequest restRequest;
-    RestRequestResponse output;
+    QString response;
     QMap<QString, QString> headers;
     QString urlCheckStatus = serverAddress+"/_synapse/client/cm_login/ciba_status/"+requestId;
-    output.status= restRequest.get(urlCheckStatus,headers,output.jsonRespnse);
-    return output;
+    restRequest.get(urlCheckStatus,headers,response);
+    QJsonDocument statusResponse = QJsonDocument::fromJson(response.toUtf8());
+    QJsonObject jsonObj = statusResponse.object();
+    if(jsonObj.contains("access_token")){
+        return jsonObj["access_token"].toString();
+    }
+    return "";
 }
 
 RestRequestResponse CibaAuthentication::checkRegistration(QString accessToken){
