@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -69,7 +70,7 @@ public:
 
     // optionally returns the event or nullptr and fetches it, after which it emits a
     // relatedFetched event
-    mtx::events::collections::TimelineEvents *get(std::string id,
+    mtx::events::collections::TimelineEvents *get(const std::string &id,
                                                   std::string_view related_to,
                                                   bool decrypt       = true,
                                                   bool resolve_edits = true);
@@ -79,8 +80,8 @@ public:
     QVariantList reactions(const std::string &event_id);
     std::vector<mtx::events::collections::TimelineEvents> edits(const std::string &event_id);
     olm::DecryptionErrorCode decryptionError(std::string id);
-    void requestSession(const mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> &ev,
-                        bool manual);
+    void
+    requestSession(const mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> &ev, bool manual);
 
     int size() const
     {
@@ -96,9 +97,9 @@ public:
 
 signals:
     void beginInsertRows(int from, int to);
-    // void endInsertRows();
-    // void beginResetModel();
-    // void endResetModel();
+    void endInsertRows();
+    void beginResetModel();
+    void endResetModel();
     void dataChanged(int from, int to);
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
     void eventFetched(std::string id,
@@ -121,8 +122,8 @@ public slots:
     void enableKeyRequests(bool suppressKeyRequests_);
     
 private:
-    olm::DecryptionResult *decryptEvent(
-      const IdIndex &idx,
+    olm::DecryptionResult *
+    decryptEvent(const IdIndex &idx,
       const mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> &e);
     void handle_room_verification(mtx::events::collections::TimelineEvents event);
 

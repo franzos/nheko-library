@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -6,15 +7,16 @@
 
 #include <QThread>
 #include <QTimer>
-#include <QDebug>
+
 #include <mtx/responses/common.hpp>
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "Client.h"
+#include "../Client.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
+// #include "UserSettingsPage.h"
 #include "Utils.h"
 
 Q_DECLARE_METATYPE(Reaction)
@@ -44,6 +46,7 @@ EventStore::EventStore(std::string room_id, QObject *)
       [this](
         std::string id, std::string relatedTo, mtx::events::collections::TimelineEvents timeline) {
           cache::client()->storeEvent(room_id_, id, {timeline});
+
           if (!relatedTo.empty()) {
               auto idx = idToIndex(relatedTo);
               if (idx)
@@ -71,7 +74,7 @@ EventStore::EventStore(std::string room_id, QObject *)
                   auto oldFirst = this->first;
                   emit beginInsertRows(toExternalIdx(newFirst), toExternalIdx(this->first - 1));
                   this->first = newFirst;
-                //   emit endInsertRows();
+                  emit endInsertRows();
                   emit fetchedMore();
                   emit dataChanged(toExternalIdx(oldFirst), toExternalIdx(oldFirst));
               } else {
@@ -81,7 +84,7 @@ EventStore::EventStore(std::string room_id, QObject *)
                       emit beginInsertRows(0, int(range->last - range->first));
                       this->first = range->first;
                       this->last  = range->last;
-                    //   emit endInsertRows();
+                      emit endInsertRows();
                       emit fetchedMore();
                   } else {
                       fetchMore();
@@ -105,9 +108,9 @@ EventStore::EventStore(std::string room_id, QObject *)
         }
 
         std::visit(
-          [this](auto e) {
-              auto txn_id       = e.event_id;
-              this->current_txn = txn_id;
+          [this](const auto &e) {
+              const auto &txn_id = e.event_id;
+              this->current_txn  = txn_id;
 
               if (txn_id.empty() || txn_id[0] != 'm') {
                   nhlog::ui()->debug("Invalid txn id '{}'", txn_id);
@@ -181,48 +184,95 @@ EventStore::EventStore(std::string room_id, QObject *)
           // Replace the event_id in pending edits/replies/redactions with the actual
           // event_id of this event. This allows one to edit and reply to events that are
           // currently pending.
+          for (const auto &pending_event_id : cache::client()->pendingEvents(room_id_)) {
+              if (auto pending_event = cache::client()->getEvent(room_id_, pending_event_id)) {
+                  bool was_encrypted = false;
+                  mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> original_encrypted;
+                  if (auto encrypted =
+                        std::get_if<mtx::events::EncryptedEvent<mtx::events::msg::Encrypted>>(
+                          &pending_event->data)) {
+                      auto d_event = decryptEvent({room_id_, encrypted->event_id}, *encrypted);
+                      if (d_event->event) {
+                          was_encrypted       = true;
+                          original_encrypted  = *encrypted;
+                          pending_event->data = *d_event->event;
+                      }
+                  }
 
-          // FIXME (introduced by balsoft): this doesn't work for encrypted events, but
-          // allegedly it's hard to fix so I'll leave my first contribution at that
-          for (auto related_event_id : cache::client()->relatedEvents(room_id_, txn_id)) {
-              if (cache::client()->getEvent(room_id_, related_event_id)) {
-                  auto related_event =
-                    cache::client()->getEvent(room_id_, related_event_id).value();
-                  auto relations = mtx::accessors::relations(related_event.data);
+                  auto relations = mtx::accessors::relations(pending_event->data);
 
                   // Replace the blockquote in fallback reply
                   auto related_text = std::get_if<mtx::events::RoomEvent<mtx::events::msg::Text>>(
-                    &related_event.data);
+                    &pending_event->data);
                   if (related_text && relations.reply_to() == txn_id) {
                       size_t index = related_text->content.formatted_body.find(txn_id);
                       if (index != std::string::npos) {
                           related_text->content.formatted_body.replace(
-                            index, event_id.length(), event_id);
+                            index, txn_id.length(), event_id);
                       }
                   }
 
+                  bool replaced_txn = false;
                   for (mtx::common::Relation &rel : relations.relations) {
-                      if (rel.event_id == txn_id)
+                      if (rel.event_id == txn_id) {
                           rel.event_id = event_id;
+                          replaced_txn = true;
+                      }
                   }
 
-                  mtx::accessors::set_relations(related_event.data, relations);
+                  if (!replaced_txn)
+                      continue;
 
-                  cache::client()->replaceEvent(room_id_, related_event_id, related_event);
+                  mtx::accessors::set_relations(pending_event->data, std::move(relations));
 
-                  auto idx = idToIndex(related_event_id);
+                  // reencrypt. This is a bit of a hack and might make people able to read the
+                  // message, that were in the room at the time of sending the last pending message.
+                  // That window is pretty small though, so it should be good enough. We also just
+                  // fail, if there was no session. But there SHOULD always be one. Let's wait until
+                  // I am proven wrong :3
+                  if (was_encrypted) {
+                      auto session = cache::getOutboundMegolmSession(room_id_);
+                      if (!session.session)
+                          continue;
 
-                  events_by_id_.remove({room_id_, related_event_id});
+                      std::visit(
+                        [&pending_event, &original_encrypted, &session, this](auto &msg) {
+                            json doc = {{"type", mtx::events::to_string(msg.type)},
+                                        {"content", json(msg.content)},
+                                        {"room_id", room_id_}};
+
+                            auto data = olm::encrypt_group_message_with_session(
+                              session.session, http::client()->device_id(), doc);
+
+                            session.data.message_index =
+                              olm_outbound_group_session_message_index(session.session.get());
+                            cache::updateOutboundMegolmSession(
+                              room_id_, session.data, session.session);
+
+                            original_encrypted.content = data;
+                            pending_event->data        = original_encrypted;
+                        },
+                        pending_event->data);
+                  }
+
+                  cache::client()->replaceEvent(room_id_, pending_event_id, *pending_event);
+
+                  auto idx = idToIndex(pending_event_id);
+
+                  events_by_id_.remove({room_id_, pending_event_id});
                   events_.remove({room_id_, toInternalIdx(*idx)});
               }
           }
 
-          http::client()->read_event(
-            room_id_, event_id, [this, event_id](mtx::http::RequestErr err) {
-                if (err) {
-                    nhlog::net()->warn("failed to read_event ({}, {})", room_id_, event_id);
-                }
-            });
+        //   http::client()->read_event(
+        //     room_id_,
+        //     event_id,
+        //     [this, event_id](mtx::http::RequestErr err) {
+        //         if (err) {
+        //             nhlog::net()->warn("failed to read_event ({}, {})", room_id_, event_id);
+        //         }
+        //     },
+        //     !UserSettings::instance()->readReceipts());
 
           auto idx = idToIndex(event_id);
 
@@ -242,6 +292,7 @@ EventStore::addPending(mtx::events::collections::TimelineEvents event)
 {
     if (this->thread() != QThread::currentThread())
         nhlog::db()->warn("{} called from a different thread!", __func__);
+
     cache::client()->savePendingMessage(this->room_id_, {event});
     mtx::responses::Timeline events;
     events.limited = false;
@@ -254,7 +305,7 @@ EventStore::addPending(mtx::events::collections::TimelineEvents event)
 void
 EventStore::clearTimeline()
 {
-    // emit beginResetModel();
+    emit beginResetModel();
 
     cache::client()->clearTimeline(room_id_);
     auto range = cache::client()->getTimelineRange(room_id_);
@@ -271,7 +322,7 @@ EventStore::clearTimeline()
     decryptedEvents_.clear();
     events_.clear();
 
-    // emit endResetModel();
+    emit endResetModel();
 }
 
 void
@@ -302,40 +353,39 @@ EventStore::receivedSessionKey(const std::string &session_id)
 void
 EventStore::handleSync(const mtx::responses::Timeline &events)
 {
-    bool flagToSendSignal = false;
-    int from = 0, to = 0;
     if (this->thread() != QThread::currentThread())
         nhlog::db()->warn("{} called from a different thread!", __func__);
+
     auto range = cache::client()->getTimelineRange(room_id_);
     if (!range) {
-        // emit beginResetModel();
+        emit beginResetModel();
         this->first = std::numeric_limits<uint64_t>::max();
         this->last  = std::numeric_limits<uint64_t>::max();
 
         decryptedEvents_.clear();
         events_.clear();
-        // emit endResetModel();
+        emit endResetModel();
         return;
     }
+
     if (events.limited) {
-        // emit beginResetModel();
+        emit beginResetModel();
         this->last  = range->last;
         this->first = range->first;
 
         decryptedEvents_.clear();
         events_.clear();
-        // emit endResetModel();
+        emit endResetModel();
     } else if (range->last > this->last) {
-        // emit beginInsertRows(toExternalIdx(this->last + 1), toExternalIdx(range->last));
-        flagToSendSignal = true;
-        from = toExternalIdx(this->last + 1);
-        to = toExternalIdx(range->last);
+        emit beginInsertRows(toExternalIdx(this->last + 1), toExternalIdx(range->last));
         this->last = range->last;
-        // emit endInsertRows();
+        emit endInsertRows();
     }
+
     for (const auto &event : events.events) {
         std::set<std::string> relates_to;
-        if (auto redaction = std::get_if<mtx::events::RedactionEvent<mtx::events::msg::Redaction>>(&event)) {
+        if (auto redaction =
+              std::get_if<mtx::events::RedactionEvent<mtx::events::msg::Redaction>>(&event)) {
             // fixup reactions
             auto redacted = events_by_id_.object({room_id_, redaction->redacts});
             if (redacted) {
@@ -349,6 +399,7 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
                     }
                 }
             }
+
             relates_to.insert(redaction->redacts);
         } else {
             for (const auto &r : mtx::accessors::relations(event).relations)
@@ -384,9 +435,6 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
                 handle_room_verification(*d_event->event);
             }
         }
-    }
-    if(flagToSendSignal){
-        emit beginInsertRows(from, to);
     }
 }
 
@@ -452,8 +500,8 @@ EventStore::edits(const std::string &event_id)
         std::holds_alternative<mtx::events::RoomEvent<mtx::events::msg::Redacted>>(*original_event))
         return {};
 
-    auto original_sender    = mtx::accessors::sender(*original_event);
-    auto original_relations = mtx::accessors::relations(*original_event);
+    const auto &original_sender    = mtx::accessors::sender(*original_event);
+    const auto &original_relations = mtx::accessors::relations(*original_event);
 
     std::vector<mtx::events::collections::TimelineEvents> edits;
     for (const auto &id : event_ids) {
@@ -461,15 +509,15 @@ EventStore::edits(const std::string &event_id)
         if (!related_event)
             continue;
 
-        auto related_ev = *related_event;
-
-        auto edit_rel = mtx::accessors::relations(related_ev);
+        const auto &edit_rel = mtx::accessors::relations(*related_event);
         if (edit_rel.replaces() == event_id &&
-            original_sender == mtx::accessors::sender(related_ev)) {
+            original_sender == mtx::accessors::sender(*related_event)) {
+            auto related_ev = *related_event;
             if (edit_rel.synthesized && original_relations.reply_to() && !edit_rel.reply_to()) {
-                edit_rel.relations.push_back(
+                auto edit_rel_copy = edit_rel;
+                edit_rel_copy.relations.push_back(
                   {mtx::common::RelationType::InReplyTo, original_relations.reply_to().value()});
-                mtx::accessors::set_relations(related_ev, std::move(edit_rel));
+                mtx::accessors::set_relations(related_ev, std::move(edit_rel_copy));
             }
             edits.push_back(std::move(related_ev));
         }
@@ -528,6 +576,7 @@ EventStore::reactions(const std::string &event_id)
     }
 
     QVariantList temp;
+    temp.reserve(static_cast<int>(reactions.size()));
     for (auto &reaction : reactions) {
         const auto &agg            = aggregation[reaction.key_.toStdString()];
         reaction.count_            = agg.count;
@@ -538,15 +587,11 @@ EventStore::reactions(const std::string &event_id)
             if (firstReaction)
                 firstReaction = false;
             else
-                reaction.users_ += ", ";
+                reaction.users_ += QLatin1String(", ");
 
             reaction.users_ += QString::fromStdString(user);
         }
 
-        nhlog::db()->debug("key: {}, count: {}, users: {}",
-                           reaction.key_.toStdString(),
-                           reaction.count_,
-                           reaction.users_.toStdString());
         temp.append(QVariant::fromValue(reaction));
     }
 
@@ -562,17 +607,20 @@ EventStore::get(int idx, bool decrypt)
     Index index{room_id_, toInternalIdx(idx)};
     if (index.idx > last || index.idx < first)
         return nullptr;
+
     auto event_ptr = events_.object(index);
     if (!event_ptr) {
         auto event_id = cache::client()->getTimelineEventId(room_id_, index.idx);
         if (!event_id)
             return nullptr;
+
         std::optional<mtx::events::collections::TimelineEvent> event;
         auto edits_ = edits(*event_id);
         if (edits_.empty())
             event = cache::client()->getEvent(room_id_, *event_id);
         else
             event = {edits_.back()};
+
         if (!event)
             return nullptr;
         else
@@ -584,9 +632,8 @@ EventStore::get(int idx, bool decrypt)
         if (auto encrypted =
               std::get_if<mtx::events::EncryptedEvent<mtx::events::msg::Encrypted>>(event_ptr)) {
             auto decrypted = decryptEvent({room_id_, encrypted->event_id}, *encrypted);
-            if (decrypted->event){
+            if (decrypted->event)
                 return &*decrypted->event;
-            }
         }
     }
 
@@ -620,6 +667,7 @@ EventStore::decryptEvent(const IdIndex &idx,
 {
     if (auto cachedEvent = decryptedEvents_.object(idx))
         return cachedEvent;
+
     MegolmSessionIndex index(room_id_, e.content);
 
     auto asCacheEntry = [&idx](olm::DecryptionResult &&event) {
@@ -674,6 +722,9 @@ EventStore::decryptEvent(const IdIndex &idx,
     auto encInfo = mtx::accessors::file(decryptionResult.event.value());
     if (encInfo)
         emit newEncryptedImage(encInfo.value());
+    encInfo = mtx::accessors::thumbnail_file(decryptionResult.event.value());
+    if (encInfo)
+        emit newEncryptedImage(encInfo.value());
 
     return asCacheEntry(std::move(decryptionResult));
 }
@@ -715,7 +766,8 @@ void
 EventStore::enableKeyRequests(bool suppressKeyRequests_)
 {
     if (!suppressKeyRequests_) {
-        for (const auto &key : decryptedEvents_.keys())
+        auto keys = decryptedEvents_.keys();
+        for (const auto &key : qAsConst(keys))
             if (key.room == this->room_id_)
                 decryptedEvents_.remove(key);
         suppressKeyRequests = false;
@@ -724,7 +776,10 @@ EventStore::enableKeyRequests(bool suppressKeyRequests_)
 }
 
 mtx::events::collections::TimelineEvents *
-EventStore::get(std::string id, std::string_view related_to, bool decrypt, bool resolve_edits)
+EventStore::get(const std::string &id,
+                std::string_view related_to,
+                bool decrypt,
+                bool resolve_edits)
 {
     if (this->thread() != QThread::currentThread())
         nhlog::db()->warn("{} called from a different thread!", __func__);
@@ -732,7 +787,7 @@ EventStore::get(std::string id, std::string_view related_to, bool decrypt, bool 
     if (id.empty())
         return nullptr;
 
-    IdIndex index{room_id_, std::move(id)};
+    IdIndex index{room_id_, id};
     if (resolve_edits) {
         auto edits_ = edits(index.id);
         if (!edits_.empty()) {

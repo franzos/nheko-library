@@ -119,6 +119,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/JdenticonProvider.h
 	src/Client.h
 	src/CMUserInfo.h
+	src/Config.h
 	src/MxcImageProvider.h
 	src/PresenceEmitter.h
 	src/UIA.h
@@ -148,6 +149,7 @@ set(HEADERS
 	Cache_p.h
 	Client.h
 	CMUserInfo.h
+	Config.h
 	UserProfile.h	
 	UserSettings.h	
 	Authentication.h	

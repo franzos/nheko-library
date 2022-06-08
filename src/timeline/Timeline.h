@@ -14,6 +14,8 @@ public:
     Timeline(const QString &roomId, QObject *parent = nullptr);
     void sync(const mtx::responses::JoinedRoom &room);
     void initialSync();
+    QString escapeEmoji(QString str) const;
+    QString id() {return _roomId;};
 
 signals:
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
@@ -45,7 +47,7 @@ public slots:
     void markEventsAsRead(const QStringList &event_ids);
     QString displayName(QString id) const;
     QString avatarUrl(QString id) const;
-
+    EventStore *events() {return &_events;};
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
 

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -87,7 +88,7 @@ struct CallType
                      ? "video"
                      : "voice";
         }
-        return std::string();
+        return "";
     }
 };
 
@@ -138,6 +139,19 @@ struct EventFile
     }
 };
 
+struct EventThumbnailFile
+{
+    template<class Content>
+    using file_t = decltype(Content::info.thumbnail_file);
+    template<class T>
+    std::optional<mtx::crypto::EncryptedFile> operator()(const mtx::events::Event<T> &e)
+    {
+        if constexpr (is_detected<file_t, T>::value)
+            return e.content.info.thumbnail_file;
+        return std::nullopt;
+    }
+};
+
 struct EventUrl
 {
     template<class Content>
@@ -162,9 +176,25 @@ struct EventThumbnailUrl
     std::string operator()(const mtx::events::Event<T> &e)
     {
         if constexpr (is_detected<thumbnail_url_t, T>::value) {
+            if (auto file = EventThumbnailFile{}(e))
+                return file->url;
             return e.content.info.thumbnail_url;
         }
         return "";
+    }
+};
+
+struct EventDuration
+{
+    template<class Content>
+    using thumbnail_url_t = decltype(Content::info.duration);
+    template<class T>
+    uint64_t operator()(const mtx::events::Event<T> &e)
+    {
+        if constexpr (is_detected<thumbnail_url_t, T>::value) {
+            return e.content.info.duration;
+        }
+        return 0;
     }
 };
 
@@ -243,15 +273,17 @@ struct EventFilesize
 
 struct EventRelations
 {
+    inline const static mtx::common::Relations empty;
+
     template<class Content>
     using related_ev_id_t = decltype(Content::relations);
     template<class T>
-    mtx::common::Relations operator()(const mtx::events::Event<T> &e)
+    const mtx::common::Relations &operator()(const mtx::events::Event<T> &e)
     {
         if constexpr (is_detected<related_ev_id_t, T>::value) {
             return e.content.relations;
         }
-        return {};
+        return empty;
     }
 };
 
@@ -325,28 +357,28 @@ eventPropHeight(const mtx::events::RoomEvent<T> &e)
 }
 }
 
-std::string
+const std::string &
 mtx::accessors::event_id(const mtx::events::collections::TimelineEvents &event)
 {
-    return std::visit([](const auto e) { return e.event_id; }, event);
+    return std::visit([](const auto &e) -> const std::string & { return e.event_id; }, event);
 }
-std::string
+const std::string &
 mtx::accessors::room_id(const mtx::events::collections::TimelineEvents &event)
 {
-    return std::visit([](const auto e) { return e.room_id; }, event);
+    return std::visit([](const auto &e) -> const std::string & { return e.room_id; }, event);
 }
 
-std::string
+const std::string &
 mtx::accessors::sender(const mtx::events::collections::TimelineEvents &event)
 {
-    return std::visit([](const auto e) { return e.sender; }, event);
+    return std::visit([](const auto &e) -> const std::string & { return e.sender; }, event);
 }
 
 QDateTime
 mtx::accessors::origin_server_ts(const mtx::events::collections::TimelineEvents &event)
 {
     return QDateTime::fromMSecsSinceEpoch(
-      std::visit([](const auto e) { return e.origin_server_ts; }, event));
+      std::visit([](const auto &e) { return e.origin_server_ts; }, event));
 }
 
 std::string
@@ -396,13 +428,21 @@ mtx::accessors::formattedBodyWithFallback(const mtx::events::collections::Timeli
     if (!formatted.empty())
         return QString::fromStdString(formatted);
     else
-        return QString::fromStdString(body(event)).toHtmlEscaped().replace("\n", "<br>");
+        return QString::fromStdString(body(event))
+          .toHtmlEscaped()
+          .replace(QLatin1String("\n"), QLatin1String("<br>"));
 }
 
 std::optional<mtx::crypto::EncryptedFile>
 mtx::accessors::file(const mtx::events::collections::TimelineEvents &event)
 {
     return std::visit(EventFile{}, event);
+}
+
+std::optional<mtx::crypto::EncryptedFile>
+mtx::accessors::thumbnail_file(const mtx::events::collections::TimelineEvents &event)
+{
+    return std::visit(EventThumbnailFile{}, event);
 }
 
 std::string
@@ -415,6 +455,11 @@ mtx::accessors::thumbnail_url(const mtx::events::collections::TimelineEvents &ev
 {
     return std::visit(EventThumbnailUrl{}, event);
 }
+uint64_t
+mtx::accessors::duration(const mtx::events::collections::TimelineEvents &event)
+{
+    return std::visit(EventDuration{}, event);
+}
 std::string
 mtx::accessors::blurhash(const mtx::events::collections::TimelineEvents &event)
 {
@@ -425,7 +470,7 @@ mtx::accessors::mimetype(const mtx::events::collections::TimelineEvents &event)
 {
     return std::visit(EventMimeType{}, event);
 }
-mtx::common::Relations
+const mtx::common::Relations &
 mtx::accessors::relations(const mtx::events::collections::TimelineEvents &event)
 {
     return std::visit(EventRelations{}, event);

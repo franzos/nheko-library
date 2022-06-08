@@ -7,6 +7,7 @@
 #include "Client.h"
 #include "Cache_p.h"
 #include "MatrixClient.h"
+#include "../Utils.h"
 
 Timeline::Timeline(const QString &roomId, QObject *parent):
     QObject(parent),
@@ -475,4 +476,10 @@ QString Timeline::displayName(QString id) const {
 
 QString Timeline::avatarUrl(QString id) const {
     return cache::avatarUrl(_roomId, id);
+}
+
+
+QString Timeline::escapeEmoji(QString str) const
+{
+    return utils::replaceEmoji(str);
 }

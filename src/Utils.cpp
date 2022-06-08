@@ -17,6 +17,7 @@
 
 #include <cmark.h>
 
+#include "Config.h"
 #include "Cache.h"
 #include "EventAccessors.h"
 #include "MatrixClient.h"
@@ -38,7 +39,6 @@ createDescriptionInfo(const Event &event, const QString &localUser, const QStrin
     auto body           = utils::event_body(event).trimmed();
     if (mtx::accessors::relations(event).reply_to())
         body = QString::fromStdString(utils::stripReplyFromBody(body.toStdString()));
-
     return DescInfo{QString::fromStdString(msg.event_id),
                     sender,
                     utils::messageDescription<T>(username, body),
@@ -119,34 +119,34 @@ utils::replaceEmoji(const QString &body)
     QString fmtBody;
     fmtBody.reserve(body.size());
 
-    // QVector<uint> utf32_string = body.toUcs4();
+    QVector<uint> utf32_string = body.toUcs4();
 
-    // bool insideFontBlock = false;
-    // for (auto &code : utf32_string) {
-    //     if (utils::codepointIsEmoji(code)) {
-    //         if (!insideFontBlock) {
-    //             fmtBody += QStringLiteral("<font face=\"") % UserSettings::instance()->emojiFont() %
-    //                        QStringLiteral("\">");
-    //             insideFontBlock = true;
-    //         }
+    bool insideFontBlock = false;
+    for (auto &code : utf32_string) {
+        if (utils::codepointIsEmoji(code)) {
+            if (!insideFontBlock) {
+                fmtBody += QStringLiteral("<font face=\"") % "Default" %
+                           QStringLiteral("\">");
+                insideFontBlock = true;
+            }
 
-    //     } else {
-    //         if (insideFontBlock) {
-    //             fmtBody += QStringLiteral("</font>");
-    //             insideFontBlock = false;
-    //         }
-    //     }
-    //     if (QChar::requiresSurrogates(code)) {
-    //         QChar emoji[] = {static_cast<ushort>(QChar::highSurrogate(code)),
-    //                          static_cast<ushort>(QChar::lowSurrogate(code))};
-    //         fmtBody.append(emoji, 2);
-    //     } else {
-    //         fmtBody.append(QChar(static_cast<ushort>(code)));
-    //     }
-    // }
-    // if (insideFontBlock) {
-    //     fmtBody += QStringLiteral("</font>");
-    // }
+        } else {
+            if (insideFontBlock) {
+                fmtBody += QStringLiteral("</font>");
+                insideFontBlock = false;
+            }
+        }
+        if (QChar::requiresSurrogates(code)) {
+            QChar emoji[] = {static_cast<ushort>(QChar::highSurrogate(code)),
+                             static_cast<ushort>(QChar::lowSurrogate(code))};
+            fmtBody.append(emoji, 2);
+        } else {
+            fmtBody.append(QChar(static_cast<ushort>(code)));
+        }
+    }
+    if (insideFontBlock) {
+        fmtBody += QStringLiteral("</font>");
+    }
 
     return fmtBody;
 }
@@ -359,9 +359,9 @@ utils::linkifyMessage(const QString &body)
 {
     // Convert to valid XML.
     auto doc = body;
-    // doc.replace(conf::strings::url_regex, conf::strings::url_html);
-    // doc.replace(QRegularExpression("\\b(?<![\"'])(?>(matrix:[\\S]{5,}))(?![\"'])\\b"),
-    //             conf::strings::url_html);
+    doc.replace(conf::strings::url_regex, conf::strings::url_html);
+    doc.replace(QRegularExpression("\\b(?<![\"'])(?>(matrix:[\\S]{5,}))(?![\"'])\\b"),
+                conf::strings::url_html);
 
     return doc;
 }

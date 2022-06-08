@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -15,11 +16,12 @@
 
 #include "Cache.h"
 #include "Cache_p.h"
-#include "Client.h"
+#include "../Client.h"
+#include "DeviceVerificationFlow.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
-#include "UserSettings.h"
+// #include "UserSettingsPage.h"
 #include "Utils.h"
 
 namespace {
@@ -272,7 +274,7 @@ handle_olm_message(const OlmMessage &msg, const UserKeyCache &otherUserDeviceKey
             }
 
             bool from_their_device = false;
-            for (auto [device_id, key] : otherUserDeviceKeys.device_keys) {
+            for (const auto &[device_id, key] : otherUserDeviceKeys.device_keys) {
                 auto c_key = key.keys.find("curve25519:" + device_id);
                 auto e_key = key.keys.find("ed25519:" + device_id);
 
@@ -405,7 +407,7 @@ handle_olm_message(const OlmMessage &msg, const UserKeyCache &otherUserDeviceKey
     if (failed_decryption) {
         try {
             std::map<std::string, std::vector<std::string>> targets;
-            for (auto [device_id, key] : otherUserDeviceKeys.device_keys) {
+            for (const auto &[device_id, key] : otherUserDeviceKeys.device_keys) {
                 if (key.keys.at("curve25519:" + device_id) == msg.sender_key)
                     targets[msg.sender].push_back(device_id);
             }
@@ -466,6 +468,30 @@ handle_pre_key_olm_message(const std::string &sender,
     }
 
     return plaintext;
+}
+
+mtx::events::msg::Encrypted
+encrypt_group_message_with_session(mtx::crypto::OutboundGroupSessionPtr &session,
+                                   const std::string &device_id,
+                                   nlohmann::json body)
+{
+    using namespace mtx::events;
+
+    // relations shouldn't be encrypted...
+    mtx::common::Relations relations = mtx::common::parse_relations(body["content"]);
+
+    auto payload = olm::client()->encrypt_group_message(session.get(), body.dump());
+
+    // Prepare the m.room.encrypted event.
+    msg::Encrypted data;
+    data.ciphertext = std::string((char *)payload.data(), payload.size());
+    data.sender_key = olm::client()->identity_keys().curve25519;
+    data.session_id = mtx::crypto::session_id(session.get());
+    data.device_id  = device_id;
+    data.algorithm  = MEGOLM_ALGO;
+    data.relations  = relations;
+
+    return data;
 }
 
 mtx::events::msg::Encrypted
@@ -629,19 +655,7 @@ encrypt_group_message(const std::string &room_id, const std::string &device_id, 
     if (!sendSessionTo.empty())
         olm::send_encrypted_to_device_messages(sendSessionTo, megolm_payload);
 
-    // relations shouldn't be encrypted...
-    mtx::common::Relations relations = mtx::common::parse_relations(body["content"]);
-
-    auto payload = olm::client()->encrypt_group_message(session.get(), body.dump());
-
-    // Prepare the m.room.encrypted event.
-    msg::Encrypted data;
-    data.ciphertext = std::string((char *)payload.data(), payload.size());
-    data.sender_key = olm::client()->identity_keys().curve25519;
-    data.session_id = mtx::crypto::session_id(session.get());
-    data.device_id  = device_id;
-    data.algorithm  = MEGOLM_ALGO;
-    data.relations  = relations;
+    auto data = encrypt_group_message_with_session(session, device_id, body);
 
     group_session_data.message_index = olm_outbound_group_session_message_index(session.get());
     nhlog::crypto()->debug("next message_index {}", group_session_data.message_index);
@@ -1219,6 +1233,7 @@ send_encrypted_to_device_messages(const std::map<std::string, std::vector<std::s
         auto deviceTargets = devices;
         if (devices.empty()) {
             deviceTargets.clear();
+            deviceTargets.reserve(deviceKeys->device_keys.size());
             for (const auto &[device, keys] : deviceKeys->device_keys) {
                 (void)keys;
                 deviceTargets.push_back(device);
@@ -1521,7 +1536,7 @@ request_cross_signing_keys()
         }
 
         // timeout after 15 min
-        QTimer::singleShot(15 * 60 * 1000, [secretRequest, body]() {
+        QTimer::singleShot(15 * 60 * 1000, Client::instance(), [secretRequest, body]() {
             if (request_id_to_secret_name.count(secretRequest.request_id)) {
                 request_id_to_secret_name.erase(secretRequest.request_id);
                 http::client()->send_to_device<mtx::events::msg::SecretRequest>(

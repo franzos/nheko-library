@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -38,13 +39,13 @@ struct detector<Default, std::void_t<Op<Args...>>, Op, Args...>
 }
 
 namespace mtx::accessors {
-std::string
+const std::string &
 event_id(const mtx::events::collections::TimelineEvents &event);
 
-std::string
+const std::string &
 room_id(const mtx::events::collections::TimelineEvents &event);
 
-std::string
+const std::string &
 sender(const mtx::events::collections::TimelineEvents &event);
 
 bool
@@ -77,16 +78,20 @@ formattedBodyWithFallback(const mtx::events::collections::TimelineEvents &event)
 
 std::optional<mtx::crypto::EncryptedFile>
 file(const mtx::events::collections::TimelineEvents &event);
+std::optional<mtx::crypto::EncryptedFile>
+thumbnail_file(const mtx::events::collections::TimelineEvents &event);
 
 std::string
 url(const mtx::events::collections::TimelineEvents &event);
 std::string
 thumbnail_url(const mtx::events::collections::TimelineEvents &event);
+uint64_t
+duration(const mtx::events::collections::TimelineEvents &event);
 std::string
 blurhash(const mtx::events::collections::TimelineEvents &event);
 std::string
 mimetype(const mtx::events::collections::TimelineEvents &event);
-mtx::common::Relations
+const mtx::common::Relations &
 relations(const mtx::events::collections::TimelineEvents &event);
 void
 set_relations(mtx::events::collections::TimelineEvents &event, mtx::common::Relations relations);
