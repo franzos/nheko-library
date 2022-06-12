@@ -68,13 +68,13 @@ qml_mtx_events::toRoomEventType(mtx::events::EventType e)
 }
 
 qml_mtx_events::EventType
-toRoomEventType(const mtx::events::collections::TimelineEvents &event)
+qml_mtx_events::toRoomEventType(const mtx::events::collections::TimelineEvents &event)
 {
     return std::visit(RoomEventType{}, event);
 }
 
 QString
-toRoomEventTypeString(const mtx::events::collections::TimelineEvents &event)
+qml_mtx_events::toRoomEventTypeString(const mtx::events::collections::TimelineEvents &event)
 {
     return std::visit([](const auto &e) { return QString::fromStdString(to_string(e.type)); },
                       event);
