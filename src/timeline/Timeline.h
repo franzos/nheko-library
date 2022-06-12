@@ -30,7 +30,6 @@ signals:
 
 public slots:
     bool canFetchMore() const;
-    void sendMessage(const QString &msg);
     void setDecryptDescription(bool decrypt) { _decryptDescription = decrypt; }
     int  eventSize() {return _events.size();};
     QVector<DescInfo> getEvents(int from, int len, bool markAsRead = true);
@@ -48,6 +47,13 @@ public slots:
     QString displayName(QString id) const;
     QString avatarUrl(QString id) const;
     EventStore *events() {return &_events;};
+    QStringList pinnedMessages() const;
+    int roomMemberCount() const;
+    bool isDirect() const { return roomMemberCount() <= 2; }
+    QString directChatOtherUserId() const;
+    void unpin(const QString &id);
+    void pin(const QString &id);
+
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
 

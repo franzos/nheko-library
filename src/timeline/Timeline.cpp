@@ -250,12 +250,6 @@ Timeline::addPendingMessage(mtx::events::collections::TimelineEvents event)
     std::visit(SendMessageVisitor{this}, event);
 }
 
-void Timeline::sendMessage(const QString &msg) {
-    mtx::events::msg::Text text = {};
-    text.body                   = msg.trimmed().toStdString();
-    sendMessageEvent(text, mtx::events::EventType::RoomMessage);
-}
-
 void Timeline::sync(const mtx::responses::JoinedRoom &room){
     // this->syncState(room.state);
     addEvents(room.timeline);
@@ -482,4 +476,86 @@ QString Timeline::avatarUrl(QString id) const {
 QString Timeline::escapeEmoji(QString str) const
 {
     return utils::replaceEmoji(str);
+}
+
+QStringList Timeline::pinnedMessages() const {
+    auto pinned =
+      cache::client()->getStateEvent<mtx::events::state::PinnedEvents>(_roomId.toStdString());
+
+    if (!pinned || pinned->content.pinned.empty())
+        return {};
+
+    QStringList list;
+    list.reserve(pinned->content.pinned.size());
+    for (const auto &p : pinned->content.pinned)
+        list.push_back(QString::fromStdString(p));
+
+    return list;
+}
+
+
+int Timeline::roomMemberCount() const {
+    return (int)cache::client()->memberCount(_roomId.toStdString());
+}
+
+QString Timeline::directChatOtherUserId() const {
+    if (roomMemberCount() < 3) {
+        QString id;
+        for (const auto &member : cache::getMembers(_roomId.toStdString()))
+            if (member.user_id != UserSettings::instance()->userId())
+                id = member.user_id;
+        return id;
+    } else
+        return {};
+}
+
+
+void Timeline::unpin(const QString &id) {
+    auto pinned =
+      cache::client()->getStateEvent<mtx::events::state::PinnedEvents>(_roomId.toStdString());
+
+    mtx::events::state::PinnedEvents content{};
+    if (pinned)
+        content = pinned->content;
+
+    auto idStr = id.toStdString();
+
+    for (auto it = content.pinned.begin(); it != content.pinned.end(); ++it) {
+        if (*it == idStr) {
+            content.pinned.erase(it);
+            break;
+        }
+    }
+
+    http::client()->send_state_event(
+      _roomId.toStdString(),
+      content,
+      [idStr](const mtx::responses::EventId &, mtx::http::RequestErr err) {
+          if (err)
+              nhlog::net()->error("Failed to unpin {}: {}", idStr, *err);
+          else
+              nhlog::net()->debug("Unpinned {}", idStr);
+      });
+}
+
+void Timeline::pin(const QString &id) {
+    auto pinned =
+      cache::client()->getStateEvent<mtx::events::state::PinnedEvents>(_roomId.toStdString());
+
+    mtx::events::state::PinnedEvents content{};
+    if (pinned)
+        content = pinned->content;
+
+    auto idStr = id.toStdString();
+    content.pinned.push_back(idStr);
+
+    http::client()->send_state_event(
+      _roomId.toStdString(),
+      content,
+      [idStr](const mtx::responses::EventId &, mtx::http::RequestErr err) {
+          if (err)
+              nhlog::net()->error("Failed to pin {}: {}", idStr, *err);
+          else
+              nhlog::net()->debug("Pinned {}", idStr);
+      });
 }

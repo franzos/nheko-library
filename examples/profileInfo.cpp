@@ -86,8 +86,8 @@ int main(int argc, char *argv[]){
                     auto events = timeline->getEvents(from, len);
                     for(auto const &e: events){
                         qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-                        if(e.body == "Hamzeh: answer")
-                            timeline->sendMessage("Hi, I got your message");
+                        if(e.body == "Hamzeh: answer");
+                            // timeline->sendMessage("Hi, I got your message");
                     }
                     qDebug() << "-------------------------------------------------------------------------------";
                 });
