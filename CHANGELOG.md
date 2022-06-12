@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.0]
+### Changed
+
+* Pin/Unpin message.
+* Update with upstream.
+
+
 ## [0.0.61]
 ### Changed
 
