@@ -5,8 +5,220 @@
 #include <mtx/events/collections.hpp>
 #include "EventStore.h"
 #include "../CacheStructs.h"
+#include "Permissions.h"
 
 Q_DECLARE_METATYPE(mtx::events::collections::TimelineEvents)
+
+namespace qml_mtx_events {
+Q_NAMESPACE
+
+enum EventType
+{
+    // Unsupported event
+    Unsupported,
+    /// m.room_key_request
+    KeyRequest,
+    /// m.reaction,
+    Reaction,
+    /// m.room.aliases
+    Aliases,
+    /// m.room.avatar
+    Avatar,
+    /// m.call.invite
+    CallInvite,
+    /// m.call.answer
+    CallAnswer,
+    /// m.call.hangup
+    CallHangUp,
+    /// m.call.candidates
+    CallCandidates,
+    /// m.room.canonical_alias
+    CanonicalAlias,
+    /// m.room.create
+    RoomCreate,
+    /// m.room.encrypted.
+    Encrypted,
+    /// m.room.encryption.
+    Encryption,
+    /// m.room.guest_access
+    RoomGuestAccess,
+    /// m.room.history_visibility
+    RoomHistoryVisibility,
+    /// m.room.join_rules
+    RoomJoinRules,
+    /// m.room.member
+    Member,
+    /// m.room.name
+    Name,
+    /// m.room.power_levels
+    PowerLevels,
+    /// m.room.tombstone
+    Tombstone,
+    /// m.room.topic
+    Topic,
+    /// m.room.redaction
+    Redaction,
+    /// m.room.pinned_events
+    PinnedEvents,
+    // m.sticker
+    Sticker,
+    // m.tag
+    Tag,
+    // m.widget
+    Widget,
+    /// m.room.message
+    AudioMessage,
+    EmoteMessage,
+    FileMessage,
+    ImageMessage,
+    LocationMessage,
+    NoticeMessage,
+    TextMessage,
+    VideoMessage,
+    Redacted,
+    UnknownMessage,
+    KeyVerificationRequest,
+    KeyVerificationStart,
+    KeyVerificationMac,
+    KeyVerificationAccept,
+    KeyVerificationCancel,
+    KeyVerificationKey,
+    KeyVerificationDone,
+    KeyVerificationReady,
+    //! m.image_pack, currently im.ponies.room_emotes
+    ImagePackInRoom,
+    //! m.image_pack, currently im.ponies.user_emotes
+    ImagePackInAccountData,
+    //! m.image_pack.rooms, currently im.ponies.emote_rooms
+    ImagePackRooms,
+    // m.space.parent
+    SpaceParent,
+    // m.space.child
+    SpaceChild,
+};
+Q_ENUM_NS(EventType)
+mtx::events::EventType fromRoomEventType(qml_mtx_events::EventType);
+EventType toRoomEventType(mtx::events::EventType e);
+EventType toRoomEventType(const mtx::events::collections::TimelineEvents &event);
+QString toRoomEventTypeString(const mtx::events::collections::TimelineEvents &event);
+
+enum EventState
+{
+    //! The plaintext message was received by the server.
+    Received,
+    //! At least one of the participants has read the message.
+    Read,
+    //! The client sent the message. Not yet received.
+    Sent,
+    //! When the message is loaded from cache or backfill.
+    Empty,
+};
+Q_ENUM_NS(EventState)
+}
+
+namespace {
+struct RoomEventType
+{
+    template<class T>
+    qml_mtx_events::EventType operator()(const mtx::events::Event<T> &e)
+    {
+        return qml_mtx_events::toRoomEventType(e.type);
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Audio> &)
+    {
+        return qml_mtx_events::EventType::AudioMessage;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Emote> &)
+    {
+        return qml_mtx_events::EventType::EmoteMessage;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::File> &)
+    {
+        return qml_mtx_events::EventType::FileMessage;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Image> &)
+    {
+        return qml_mtx_events::EventType::ImageMessage;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Notice> &)
+    {
+        return qml_mtx_events::EventType::NoticeMessage;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Text> &)
+    {
+        return qml_mtx_events::EventType::TextMessage;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Video> &)
+    {
+        return qml_mtx_events::EventType::VideoMessage;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationRequest> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationRequest;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationStart> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationStart;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationMac> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationMac;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationAccept> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationAccept;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationReady> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationReady;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationCancel> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationCancel;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationKey> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationKey;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::KeyVerificationDone> &)
+    {
+        return qml_mtx_events::EventType::KeyVerificationDone;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Redacted> &)
+    {
+        return qml_mtx_events::EventType::Redacted;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::CallInvite> &)
+    {
+        return qml_mtx_events::EventType::CallInvite;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::CallAnswer> &)
+    {
+        return qml_mtx_events::EventType::CallAnswer;
+    }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::CallHangUp> &)
+    {
+        return qml_mtx_events::EventType::CallHangUp;
+    }
+    qml_mtx_events::EventType
+    operator()(const mtx::events::Event<mtx::events::msg::CallCandidates> &)
+    {
+        return qml_mtx_events::EventType::CallCandidates;
+    }
+    // ::EventType::Type operator()(const Event<mtx::events::msg::Location> &e) { return
+    // ::EventType::LocationMessage; }
+};
+}
+
+
 
 class Timeline : public QObject {
 Q_OBJECT
@@ -16,6 +228,7 @@ public:
     void initialSync();
     QString escapeEmoji(QString str) const;
     QString id() {return _roomId;};
+    Permissions *permissions() { return &_permissions; };
 
 signals:
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
@@ -69,6 +282,7 @@ private:
    
     mutable EventStore _events;
     QString _roomId;
+    Permissions _permissions;
     DescInfo _lastMessage{};
     bool _decryptDescription     = true;
     int _notificationCount = 0, _highlightCount = 0;

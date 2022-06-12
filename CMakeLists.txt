@@ -51,6 +51,7 @@ set(SRC_FILES
 	src/Authentication.cpp
 	src/CibaAuthentication.cpp
 	src/timeline/EventStore.cpp
+	src/timeline/Permissions.cpp
 	src/timeline/Reaction.cpp
 	src/timeline/Timeline.cpp
 	src/encryption/Olm.cpp
@@ -103,6 +104,7 @@ feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAG
 
 qt5_wrap_cpp(MOC_HEADERS
 	src/timeline/EventStore.h
+	src/timeline/Permissions.h
 	src/timeline/Reaction.h
 	src/timeline/Timeline.h
 	src/encryption/Olm.h
@@ -133,6 +135,7 @@ qt5_wrap_cpp(MOC_HEADERS
 
 set(HEADERS 
 	timeline/EventStore.h
+	timeline/Permissions.h
 	timeline/Reaction.h
 	timeline/Timeline.h
 	encryption/Olm.h
