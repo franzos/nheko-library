@@ -2,12 +2,14 @@
 #include <QDateTime>
 #include <mtx/responses/common.hpp>
 #include <mtx/events.hpp>
+#include <mtx/responses/media.hpp>
 #include <QDebug>
 #include "EventAccessors.h"
 #include "Client.h"
 #include "Cache_p.h"
 #include "MatrixClient.h"
 #include "../Utils.h"
+
 
 qml_mtx_events::EventType
 qml_mtx_events::toRoomEventType(mtx::events::EventType e)
