@@ -119,6 +119,7 @@ public slots:
     void serverDiscovery(QString hostName);
     QString getLibraryVersion();
     QString extractHostName(QString userId);
+    std::optional<mtx::events::state::CanonicalAlias> getRoomAliases(const QString &roomid);
 
 signals:
     // Authentication signals

@@ -1301,3 +1301,7 @@ QString Client::extractHostName(QString userId){
     }      
     return "";
 }
+
+std::optional<mtx::events::state::CanonicalAlias> Client::getRoomAliases(const QString &roomid){
+    return cache::client()->getRoomAliases(roomid.toStdString());
+}
