@@ -268,6 +268,9 @@ public slots:
     void pin(const QString &id);
     std::optional<mtx::events::state::CanonicalAlias> getRoomAliases();
     std::vector<RoomMember> getMembers(std::size_t startIndex = 0, std::size_t len = 30);
+    void kickUser(const QString & userid, const QString & reason);
+    void banUser(const QString & userid, const QString & reason);
+    void unbanUser(const QString & userid, const QString & reason);
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);

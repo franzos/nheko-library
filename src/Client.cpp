@@ -813,66 +813,6 @@ Client::inviteUser(const QString &roomid,const QString &userid, const QString &r
       },
       reason.trimmed().toStdString());
 }
-void
-Client::kickUser(const QString & roomid,const QString & userid, const QString & reason)
-{
-    http::client()->kick_user(
-      roomid.toStdString(),
-      userid.toStdString(),
-      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
-          if (err) {
-            // TODO emit error
-            //   emit showNotification(tr("Failed to kick %1 from %2: %3")
-            //                           .arg(userid)
-            //                           .arg(roomid)
-            //                           .arg(QString::fromStdString(err->matrix_error.error)));
-          } else {
-            // TODO emit done
-            //   emit showNotification(tr("Kicked user: %1").arg(userid));
-          }
-      },
-      reason.trimmed().toStdString());
-}
-void
-Client::banUser(const QString &roomid, const QString & userid, const QString & reason)
-{
-    http::client()->ban_user(
-      roomid.toStdString(),
-      userid.toStdString(),
-      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
-          if (err) {
-            // TODO emit error
-            //   emit showNotification(tr("Failed to ban %1 in %2: %3")
-            //                           .arg(userid)
-            //                           .arg(room)
-            //                           .arg(QString::fromStdString(err->matrix_error.error)));
-          } else {
-            // TODO emit done
-            //   emit showNotification(tr("Banned user: %1").arg(userid));
-          }
-      },
-      reason.trimmed().toStdString());
-}
-void
-Client::unbanUser(const QString  &roomid, const QString & userid, const QString & reason)
-{
-    http::client()->unban_user(
-      roomid.toStdString(),
-      userid.toStdString(),
-      [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
-          if (err) {
-            // TODO emit erro
-            //   emit showNotification(tr("Failed to unban %1 in %2: %3")
-            //                           .arg(userid)
-            //                           .arg(room)
-            //                           .arg(QString::fromStdString(err->matrix_error.error)));
-          } else{
-            // TODO emit done
-            //   emit showNotification(tr("Unbanned user: %1").arg(userid));
-          }
-      },
-      reason.trimmed().toStdString());
-}
 
 void
 Client::receivedSessionKey(const QString &room_id, const QString &session_id)
