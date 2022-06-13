@@ -756,3 +756,12 @@ void Timeline::pin(const QString &id) {
               nhlog::net()->debug("Pinned {}", idStr);
       });
 }
+
+
+std::optional<mtx::events::state::CanonicalAlias> Timeline::getRoomAliases(){
+    return cache::client()->getRoomAliases(_roomId.toStdString());
+}
+
+std::vector<RoomMember> Timeline::getMembers(std::size_t startIndex, std::size_t len){
+    return cache::getMembers(_roomId.toStdString(), startIndex, len);
+}

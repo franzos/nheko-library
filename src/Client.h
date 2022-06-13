@@ -119,8 +119,8 @@ public slots:
     void serverDiscovery(QString hostName);
     QString getLibraryVersion();
     QString extractHostName(QString userId);
-    std::optional<mtx::events::state::CanonicalAlias> getRoomAliases(const QString &roomid);
     void forwardMessageToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
+
 signals:
     // Authentication signals
     void loginOk(const UserInformation &user);

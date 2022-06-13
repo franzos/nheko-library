@@ -266,6 +266,8 @@ public slots:
     QString directChatOtherUserId() const;
     void unpin(const QString &id);
     void pin(const QString &id);
+    std::optional<mtx::events::state::CanonicalAlias> getRoomAliases();
+    std::vector<RoomMember> getMembers(std::size_t startIndex = 0, std::size_t len = 30);
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
