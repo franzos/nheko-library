@@ -765,3 +765,58 @@ std::optional<mtx::events::state::CanonicalAlias> Timeline::getRoomAliases(){
 std::vector<RoomMember> Timeline::getMembers(std::size_t startIndex, std::size_t len){
     return cache::getMembers(_roomId.toStdString(), startIndex, len);
 }
+void
+Timeline::kickUser(const QString & userid, const QString & reason)
+{
+    http::client()->kick_user(
+      _roomId.toStdString(),
+      userid.toStdString(),
+      [this, userid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+          if (err) {
+            emit Client::instance()->showNotification(tr("Failed to kick %1 from %2: %3")
+                                      .arg(userid)
+                                      .arg(_roomId)
+                                      .arg(QString::fromStdString(err->matrix_error.error)));            
+          } else {
+            emit Client::instance()->showNotification(tr("Kicked user: %1").arg(userid));
+          }
+      },
+      reason.trimmed().toStdString());
+}
+
+void
+Timeline::banUser(const QString & userid, const QString & reason)
+{
+    http::client()->ban_user(
+      _roomId.toStdString(),
+      userid.toStdString(),
+      [this, userid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+          if (err) {            
+              emit Client::instance()->showNotification(tr("Failed to ban %1 in %2: %3")
+                                      .arg(userid)
+                                      .arg(_roomId)
+                                      .arg(QString::fromStdString(err->matrix_error.error)));
+          } else {
+              emit Client::instance()->showNotification(tr("Banned user: %1").arg(userid));
+          }
+      },
+      reason.trimmed().toStdString());
+}
+void
+Timeline::unbanUser(const QString & userid, const QString & reason)
+{
+    http::client()->unban_user(
+      _roomId.toStdString(),
+      userid.toStdString(),
+      [this, userid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
+          if (err) {
+              emit Client::instance()->showNotification(tr("Failed to unban %1 in %2: %3")
+                                      .arg(userid)
+                                      .arg(_roomId)
+                                      .arg(QString::fromStdString(err->matrix_error.error)));
+          } else{
+              emit Client::instance()->showNotification(tr("Unbanned user: %1").arg(userid));
+          }
+      },
+      reason.trimmed().toStdString());
+}
