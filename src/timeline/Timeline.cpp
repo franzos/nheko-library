@@ -820,3 +820,25 @@ Timeline::unbanUser(const QString & userid, const QString & reason)
       },
       reason.trimmed().toStdString());
 }
+
+void Timeline::forwardMessage(const QString &eventId, QString roomId) {
+    auto e = _events.get(eventId.toStdString(), "");
+    if (!e)
+        return;
+    emit forwardToRoom(e, std::move(roomId));
+}
+
+QString Timeline::viewDecryptedRawMessage(const QString &id){
+    auto e = _events.get(id.toStdString(), "");
+    if (!e)
+        return "";
+
+    return QString::fromStdString(mtx::accessors::serialize_event(*e).dump(4));
+}
+
+QString Timeline::viewRawMessage(const QString &id){
+    auto e = _events.get(id.toStdString(), "", false);
+    if (!e)
+        return "";
+    return QString::fromStdString(mtx::accessors::serialize_event(*e).dump(4));
+}

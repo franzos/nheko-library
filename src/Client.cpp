@@ -1230,6 +1230,7 @@ void Client::addTimeline(const QString &roomID){
     auto it = _timelines.find(roomID);
     if(it == _timelines.end()){
         _timelines[roomID] = new Timeline(roomID);
+        connect(_timelines[roomID], &Timeline::forwardToRoom, this, &Client::forwardMessageToRoom);
         _timelines[roomID]->initialSync();
     }
 }

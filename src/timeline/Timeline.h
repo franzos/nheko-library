@@ -240,6 +240,7 @@ signals:
     void newEventsStored(int from, int len);
     void notificationsChanged();
     void typingUsersChanged(const QStringList &users);
+    void forwardToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
 
 public slots:
     bool canFetchMore() const;
@@ -271,6 +272,9 @@ public slots:
     void kickUser(const QString & userid, const QString & reason);
     void banUser(const QString & userid, const QString & reason);
     void unbanUser(const QString & userid, const QString & reason);
+    void forwardMessage(const QString &eventId, QString roomId);
+    QString viewDecryptedRawMessage(const QString &id);
+    QString viewRawMessage(const QString &id);
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
