@@ -229,6 +229,7 @@ public:
     QString escapeEmoji(QString str) const;
     QString id() {return _roomId;};
     Permissions *permissions() { return &_permissions; };
+    using UserReceipts = std::multimap<uint64_t, std::string, std::greater<uint64_t>>;
 
 signals:
     void newEncryptedImage(mtx::crypto::EncryptedFile encryptionInfo);
@@ -241,6 +242,7 @@ signals:
     void notificationsChanged();
     void typingUsersChanged(const QStringList &users);
     void forwardToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
+    void newReadReceipts(const std::vector<QString> &event_ids);
 
 public slots:
     bool canFetchMore() const;
@@ -275,6 +277,7 @@ public slots:
     void forwardMessage(const QString &eventId, QString roomId);
     QString viewDecryptedRawMessage(const QString &id);
     QString viewRawMessage(const QString &id);
+    UserReceipts readReceipts(const QString &event_id);
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);

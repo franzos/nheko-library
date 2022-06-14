@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 * Pin/Unpin message.
 * Update with upstream.
+* ReadReceipts added.
+* raw message retrieving.
 
 
 ## [0.0.61]
