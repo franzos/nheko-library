@@ -150,11 +150,12 @@ signals:
     void tryInitialSyncCb();
     void newSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
     void initiateFinished();
-    void newUpdated(const mtx::responses::Sync &sync);
+    void newUpdate(const mtx::responses::Sync &sync);
     void initialSync(const mtx::responses::Sync &sync);
     void prepareTimelines();
     void initializeEmptyViews();
-    
+    void newNotifications(const mtx::responses::Notifications &notifications);
+
     // room signals
     void leftRoom(const QString &room_id);
     void roomLeaveFailed(const QString &error);

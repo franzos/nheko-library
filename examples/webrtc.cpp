@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         Q_UNUSED(sync)
         nhlog::ui()->info(">>> INITIAL SYNC");
     });
-    QObject::connect(client, &Client::newUpdated, [=](const mtx::responses::Sync &sync) {
+    QObject::connect(client, &Client::newUpdate, [=](const mtx::responses::Sync &sync) {
         Q_UNUSED(sync)
         nhlog::ui()->info(">>> NEW UPDATED");
     });
