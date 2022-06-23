@@ -69,10 +69,10 @@ setDefaultDevice(bool isVideo)
     auto settings = UserSettings::instance();
     if (isVideo && settings->camera().isEmpty()) {
         if(videoSources_.size()){
-        const VideoSource &camera = videoSources_.front();
-        settings->setCamera(QString::fromStdString(camera.name));
+            const VideoSource &camera = videoSources_.front();
+            settings->setCamera(QString::fromStdString(camera.name));
             if(camera.caps.size()){
-        settings->setCameraResolution(QString::fromStdString(camera.caps.front().resolution));
+                settings->setCameraResolution(QString::fromStdString(camera.caps.front().resolution));
                 if(camera.caps.front().frameRates.size()){
                     settings->setCameraFrameRate(QString::fromStdString(camera.caps.front().frameRates.front()));
                 } else {

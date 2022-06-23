@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.1]
+### Changed
+
+* Emit error message if there is no Camera/Microphone in Video/Audio calls.
+
+
 ## [0.1.0]
 ### Changed
 
