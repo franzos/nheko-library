@@ -64,7 +64,6 @@ set(SRC_FILES
 	src/voip/WebRTCSession.cpp
 	src/Cache.cpp
 	src/Client.cpp
-	src/CMUserInfo.cpp
 	src/EventAccessors.cpp
 	src/JdenticonProvider.cpp
 	src/Logging.cpp
@@ -120,7 +119,6 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Cache_p.h
 	src/JdenticonProvider.h
 	src/Client.h
-	src/CMUserInfo.h
 	src/Config.h
 	src/MxcImageProvider.h
 	src/PresenceEmitter.h
@@ -151,7 +149,6 @@ set(HEADERS
 	CacheStructs.h
 	Cache_p.h
 	Client.h
-	CMUserInfo.h
 	Config.h
 	UserProfile.h	
 	UserSettings.h	
@@ -190,6 +187,7 @@ endif()
 
 set(DEP_LIBS 
 	MatrixClient::MatrixClient
+	px-auth-lib-cpp
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
@@ -248,6 +246,6 @@ IF(BUILD_TESTS)
 					tests/AuthenticationTest.h
 					tests/ClientTest.h
 					tests/UserSettingsTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui Qt5::Network Qt5::Widgets)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library px-auth-lib-cpp Qt5::Gui Qt5::Network Qt5::Widgets)
 	message(" + \"tests\" will be built.")
 ENDIF()

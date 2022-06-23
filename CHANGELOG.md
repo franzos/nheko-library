@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Changed
 
 * Emit error message if there is no Camera/Microphone in Video/Audio calls.
-
+* Remove /user/me codes and using it from Auth library.
 
 ## [0.1.0]
 ### Changed

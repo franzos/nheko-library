@@ -24,6 +24,7 @@
 #include <QTimer>
 #include <QStandardPaths>
 
+#include <px-auth-lib-cpp/UserProfile.h>
 #include "Authentication.h"
 #include "UserSettings.h"
 #include "Cache.h"
@@ -33,7 +34,6 @@
 #include "timeline/Timeline.h"
 #include "encryption/VerificationManager.h"
 #include "PresenceEmitter.h"
-#include "CMUserInfo.h"
 
 class UserSettings;
 class CallManager;
@@ -141,7 +141,7 @@ signals:
     void userAvatarReady(const QString &avatar);
     void userInfoLoaded(const UserInformation &userinfo);
     void userInfoLoadingFailed(const QString &message);
-    void cmUserInfoUpdated(const CMUserInformation &info);
+    void cmUserInfoUpdated(const PX::AUTH::UserProfileInfo &info);
     void cmUserInfoFailure(const QString &message);
 
     // sync signals
@@ -195,10 +195,10 @@ private slots:
     void prepareTimelinesCB();
 
 private:
-    static Client       *instance_;
-    Authentication      *_authentication;
-    CibaAuthentication  *_cibaAuthForUserInfo;
-    CMUserInfo          *_cmUserInfo;
+    static Client           *instance_;
+    Authentication          *_authentication;
+    CibaAuthentication      *_cibaAuthForUserInfo;
+    PX::AUTH::UserProfile   *_cmUserInfo;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
 
