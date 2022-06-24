@@ -58,7 +58,6 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
-	src/rest/HttpRequest.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
 	src/voip/WebRTCSession.cpp
@@ -110,7 +109,6 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/DeviceVerificationFlow.h
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
-	src/rest/HttpRequest.h
 	src/voip/CallDevices.h
 	src/voip/CallManager.h
 	src/voip/WebRTCSession.h
@@ -140,7 +138,6 @@ set(HEADERS
 	encryption/DeviceVerificationFlow.h
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
-	rest/HttpRequest.h
 	voip/CallDevices.h
 	voip/CallManager.h
 	voip/WebRTCSession.h
