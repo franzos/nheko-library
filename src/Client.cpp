@@ -273,7 +273,39 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
                     nhlog::db()->error("failed to save mentions: {}", e.what());
                 }
             });
+    connect(this, &Client::newUpdate, this, [this](const mtx::responses::Sync &sync) {
+        static unsigned int prevNotificationCount = 0;
+        unsigned int notificationCount            = 0;
+        for (const auto &room : sync.rooms.join) {
+            notificationCount += room.second.unread_notifications.notification_count;
+        }
 
+        // HACK: If we had less notifications last time we checked, send an alert if the
+        // user wanted one. Technically, this may cause an alert to be missed if new ones
+        // come in while you are reading old ones. Since the window is almost certainly open
+        // in this edge case, that's probably a non-issue.
+        // TODO: Replace this once we have proper pushrules support. This is a horrible hack
+        if (prevNotificationCount < notificationCount) {
+        //         MainWindow::instance()->alert(0);
+        }
+        prevNotificationCount = notificationCount;
+
+        // No need to check amounts for this section, as this function internally checks for
+        // duplicates.
+        if (notificationCount)
+            http::client()->notifications(
+              5,
+              "",
+              "",
+              [this](const mtx::responses::Notifications &res, mtx::http::RequestErr err) {
+                  if (err) {
+                      nhlog::net()->warn("failed to retrieve notifications: {}", err);
+                      return;
+                  }
+
+                  emit notificationsRetrieved(std::move(res));
+              });
+    });
     connect(
       this, &Client::tryInitialSyncCb, this, &Client::tryInitialSync, Qt::QueuedConnection);
     connect(this, &Client::trySyncCb, this, &Client::trySync, Qt::QueuedConnection);
@@ -502,6 +534,7 @@ Client::removeRoom(const QString &room_id)
 void
 Client::sendNotifications(const mtx::responses::Notifications &res)
 {
+    mtx::responses::Notifications notifications;
     for (const auto &item : res.notifications) {
         const auto event_id = mtx::accessors::event_id(item.event);
 
@@ -516,27 +549,14 @@ Client::sendNotifications(const mtx::responses::Notifications &res)
 
                 // We should only sent one notification per event.
                 cache::markSentNotification(event_id);
-
-                // Don't send a notification when the current room is opened.
-                // if (isRoomActive(room_id))
-                //     continue;
-
-                // if (userSettings_->hasDesktopNotifications()) {
-                    // auto info = cache::singleRoomInfo(item.room_id);
-
-                    // AvatarProvider::resolve(QString::fromStdString(info.avatar_url),
-                    //                         96,
-                    //                         this,
-                    //                         [this, item](QPixmap image) {
-                    //                             notificationsManager.postNotification(
-                    //                               item, image.toImage());
-                    //                         });
-                // }
+                notifications.notifications.push_back(item);
             }
         } catch (const lmdb::error &e) {
             nhlog::db()->warn("error while sending notification: {}", e.what());
         }
     }
+    if(notifications.notifications.size())
+        emit newNotifications(notifications);
 }
 
 void
@@ -670,7 +690,7 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
 
         if( res.rooms.join.size() || res.rooms.invite.size() || res.rooms.leave.size()) {
             syncTimelines(res.rooms);
-            emit newUpdated(res);
+            emit newUpdate(res);
         }
         _presenceEmitter->sync(res.presence);
         // if we process a lot of syncs (1 every 200ms), this means we clean the
