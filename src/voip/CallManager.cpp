@@ -172,6 +172,21 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
         return false;
     }
 
+
+    if (callType == CallType::VIDEO && !CallDevices::instance().haveCamera()) {
+        std::string errorMessage = "Camera not connected!"; 
+        nhlog::ui()->error(errorMessage);
+        emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
+        return false;
+    }
+
+    if (callType == CallType::VOICE && !CallDevices::instance().haveMic()) {
+        std::string errorMessage = "Microphone not connected!"; 
+        nhlog::ui()->error(errorMessage);
+        emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
+        return false;
+    }
+    
     callType_ = callType;
     roomid_   = roomid;
     session_.setTurnServers(turnURIs_);

@@ -172,11 +172,11 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit discoveryErrorOccurred(msg);            
     }); 
     // -------------------- to get CM user info
-    _cmUserInfo = new CMUserInfo();
-    connect(_cmUserInfo, &CMUserInfo::userInfoUpdated, [&](const CMUserInformation &info){
+    _cmUserInfo = new PX::AUTH::UserProfile();
+    connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdated, [&](const PX::AUTH::UserProfileInfo &info){
         emit cmUserInfoUpdated(info);
     });
-    connect(_cmUserInfo, &CMUserInfo::userInfoFailure, [&](const QString &message){
+    connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdateFailed, [&](const QString &message){
         emit cmUserInfoFailure(message);
     });
 
