@@ -127,7 +127,7 @@ public:
     Q_INVOKABLE void fetchDeviceList(const QString &userID);
     Q_INVOKABLE void refreshDevices();
     Q_INVOKABLE void banUser();
-    // Q_INVOKABLE void signOutDevice(const QString &deviceID);
+    Q_INVOKABLE void signOutDevice(const QString &deviceID);
     // Q_INVOKABLE void ignoreUser();
     Q_INVOKABLE void kickUser();
     Q_INVOKABLE void startChat();

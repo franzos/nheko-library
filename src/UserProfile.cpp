@@ -12,6 +12,7 @@
 #include "Logging.h"
 #include "UserProfile.h"
 #include "Utils.h"
+#include "UIA.h"
 #include "encryption/DeviceVerificationFlow.h"
 #include "mtx/responses/crypto.hpp"
 
@@ -101,26 +102,26 @@ UserProfile::isSelf() const
     return this->userid_ == utils::localUser();
 }
 
-// void
-// UserProfile::signOutDevice(const QString &deviceID)
-// {
-//     http::client()->delete_device(
-//       deviceID.toStdString(),
-//       UIA::instance()->genericHandler(tr("Sign out device %1").arg(deviceID)),
-//       [this, deviceID](mtx::http::RequestErr e) {
-//           if (e) {
-//               nhlog::ui()->critical("Failure when attempting to sign out device {}",
-//                                     deviceID.toStdString());
-//               return;
-//           }
-//           nhlog::ui()->info("Device {} successfully signed out!", deviceID.toStdString());
-//           // This is us. Let's update the interface accordingly
-//           if (isSelf() && deviceID.toStdString() == ::http::client()->device_id()) {
-//               ChatPage::instance()->dropToLoginPageCb(tr("You signed out this device."));
-//           }
-//           refreshDevices();
-//       });
-// }
+void
+UserProfile::signOutDevice(const QString &deviceID)
+{
+    http::client()->delete_device(
+      deviceID.toStdString(),
+      UIA::instance()->genericHandler(tr("Sign out device %1").arg(deviceID)),
+      [this, deviceID](mtx::http::RequestErr e) {
+          if (e) {
+              nhlog::ui()->critical("Failure when attempting to sign out device {}",
+                                    deviceID.toStdString());
+              return;
+          }
+          nhlog::ui()->info("Device {} successfully signed out!", deviceID.toStdString());
+          // This is us. Let's update the interface accordingly
+          if (isSelf() && deviceID.toStdString() == ::http::client()->device_id()) {
+              Client::instance()->dropToLogin(tr("You signed out this device."));
+          }
+          refreshDevices();
+      });
+}
 
 void
 UserProfile::refreshDevices()
@@ -177,7 +178,7 @@ UserProfile::updateVerificationStatus()
     if (!user_keys) {
         this->hasMasterKey   = false;
         this->isUserVerified = crypto::Trust::Unverified;
-        // this->deviceList_.reset({});
+        this->deviceList_.reset({});
         emit userStatusChanged();
         return;
     }
@@ -217,7 +218,7 @@ UserProfile::updateVerificationStatus()
                   nhlog::net()->warn("failed to query devices: {} {}",
                                      err->matrix_error.error,
                                      static_cast<int>(err->status_code));
-                //   this->deviceList_.queueReset(std::move(deviceInfo));
+                  this->deviceList_.queueReset(std::move(deviceInfo));
                   emit devicesChanged();
                   return;
               }
@@ -243,20 +244,20 @@ UserProfile::updateVerificationStatus()
                   }
               }
 
-            //   this->deviceList_.queueReset(std::move(deviceInfo));
+              this->deviceList_.queueReset(std::move(deviceInfo));
               emit devicesChanged();
           });
         return;
     }
 
-    // this->deviceList_.queueReset(std::move(deviceInfo));
+    this->deviceList_.queueReset(std::move(deviceInfo));
     emit devicesChanged();
 }
 
 void
 UserProfile::banUser()
 {
-    // Client::instance()->banUser(this->userid_, "");
+    Client::instance()->timeline(roomid_)->banUser(this->userid_, "");
 }
 
 // void ignoreUser(){
@@ -266,7 +267,7 @@ UserProfile::banUser()
 void
 UserProfile::kickUser()
 {
-    // Client::instance()->kickUser(this->userid_, "");
+    Client::instance()->timeline(roomid_)->kickUser(this->userid_, "");
 }
 
 void
