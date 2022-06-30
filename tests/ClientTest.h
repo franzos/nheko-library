@@ -50,7 +50,7 @@ private slots:
             isInitialSynced = true;               
         });
 
-        QObject::connect(client,  &Client::newUpdated, [&](const mtx::responses::Sync &sync){   
+        QObject::connect(client,  &Client::newUpdate, [&](const mtx::responses::Sync &sync){   
             (void)sync;
             qDebug()<<"Update Sync is done";  
             isUpdated = true;               
