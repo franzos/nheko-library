@@ -23,6 +23,7 @@ UserProfile::UserProfile(QString roomid,
     QObject(parent)
   , roomid_(roomid)
   , userid_(userid)
+  , _timeline(Client::instance()->timeline(roomid_))
 {
     globalAvatarUrl = "";
 
@@ -49,12 +50,47 @@ UserProfile::UserProfile(QString roomid,
     fetchDeviceList(this->userid_);
 }
 
+QHash<int, QByteArray>
+DeviceInfoModel::roleNames() const
+{
+    return {
+      {DeviceId, "deviceId"},
+      {DeviceName, "deviceName"},
+      {VerificationStatus, "verificationStatus"},
+      {LastIp, "lastIp"},
+      {LastTs, "lastTs"},
+    };
+}
+
+QVariant
+DeviceInfoModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() >= (int)deviceList_.size() || index.row() < 0)
+        return {};
+
+    switch (role) {
+    case DeviceId:
+        return deviceList_[index.row()].device_id;
+    case DeviceName:
+        return deviceList_[index.row()].display_name;
+    case VerificationStatus:
+        return QVariant::fromValue(deviceList_[index.row()].verification_status);
+    case LastIp:
+        return deviceList_[index.row()].lastIp;
+    case LastTs:
+        return deviceList_[index.row()].lastTs;
+    default:
+        return {};
+    }
+}
+
 void
 DeviceInfoModel::reset(const std::vector<DeviceInfo> &deviceList)
 {
+    beginResetModel();
     this->deviceList_ = std::move(deviceList);
+    endResetModel();
 }
-
 DeviceInfoModel *
 UserProfile::deviceList()
 {
@@ -257,7 +293,7 @@ UserProfile::updateVerificationStatus()
 void
 UserProfile::banUser()
 {
-    Client::instance()->timeline(roomid_)->banUser(this->userid_, "");
+    _timeline->banUser(this->userid_, "");
 }
 
 // void ignoreUser(){
@@ -267,7 +303,7 @@ UserProfile::banUser()
 void
 UserProfile::kickUser()
 {
-    Client::instance()->timeline(roomid_)->kickUser(this->userid_, "");
+    _timeline->kickUser(this->userid_, "");
 }
 
 void

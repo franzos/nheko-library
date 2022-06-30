@@ -197,7 +197,7 @@ set(DEP_LIBS
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
 	list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
 else()
-	list(APPEND DEP_LIBS px-auth-lib)
+	list(APPEND DEP_LIBS px-auth-lib-cpp)
 endif()
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)

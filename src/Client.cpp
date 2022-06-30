@@ -131,6 +131,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
+    
     _verificationManager = new VerificationManager(this);
     _authentication = new Authentication();
     connect(_authentication,
