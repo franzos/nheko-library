@@ -184,7 +184,6 @@ endif()
 
 set(DEP_LIBS 
 	MatrixClient::MatrixClient
-	px-auth-lib-cpp
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
@@ -194,6 +193,12 @@ set(DEP_LIBS
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+	list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
+else()
+	list(APPEND DEP_LIBS px-auth-lib-cpp)
+endif()
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 install(TARGETS matrix-client-library DESTINATION lib)
