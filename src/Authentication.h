@@ -16,7 +16,7 @@ public:
     Authentication(QObject *parent = nullptr);
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
-    void loginWithCiba(QString username,QString server);
+    void loginWithCiba(QString username,QString server,QString accessToken);
     void serverDiscovery(std::string hostName);
     QVariantMap availableLogin(const QString &server);
 

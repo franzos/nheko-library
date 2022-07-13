@@ -108,7 +108,7 @@ public slots:
                                   const SecretsToDecrypt &secrets);
     // Authentication
     void loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress);
-    void loginWithCiba(QString username,QString server);
+    void loginWithCiba(QString username,QString server,QString accessToken = "");
     bool hasValidUser();
     UserInformation userInformation();
     void userInformation(const QString &mxid);

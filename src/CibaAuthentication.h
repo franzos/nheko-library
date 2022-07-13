@@ -15,7 +15,7 @@ class CibaAuthentication: public QObject{
 
 public:
     CibaAuthentication();
-    void loginRequest(const QString &serverAddress, const QString &user);
+    void loginRequest(const QString &serverAddress, const QString &user, const QString &accessToken = "");
     RestRequestResponse checkRegistration(QString accessToken);
     RestRequestResponse registeration(QString accessToken);
     RestRequestResponse login(QString accessToken,QString user);  
