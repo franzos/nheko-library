@@ -69,13 +69,13 @@ void Authentication::serverDiscovery(std::string hostName){
     });
 }
 
-void Authentication::loginWithCiba(QString username,QString server){
+void Authentication::loginWithCiba(QString username,QString server,QString accessToken){
     cibaServer = server;
     std::string errMsg;
     auto opts = availableLogin(server);
     if(!opts.isEmpty()){
-        if(isCibaSupported(opts)) {   
-            _ciba->loginRequest(server, username);
+        if(isCibaSupported(opts)) {
+            _ciba->loginRequest(server, username, accessToken);
             return;
         } else {
             errMsg = "Ciba is not supported";

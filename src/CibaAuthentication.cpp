@@ -9,7 +9,7 @@
 CibaAuthentication::CibaAuthentication(){
 }
 
-void CibaAuthentication::loginRequest(const QString &serverAddress, const QString &username){
+void CibaAuthentication::loginRequest(const QString &serverAddress, const QString &username, const QString &accessToken){
     RestRequest restRequest;
     QString requestId = "";
     QMap<QString, QString> headers;
@@ -17,6 +17,10 @@ void CibaAuthentication::loginRequest(const QString &serverAddress, const QStrin
     headers.insert("Content-Type", "application/json");   
     data.insert("login_hint_token", username);       
     _serverAddress = serverAddress;
+    if(!accessToken.isEmpty()){
+        emit loginOk(accessToken, username);
+        return;
+    }
     QString urlLoginRequest = _serverAddress+"/_synapse/client/cm_login/ciba";
     QString response;
     int resCode = restRequest.post( urlLoginRequest , headers,{}, data, response);

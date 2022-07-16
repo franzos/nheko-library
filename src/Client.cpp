@@ -1265,8 +1265,8 @@ void Client::removeTimeline(const QString &roomID){
     }
 }
 
-void Client::loginWithCiba(QString username,QString server){
-    _authentication->loginWithCiba(username,server);
+void Client::loginWithCiba(QString username,QString server, QString accessToken){
+    _authentication->loginWithCiba(username,server, accessToken);
 }
 
 void Client::loginCibaCb(UserInformation userInfo){
