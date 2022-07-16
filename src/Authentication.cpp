@@ -138,7 +138,7 @@ QVariantMap Authentication::availableLogin(const QString &server){
 }
 
 bool Authentication::isCibaSupported(const QVariantMap &loginOpts){
-    for(auto const o: loginOpts.toStdMap()){
+    for(auto const &o: loginOpts.toStdMap()){
         if((o.first=="CIBA")){
             return true;
         }
