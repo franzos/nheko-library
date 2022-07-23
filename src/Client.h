@@ -216,6 +216,7 @@ private:
     void createTimelinesFromDB();
     void addTimeline(const QString &roomID); 
     void removeTimeline(const QString &roomID); 
+    void loginDone(const UserInformation &user);
 
     using UserID      = QString;
     using Membership  = mtx::events::StateEvent<mtx::events::state::Member>;

@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.4]
+### Changed
+
+* Get permissions of timeline.
+* Kick and ban user added.
+* Sign-out from device added.
+* Cleaning the old DB after each successful login if DB is exist.
+
+
 ## [0.1.3]
 ### Changed
 
