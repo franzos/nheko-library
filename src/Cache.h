@@ -92,6 +92,9 @@ isInitialized();
 std::string
 nextBatchToken();
 
+void deleteDB(const QString &cacheDirectory);
+QString cacheDirectory(const QString &localUserId, const QString &profile);
+
 void
 deleteData();
 

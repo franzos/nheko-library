@@ -227,8 +227,7 @@ public:
     void sync(const mtx::responses::JoinedRoom &room);
     void initialSync();
     QString escapeEmoji(QString str) const;
-    QString id() {return _roomId;};
-    Permissions *permissions() { return &_permissions; };
+    QString id() {return _roomId;};    
     using UserReceipts = std::multimap<uint64_t, std::string, std::greater<uint64_t>>;
 
 signals:
@@ -245,6 +244,7 @@ signals:
     void newReadReceipts(const std::vector<QString> &event_ids);
 
 public slots:
+    Permissions *permissions() { return &_permissions; };
     bool canFetchMore() const;
     void setDecryptDescription(bool decrypt) { _decryptDescription = decrypt; }
     int  eventSize() {return _events.size();};

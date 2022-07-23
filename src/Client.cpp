@@ -131,6 +131,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
+    
     _verificationManager = new VerificationManager(this);
     _authentication = new Authentication();
     connect(_authentication,
@@ -340,6 +341,7 @@ Client::logoutCb()
     connectivityTimer_.stop();
     emit logoutOk();
 }
+
 void
 Client::loginCb(const mtx::responses::Login &res)
 {
@@ -358,6 +360,11 @@ Client::loginCb(const mtx::responses::Login &res)
     user.homeServer = homeserver;
     user.deviceId = device_id;
     user.accessToken = token;
+    loginDone(user);
+}
+
+void Client::loginDone(const UserInformation &user){
+    cache::deleteDB(cache::cacheDirectory(user.userId, userSettings_.data()->profile()));
     emit loginOk(user);
 }
 
@@ -1148,7 +1155,7 @@ void Client::loginWithPassword(QString deviceName, QString userId, QString passw
 }
 
 bool Client::hasValidUser(){
-     if (UserSettings::instance()->accessToken() != "") {
+    if (UserSettings::instance()->accessToken() != "") {
         return true;
     }
     return false;
@@ -1273,8 +1280,8 @@ void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setCMUserId(userInfo.cmUserId);
     userSettings_.data()->setAccessToken(userInfo.accessToken);
     userSettings_.data()->setDeviceId(userInfo.deviceId);
-    userSettings_.data()->setHomeserver(userInfo.homeServer);    
-    emit loginOk(userInfo);
+    userSettings_.data()->setHomeserver(userInfo.homeServer);
+    loginDone(userInfo);
 }
 
 QString Client::getLibraryVersion(){

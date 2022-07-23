@@ -226,13 +226,8 @@ Cache::setup()
 
     nhlog::db()->debug("setting up cache");
 
-    cacheDirectory_ = QString("%1/%2%3")
-                        .arg(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
-                        .arg(QString::fromUtf8(localUserId_.toUtf8().toHex()))
-                        .arg(QString::fromUtf8(settings->profile().toUtf8().toHex()));
-
+    cacheDirectory_ = cache::cacheDirectory(localUserId_, settings->profile());
     bool isInitial = !QFile::exists(cacheDirectory_);
-
     env_ = lmdb::env::create();
     env_.set_mapsize(DB_SIZE);
     env_.set_max_dbs(MAX_DBS);
@@ -929,19 +924,12 @@ Cache::deleteData()
         env_.close();
 
         verification_storage.status.clear();
-
-        if (!cacheDirectory_.isEmpty()) {
-            QDir(cacheDirectory_).removeRecursively();
-            nhlog::db()->info("deleted cache files from disk");
-        } else {
-            nhlog::db()->info("\"{}\" was empty",cacheDirectory_.toStdString());
-        }
-
         deleteSecret(mtx::secret_storage::secrets::megolm_backup_v1);
         deleteSecret(mtx::secret_storage::secrets::cross_signing_master);
         deleteSecret(mtx::secret_storage::secrets::cross_signing_user_signing);
         deleteSecret(mtx::secret_storage::secrets::cross_signing_self_signing);
         deleteSecret("pickle_secret", true);
+        cache::deleteDB(cacheDirectory_);
     }
 }
 
@@ -4559,6 +4547,22 @@ std::string
 nextBatchToken()
 {
     return instance_->nextBatchToken();
+}
+
+void deleteDB(const QString &cacheDirectory){
+    if (!cacheDirectory.isEmpty()) {
+        QDir(cacheDirectory).removeRecursively();
+        nhlog::db()->info("deleted cache files from disk");
+    } else {
+        nhlog::db()->info("\"{}\" was empty",cacheDirectory.toStdString());
+    }
+}
+
+QString cacheDirectory(const QString &localUserId, const QString &profile){
+    return QString("%1/%2%3")
+                    .arg(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
+                    .arg(QString::fromUtf8(localUserId.toUtf8().toHex()))
+                    .arg(QString::fromUtf8(profile.toUtf8().toHex()));
 }
 
 void
