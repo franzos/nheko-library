@@ -6,8 +6,6 @@
 
 #include <mtxclient/http/client.hpp>
 
-#include <curl/curl.h>
-
 #include "Logging.h"
 
 namespace http {
