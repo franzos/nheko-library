@@ -259,6 +259,12 @@ UserSettings::save()
 {
     settings.beginGroup("user");
     settings.setValue("currentProfile", profile_);
+    settings.setValue("ringtone", ringtone_);
+    settings.setValue("microphone", microphone_);
+    settings.setValue("camera", camera_);
+    settings.setValue("camera_resolution", cameraResolution_);
+    settings.setValue("camera_frame_rate", cameraFrameRate_);
+    settings.setValue("use_stun_server", useStunServer_);
     settings.endGroup(); // user
 
     QString prefix = (profile_ != "" && profile_ != "default") ? "profile/" + profile_ + "/" : "";
@@ -273,14 +279,7 @@ UserSettings::save()
     settings.setValue(prefix + "user/only_share_keys_with_verified_users",
                       onlyShareKeysWithVerifiedUsers_);
     settings.setValue(prefix + "user/online_key_backup", useOnlineKeyBackup_);
-
     settings.setValue("disable_certificate_validation", disableCertificateValidation_);
-    settings.setValue("ringtone", ringtone_);
-    settings.setValue("microphone", microphone_);
-    settings.setValue("camera", camera_);
-    settings.setValue("camera_resolution", cameraResolution_);
-    settings.setValue("camera_frame_rate", cameraFrameRate_);
-    settings.setValue("use_stun_server", useStunServer_);
 
     QMap<QString, QString>::iterator i;
     for (i = secretsMap_.begin(); i != secretsMap_.end(); ++i) {
