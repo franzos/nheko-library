@@ -32,6 +32,7 @@ Q_DECLARE_METATYPE(std::optional<RelatedInfo>)
 Q_DECLARE_METATYPE(mtx::presence::PresenceState)
 Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
+Q_DECLARE_METATYPE(std::vector<DeviceInfo>)
 
 
 namespace {
@@ -131,6 +132,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
+    qRegisterMetaType<std::vector<DeviceInfo>>();
 
     _verificationManager = new VerificationManager(this);
     _authentication = new Authentication();
