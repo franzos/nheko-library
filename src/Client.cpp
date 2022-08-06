@@ -131,7 +131,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
-    
+
     _verificationManager = new VerificationManager(this);
     _authentication = new Authentication();
     connect(_authentication,
@@ -1290,6 +1290,19 @@ QString Client::getLibraryVersion(){
 
 QVariantMap Client::loginOptions(QString server){
     return _authentication->availableLogin(server);
+}
+
+QVector<RoomMember> Client::knownUsers(const QString &filter){
+    QVector<RoomMember> knownUsers;
+    for(auto const& t: _timelines.toStdMap()){
+        auto members = t.second->getMembers();
+        for(auto const &m: members){
+            if(m.user_id != UserSettings::instance()->userId() && (m.user_id.contains(filter) || m.display_name.contains(filter))){
+                knownUsers.push_back(m);
+            }
+        }
+    }
+    return knownUsers;
 }
 
 QString Client::extractHostName(QString userId){
