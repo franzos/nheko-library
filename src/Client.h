@@ -34,6 +34,7 @@
 #include "timeline/Timeline.h"
 #include "encryption/VerificationManager.h"
 #include "PresenceEmitter.h"
+#include "UserInformation.h"
 
 class UserSettings;
 class CallManager;
@@ -89,7 +90,7 @@ public:
                       .toStdString(), enable, enableDebugLogs);    
     }
     Q_INVOKABLE QVariantMap loginOptions(QString server);
-    QVector<RoomMember> knownUsers(const QString &filter = "");
+    QVector<UserInformation> knownUsers(const QString &filter = "");
 
     CallManager *callManager() { return callManager_; }
 

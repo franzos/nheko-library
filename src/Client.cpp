@@ -1294,13 +1294,17 @@ QVariantMap Client::loginOptions(QString server){
     return _authentication->availableLogin(server);
 }
 
-QVector<RoomMember> Client::knownUsers(const QString &filter){
-    QVector<RoomMember> knownUsers;
+QVector<UserInformation> Client::knownUsers(const QString &filter){
+    QVector<UserInformation> knownUsers;
     for(auto const& t: _timelines.toStdMap()){
         auto members = t.second->getMembers();
         for(auto const &m: members){
             if(m.user_id != UserSettings::instance()->userId() && (m.user_id.contains(filter) || m.display_name.contains(filter))){
-                knownUsers.push_back(m);
+                UserInformation uinfo;
+                uinfo.userId = m.user_id;
+                uinfo.displayName = m.display_name;
+                uinfo.avatarUrl = t.second->avatarUrl(m.user_id);
+                knownUsers.push_back(uinfo);
             }
         }
     }

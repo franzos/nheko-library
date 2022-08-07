@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## [0.1.6]
+## [0.1.7]
 ### Changed
 
 * Get list of known users (members of existing group/private chats).
