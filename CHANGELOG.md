@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Changed
 
 * Get list of known users (members of existing group/private chats).
+* Remove Image providers class to gui library.
 
 
 ## [0.1.5]

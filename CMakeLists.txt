@@ -64,10 +64,8 @@ set(SRC_FILES
 	src/Cache.cpp
 	src/Client.cpp
 	src/EventAccessors.cpp
-	src/JdenticonProvider.cpp
 	src/Logging.cpp
 	src/MatrixClient.cpp
-	src/MxcImageProvider.cpp
 	src/PresenceEmitter.cpp
 	src/UIA.cpp
 	src/UserProfile.cpp
@@ -115,10 +113,8 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/Authentication.h
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
-	src/JdenticonProvider.h
 	src/Client.h
 	src/Config.h
-	src/MxcImageProvider.h
 	src/PresenceEmitter.h
 	src/UIA.h
 	src/UserProfile.h	
@@ -154,9 +150,6 @@ set(HEADERS
 	RestRequest.h
 	Cache.h	
 	EventAccessors.h
-	jdenticoninterface.h
-	JdenticonProvider.h
-	MxcImageProvider.h
 	Logging.h
 	MatrixClient.h
 	PresenceEmitter.h
