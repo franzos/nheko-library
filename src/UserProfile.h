@@ -10,9 +10,8 @@
 #include <QVector>
 #include <mtx/responses.hpp>
 #include <mtx/responses/common.hpp>
-
+#include "Client.h"
 #include "CacheCryptoStructs.h"
-#include "timeline/Timeline.h"
 
 namespace verification {
 Q_NAMESPACE
@@ -113,7 +112,7 @@ class UserProfile : public QObject
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY loadingChanged)
     Q_PROPERTY(bool userVerificationEnabled READ userVerificationEnabled NOTIFY userStatusChanged)
     Q_PROPERTY(bool isSelf READ isSelf CONSTANT)
-    Q_PROPERTY(Timeline *room READ room CONSTANT)
+
 public:
     UserProfile(QString roomid,
                 QString userid,
@@ -129,8 +128,6 @@ public:
     bool userVerificationEnabled() const;
     bool isSelf() const;
     bool isLoading() const;
-    Timeline *room() const { return _timeline; }
-
 
     Q_INVOKABLE void verify(QString device = "");
     Q_INVOKABLE void unverify(QString device = "");
@@ -178,5 +175,4 @@ private:
     crypto::Trust isUserVerified = crypto::Trust::Unverified;
     bool hasMasterKey            = false;
     bool isLoading_              = false;
-    Timeline    *_timeline;
 };

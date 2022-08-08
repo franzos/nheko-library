@@ -23,7 +23,6 @@ UserProfile::UserProfile(QString roomid,
     QObject(parent)
   , roomid_(roomid)
   , userid_(userid)
-  , _timeline(Client::instance()->timeline(roomid_))
 {
     globalAvatarUrl = "";
 
@@ -293,7 +292,7 @@ UserProfile::updateVerificationStatus()
 void
 UserProfile::banUser()
 {
-    _timeline->banUser(this->userid_, "");
+    Client::instance()->timeline(roomid_)->banUser(this->userid_, "");
 }
 
 // void ignoreUser(){
@@ -303,7 +302,7 @@ UserProfile::banUser()
 void
 UserProfile::kickUser()
 {
-    _timeline->kickUser(this->userid_, "");
+    Client::instance()->timeline(roomid_)->kickUser(this->userid_, "");
 }
 
 void
