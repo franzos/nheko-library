@@ -21,10 +21,7 @@
 #include "encryption/Olm.h"
 #include "voip/CallManager.h"
 #include "Application.h"
-
-#ifdef PX_ACCOUNTS
 #include "px/PxCMManager.h"
-#endif
 
 Client *Client::instance_  = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
@@ -193,9 +190,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit cmUserInfoFailure(message);
     });
 
-#ifdef PX_ACCOUNTS
-    _cmManager = new PxCMManager();
-#endif
+    cmManager_ = new PxCMManager();
 
     //
     connect(this,
@@ -1204,17 +1199,14 @@ void Client::serverDiscovery(QString hostName){
 
 void Client::start(QString userId, QString homeServer, QString token){
 
-#ifdef PX_ACCOUNTS
     if (userId.isEmpty()) {
-        nhlog::dev()->debug("PantherX accounts integration is enabled");
-        auto account = _cmManager->getAccount(userId.toStdString());
+        auto account = cmManager_->getAccount(userId.toStdString());
         if (account.has_value()) {
             userId = QString::fromStdString(account.value().userId);
             homeServer = QString::fromStdString(account.value().homeServer);
             token = QString::fromStdString(account.value().accessToken);
         }
     }
-#endif
 
     if(userId.isEmpty()){
         if(hasValidUser()){

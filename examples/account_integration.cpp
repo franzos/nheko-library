@@ -32,6 +32,8 @@ int main(int argc, char *argv[]) {
         for (auto const &r : rooms.toStdMap()) {
             cout << "Joined rooms: " << r.first.toStdString() << endl;
         }
+        client->stop();
+        QApplication::exit(0);
     });
     client->enableLogger(false, false);
     client->start();

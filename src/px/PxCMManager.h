@@ -3,8 +3,8 @@
 #include <iostream>
 #include <optional>
 
-#include "PxAccountsClient.h"
-#include "PxSecretsClient.h"
+class PxAccountsClient;
+class PxSecretClient;
 
 struct CMAccount {
     std::string userId;
@@ -17,12 +17,12 @@ struct CMAccount {
 
 class PxCMManager {
    public:
-    explicit PxCMManager() = default;
-    virtual ~PxCMManager() = default;
+    explicit PxCMManager();
+    virtual ~PxCMManager();
 
     std::optional<CMAccount> getAccount(const std::string &userId);
 
    private:
-    PxAccountsClient rpcAccounts_;
-    PxSecretClient rpcSecrets_;
+    PxAccountsClient *rpcAccounts_ = nullptr;
+    PxSecretClient *rpcSecrets_ = nullptr;
 };

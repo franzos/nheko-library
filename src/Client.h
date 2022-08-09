@@ -37,10 +37,7 @@
 
 class UserSettings;
 class CallManager;
-
-#ifdef PX_ACCOUNTS
 class PxCMManager;
-#endif
 
 namespace mtx::requests {
 struct CreateRoom;
@@ -207,10 +204,6 @@ private:
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
 
-#ifdef PX_ACCOUNTS
-    PxCMManager *_cmManager;
-#endif
-
     Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
     void tryInitialSync();
@@ -242,8 +235,9 @@ private:
     PresenceEmitter *_presenceEmitter = nullptr;
     std::atomic_bool isConnected_;
     // Global user settings.
-    CallManager *callManager_;
     QSharedPointer<UserSettings> userSettings_;    
+    CallManager *callManager_;
+    PxCMManager *cmManager_;
 };
 
 template<class Collection>

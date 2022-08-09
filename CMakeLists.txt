@@ -20,7 +20,10 @@ if(VOIP)
 	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
 endif()
 
-option(PX_INTEGRATION "Whether the integration with PantherX services enabled or not" OFF)
+option(PX_ACCOUNTS_INTEGRATION "Whether the integration with PantherX Accounts and Secrets services enabled or not" OFF)
+
+option(BUILD_EXAMPLES "Whether build the examples or not" OFF)
+option(BUILD_TESTS "Whether build the tests or not" OFF)
 
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
@@ -60,6 +63,7 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
+	src/px/PxCMManager.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
 	src/voip/WebRTCSession.cpp
@@ -184,8 +188,8 @@ set(DEP_LIBS
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
 
-if (PX_INTEGRATION)
-	message("PantherX services integration set to enabled.")
+if (PX_ACCOUNTS_INTEGRATION)
+	message("PantherX Accounts and Secrets services integration set to enabled.")
 	
 	find_package(CapnProto CONFIG REQUIRED)
 	set(INTERFACE_DIR interfaces)
@@ -202,10 +206,9 @@ if (PX_INTEGRATION)
 		${CAPNPC_OUTPUT_DIR}
 		${CMAKE_CURRENT_BINARY_DIR})
 
-	add_definitions(-DPX_ACCOUNTS)
+	add_definitions(-DPX_ACCOUNTS_INTEGRATION)
 	list(APPEND MATRIX_LIB_DEPS
 				src/px/RpcClient.cpp
-				src/px/PxCMManager.cpp
 				src/px/PxAccountsClient.cpp
 				src/px/PxSecretsClient.cpp
 				${CapnpSources} ${CapnpHeaders})
@@ -269,7 +272,7 @@ IF(BUILD_EXAMPLES)
 		target_compile_definitions(webrtc_example PRIVATE GSTREAMER_AVAILABLE)
 	endif(VOIP)
 
-	IF (PX_INTEGRATION)
+	IF (PX_ACCOUNTS_INTEGRATION)
 		add_executable(account_integration examples/account_integration.cpp
 										   ${CapnpSources} ${CapnpHeaders})
 		target_link_libraries(account_integration matrix-client-library

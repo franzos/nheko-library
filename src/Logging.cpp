@@ -18,6 +18,7 @@ std::shared_ptr<spdlog::logger> net_logger    = nullptr;
 std::shared_ptr<spdlog::logger> crypto_logger = nullptr;
 std::shared_ptr<spdlog::logger> ui_logger     = nullptr;
 std::shared_ptr<spdlog::logger> dev_logger    = nullptr;
+std::shared_ptr<spdlog::logger> px_logger     = nullptr;
 
 constexpr auto MAX_FILE_SIZE = 1024 * 1024 * 6;
 constexpr auto MAX_LOG_FILES = 3;
@@ -75,6 +76,7 @@ init(const std::string &file_path, bool enable_logger, bool enable_debug_log)
     db_logger     = std::make_shared<spdlog::logger>("db", std::begin(sinks), std::end(sinks));
     crypto_logger = std::make_shared<spdlog::logger>("crypto", std::begin(sinks), std::end(sinks));
     dev_logger    = std::make_shared<spdlog::logger>("dev", std::begin(sinks), std::end(sinks));
+    px_logger     = std::make_shared<spdlog::logger>("px", std::begin(sinks), std::end(sinks));
 
     spdlog::level::level_enum logLevel = spdlog::level::off;
     if(enable_logger){
@@ -121,5 +123,11 @@ std::shared_ptr<spdlog::logger>
 dev()
 {
     return dev_logger;
+}
+
+std::shared_ptr<spdlog::logger>
+px()
+{
+    return px_logger;
 }
 }
