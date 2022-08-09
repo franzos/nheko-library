@@ -92,3 +92,14 @@ std::map<QString, RoomInfo> Client::joinedRoomList()
 * `Log`: `~/.local/share/matrix-client-library/APP_NAME/matrix-client-library.log`
 * `Cache` (qml and media): `~/.cache/matrix-client-library/APP_NAME/`
 * `Cache Info`: `~/.cache/matrix-client-library/APP_NAME/info`
+
+
+## PantherX Accounts And Secrets service integration
+
+in order to have the support for PantherX Online Accounts and Secret services integration, we need to build the library with the following flag: `-DPX_ACCOUNTS_INTEGRATION=ON`
+
+```shell
+$ mkdir build && cd build
+$ cmake -DPX_ACCOUNTS_INTEGRATION=ON ..
+$ make
+```
