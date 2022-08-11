@@ -58,10 +58,22 @@ qml_mtx_events::toRoomEventType(mtx::events::EventType e)
         return qml_mtx_events::EventType::Sticker;
     case EventType::Tag:
         return qml_mtx_events::EventType::Tag;
+    case EventType::PolicyRuleUser:
+        return qml_mtx_events::EventType::PolicyRuleUser;
+    case EventType::PolicyRuleRoom:
+        return qml_mtx_events::EventType::PolicyRuleRoom;
+    case EventType::PolicyRuleServer:
+        return qml_mtx_events::EventType::PolicyRuleServer;
     case EventType::SpaceParent:
         return qml_mtx_events::EventType::SpaceParent;
     case EventType::SpaceChild:
         return qml_mtx_events::EventType::SpaceChild;
+    case EventType::ImagePackInRoom:
+        return qml_mtx_events::ImagePackInRoom;
+    case EventType::ImagePackInAccountData:
+        return qml_mtx_events::ImagePackInAccountData;
+    case EventType::ImagePackRooms:
+        return qml_mtx_events::ImagePackRooms;
     case EventType::Unsupported:
         return qml_mtx_events::EventType::Unsupported;
     default:
@@ -165,6 +177,12 @@ qml_mtx_events::fromRoomEventType(qml_mtx_events::EventType t)
     // m.tag
     case qml_mtx_events::Tag:
         return mtx::events::EventType::Tag;
+    case qml_mtx_events::PolicyRuleUser:
+        return mtx::events::EventType::PolicyRuleUser;
+    case qml_mtx_events::PolicyRuleRoom:
+        return mtx::events::EventType::PolicyRuleRoom;
+    case qml_mtx_events::PolicyRuleServer:
+        return mtx::events::EventType::PolicyRuleServer;
     // m.space.parent
     case qml_mtx_events::SpaceParent:
         return mtx::events::EventType::SpaceParent;
@@ -250,7 +268,7 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
             this,
             [this](mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> msg) {
                 (void)msg; // TODO
-                // ChatPage::instance()->receivedRoomDeviceVerificationRequest(msg, this);
+                // Client::instance()->receivedRoomDeviceVerificationRequest(msg, this);
             });
     connect(&_events, &EventStore::updateFlowEventId, this, [this](std::string event_id) {
         (void)event_id; // TODO
@@ -283,8 +301,8 @@ Timeline::sendEncryptedMessage(mtx::events::RoomEvent<T> msg, mtx::events::Event
     using namespace mtx::events;
     using namespace mtx::identifiers;
 
-    json doc = {{"type", mtx::events::to_string(eventType)},
-                {"content", json(msg.content)},
+    nlohmann::json doc = {{"type", mtx::events::to_string(eventType)},
+                          {"content", nlohmann::json(msg.content)},
                 {"room_id", room_id}};
 
     try {
@@ -296,18 +314,18 @@ Timeline::sendEncryptedMessage(mtx::events::RoomEvent<T> msg, mtx::events::Event
         event.type     = mtx::events::EventType::RoomEncrypted;
         event.origin_server_ts = QDateTime::currentMSecsSinceEpoch();
 
-        emit addPendingMessageToStore(event);
+        emit this->addPendingMessageToStore(event);
 
         // TODO: Let the user know about the errors.
     } catch (const lmdb::error &e) {
         nhlog::db()->critical("failed to open outbound megolm session ({}): {}", room_id, e.what());
-        // emit ChatPage::instance()->showNotification(
-        //   tr("Failed to encrypt event, sending aborted!"));
+        emit Client::instance()->showNotification(
+          tr("Failed to encrypt event, sending aborted!"));
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical(
           "failed to open outbound megolm session ({}): {}", room_id, e.what());
-     //     emit ChatPage::instance()->showNotification(
-     //       tr("Failed to encrypt event, sending aborted!"));
+        emit Client::instance()->showNotification(
+          tr("Failed to encrypt event, sending aborted!"));
     }
 }
 
@@ -324,6 +342,11 @@ struct SendMessageVisitor
             auto encInfo = mtx::accessors::file(msg);
             if (encInfo)
                 emit _timeline->newEncryptedImage(encInfo.value());
+
+            encInfo = mtx::accessors::thumbnail_file(msg);
+            if (encInfo)
+                emit _timeline->newEncryptedImage(encInfo.value());
+
             _timeline->sendEncryptedMessage(msg, Event);
         } else {
             msg.type = Event;
@@ -355,25 +378,25 @@ struct SendMessageVisitor
         emit _timeline->addPendingMessageToStore(msg);
     }
 
-    void operator()(const mtx::events::RoomEvent<mtx::events::msg::CallInvite> &event)
+    void operator()(const mtx::events::RoomEvent<mtx::events::voip::CallInvite> &event)
     {
-        sendRoomEvent<mtx::events::msg::CallInvite, mtx::events::EventType::CallInvite>(event);
+        sendRoomEvent<mtx::events::voip::CallInvite, mtx::events::EventType::CallInvite>(event);
     }
 
-    void operator()(const mtx::events::RoomEvent<mtx::events::msg::CallCandidates> &event)
+    void operator()(const mtx::events::RoomEvent<mtx::events::voip::CallCandidates> &event)
     {
-        sendRoomEvent<mtx::events::msg::CallCandidates, mtx::events::EventType::CallCandidates>(
+        sendRoomEvent<mtx::events::voip::CallCandidates, mtx::events::EventType::CallCandidates>(
           event);
     }
 
-    void operator()(const mtx::events::RoomEvent<mtx::events::msg::CallAnswer> &event)
+    void operator()(const mtx::events::RoomEvent<mtx::events::voip::CallAnswer> &event)
     {
-        sendRoomEvent<mtx::events::msg::CallAnswer, mtx::events::EventType::CallAnswer>(event);
+        sendRoomEvent<mtx::events::voip::CallAnswer, mtx::events::EventType::CallAnswer>(event);
     }
 
-    void operator()(const mtx::events::RoomEvent<mtx::events::msg::CallHangUp> &event)
+    void operator()(const mtx::events::RoomEvent<mtx::events::voip::CallHangUp> &event)
     {
-        sendRoomEvent<mtx::events::msg::CallHangUp, mtx::events::EventType::CallHangUp>(event);
+        sendRoomEvent<mtx::events::voip::CallHangUp, mtx::events::EventType::CallHangUp>(event);
     }
 
     void operator()(const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &msg)
@@ -507,17 +530,17 @@ void Timeline::addEvents(const mtx::responses::Timeline &timeline){
                 e = result.event.value();
         }
 
-        if (std::holds_alternative<RoomEvent<msg::CallCandidates>>(e) ||
-            std::holds_alternative<RoomEvent<msg::CallInvite>>(e) ||
-            std::holds_alternative<RoomEvent<msg::CallAnswer>>(e) ||
-            std::holds_alternative<RoomEvent<msg::CallHangUp>>(e))
+        if (std::holds_alternative<RoomEvent<voip::CallCandidates>>(e) ||
+            std::holds_alternative<RoomEvent<voip::CallInvite>>(e) ||
+            std::holds_alternative<RoomEvent<voip::CallAnswer>>(e) ||
+            std::holds_alternative<RoomEvent<voip::CallHangUp>>(e))
             std::visit(
               [this](auto &event) {
                   event.room_id = _roomId.toStdString();
                   if constexpr (std::is_same_v<std::decay_t<decltype(event)>,
-                                               RoomEvent<msg::CallAnswer>> ||
+                                               RoomEvent<voip::CallAnswer>> ||
                                 std::is_same_v<std::decay_t<decltype(event)>,
-                                               RoomEvent<msg::CallHangUp>>)
+                                               RoomEvent<voip::CallHangUp>>)
                       emit newCallEvent(event);
                   else {
                       if (event.sender != http::client()->user_id().to_string())
@@ -525,23 +548,27 @@ void Timeline::addEvents(const mtx::responses::Timeline &timeline){
                   }
               },
               e);
-    //     else if (std::holds_alternative<StateEvent<state::Avatar>>(e))
-    //         emit roomAvatarUrlChanged();
-    //     else if (std::holds_alternative<StateEvent<state::Name>>(e))
-    //         emit roomNameChanged();
-    //     else if (std::holds_alternative<StateEvent<state::Topic>>(e))
-    //         emit roomTopicChanged();
-    //     else if (std::holds_alternative<StateEvent<state::PowerLevels>>(e)) {
-    //         permissions_.invalidate();
-    //         emit permissionsChanged();
-    //     } else if (std::holds_alternative<StateEvent<state::Member>>(e)) {
-    //         emit roomAvatarUrlChanged();
-    //         emit roomNameChanged();
-    //         emit CountChanged();
-    //     } else if (std::holds_alternative<StateEvent<state::Encryption>>(e)) {
-    //         this->isEncrypted_ = cache::isRoomEncrypted(room_id_.toStdString());
-    //         emit encryptionChanged();
-    //     }
+        // else if (std::holds_alternative<StateEvent<state::Avatar>>(e))
+        //     emit roomAvatarUrlChanged();
+        // else if (std::holds_alternative<StateEvent<state::Name>>(e))
+        //     emit roomNameChanged();
+        // else if (std::holds_alternative<StateEvent<state::Topic>>(e))
+        //     emit roomTopicChanged();
+        // else if (std::holds_alternative<StateEvent<state::PinnedEvents>>(e))
+        //     emit pinnedMessagesChanged();
+        // else if (std::holds_alternative<StateEvent<state::Widget>>(e))
+        //     emit widgetLinksChanged();
+        // else if (std::holds_alternative<StateEvent<state::PowerLevels>>(e)) {
+        //     permissions_.invalidate();
+        //     emit permissionsChanged();
+        // } else if (std::holds_alternative<StateEvent<state::Member>>(e)) {
+        //     emit roomAvatarUrlChanged();
+        //     emit roomNameChanged();
+        //     emit roomMemberCountChanged();
+        // } else if (std::holds_alternative<StateEvent<state::Encryption>>(e)) {
+        //     this->isEncrypted_ = cache::isRoomEncrypted(room_id_.toStdString());
+        //     emit encryptionChanged();
+        // }
     }
     updateLastMessage();
 }
@@ -584,37 +611,56 @@ isMessage(const mtx::events::EncryptedEvent<T> &)
 }
 
 auto
-isMessage(const mtx::events::RoomEvent<mtx::events::msg::CallInvite> &)
+isMessage(const mtx::events::RoomEvent<mtx::events::voip::CallInvite> &)
 {
     return true;
 }
 
 auto
-isMessage(const mtx::events::RoomEvent<mtx::events::msg::CallAnswer> &)
+isMessage(const mtx::events::RoomEvent<mtx::events::voip::CallAnswer> &)
 {
     return true;
 }
 auto
-isMessage(const mtx::events::RoomEvent<mtx::events::msg::CallHangUp> &)
+isMessage(const mtx::events::RoomEvent<mtx::events::voip::CallHangUp> &)
 {
     return true;
 }
 
-void Timeline::updateLastMessage(){
-    for (auto it = _events.size() - 1; it >= 0; --it) {
+DescInfo
+Timeline::lastMessage() const
+{
+    if (_lastMessage.event_id.isEmpty())
+        QTimer::singleShot(0, this, &Timeline::updateLastMessage);
+
+    return _lastMessage;
+}
+
+void
+Timeline::updateLastMessage()
+{
+    // only try to generate a preview for the last 1000 messages
+    auto end = std::max(_events.size() - 1001, 0);
+    for (auto it = _events.size() - 1; it >= end; --it) {
         auto event = _events.get(it, _decryptDescription);
         if (!event)
             continue;
+
         if (std::visit([](const auto &e) -> bool { return isYourJoin(e); }, *event)) {
             auto time   = mtx::accessors::origin_server_ts(*event);
             uint64_t ts = time.toMSecsSinceEpoch();
-            auto description = DescInfo{QString::fromStdString(mtx::accessors::event_id(*event)),
+            auto description =
+              DescInfo{QString::fromStdString(mtx::accessors::event_id(*event)),
                                 QString::fromStdString(http::client()->user_id().to_string()),
                                 tr("You joined this room."),
                                 utils::descriptiveTime(time),
                                 ts,
                                 time,true};
             if (description != _lastMessage) {
+                if (_lastMessage.timestamp == 0) {
+                    cache::client()->updateLastMessageTimestamp(_roomId.toStdString(),
+                                                                description.timestamp);
+                }
                 _lastMessage = description;
                 emit lastMessageChanged(_lastMessage);
             }
@@ -628,6 +674,10 @@ void Timeline::updateLastMessage(){
           QString::fromStdString(http::client()->user_id().to_string()),
           cache::displayName(_roomId, QString::fromStdString(mtx::accessors::sender(*event))));
         if (description != _lastMessage) {
+            if (_lastMessage.timestamp == 0) {
+                cache::client()->updateLastMessageTimestamp(_roomId.toStdString(),
+                                                            description.timestamp);
+            }
             _lastMessage = description;
             emit lastMessageChanged(_lastMessage);
         }

@@ -1,31 +1,35 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Utils.h"
 
+#include <QApplication>
 #include <QBuffer>
+#include <QCryptographicHash>
 #include <QImageReader>
 #include <QProcessEnvironment>
 #include <QSettings>
 #include <QStringBuilder>
 #include <QTextBoundaryFinder>
 #include <QXmlStreamReader>
+
 #include <array>
 #include <cmath>
 #include <variant>
 
 #include <cmark.h>
 
-#include "Config.h"
 #include "Cache.h"
+#include "Cache_p.h"
+#include "Config.h"
 #include "EventAccessors.h"
+#include "Logging.h"
 #include "MatrixClient.h"
 #include "UserSettings.h"
 
 using TimelineEvent = mtx::events::collections::TimelineEvents;
-
-QHash<QString, QString> authorColors_;
 
 template<class T, class Event>
 static DescInfo
@@ -39,9 +43,10 @@ createDescriptionInfo(const Event &event, const QString &localUser, const QStrin
     auto body           = utils::event_body(event).trimmed();
     if (mtx::accessors::relations(event).reply_to())
         body = QString::fromStdString(utils::stripReplyFromBody(body.toStdString()));
+
     return DescInfo{QString::fromStdString(msg.event_id),
                     sender,
-                    utils::messageDescription<T>(username, body),
+                    utils::messageDescription<T>(username, body, sender == localUser),
                     utils::descriptiveTime(ts),
                     msg.origin_server_ts,
                     ts,
@@ -52,7 +57,7 @@ std::string
 utils::stripReplyFromBody(const std::string &bodyi)
 {
     QString body = QString::fromStdString(bodyi);
-    if (body.startsWith("> <")) {
+    if (body.startsWith(QLatin1String("> <"))) {
         auto segments = body.split('\n');
         while (!segments.isEmpty() && segments.begin()->startsWith('>'))
             segments.erase(segments.begin());
@@ -61,7 +66,7 @@ utils::stripReplyFromBody(const std::string &bodyi)
         body = segments.join('\n');
     }
 
-    body.replace("@room", QString::fromUtf8("@\u2060room"));
+    body.replace(QLatin1String("@room"), QString::fromUtf8("@\u2060room"));
     return body.toStdString();
 }
 
@@ -69,9 +74,9 @@ std::string
 utils::stripReplyFromFormattedBody(const std::string &formatted_bodyi)
 {
     QString formatted_body = QString::fromStdString(formatted_bodyi);
-    formatted_body.remove(QRegularExpression("<mx-reply>.*</mx-reply>",
+    formatted_body.remove(QRegularExpression(QStringLiteral("<mx-reply>.*</mx-reply>"),
                                              QRegularExpression::DotMatchesEverythingOption));
-    formatted_body.replace("@room", QString::fromUtf8("@\u2060room"));
+    formatted_body.replace(QLatin1String("@room"), QString::fromUtf8("@\u2060room"));
     return formatted_body.toStdString();
 }
 
@@ -128,8 +133,13 @@ utils::replaceEmoji(const QString &body)
                 fmtBody += QStringLiteral("<font face=\"") % "Default" %
                            QStringLiteral("\">");
                 insideFontBlock = true;
+            } else if (code == 0xfe0f) {
+                // BUG(Nico):
+                // Workaround https://bugreports.qt.io/browse/QTBUG-97401
+                // See also https://github.com/matrix-org/matrix-react-sdk/pull/1458/files
+                // Nheko bug: https://github.com/Nheko-Reborn/nheko/issues/439
+                continue;
             }
-
         } else {
             if (insideFontBlock) {
                 fmtBody += QStringLiteral("</font>");
@@ -158,14 +168,14 @@ utils::setScaleFactor(float factor)
         return;
 
     QSettings settings;
-    settings.setValue("settings/scale_factor", factor);
+    settings.setValue(QStringLiteral("settings/scale_factor"), factor);
 }
 
 float
 utils::scaleFactor()
 {
     QSettings settings;
-    return settings.value("settings/scale_factor", -1).toFloat();
+    return settings.value(QStringLiteral("settings/scale_factor"), -1).toFloat();
 }
 
 QString
@@ -177,9 +187,9 @@ utils::descriptiveTime(const QDateTime &then)
     if (days == 0)
         return QLocale::system().toString(then.time(), QLocale::ShortFormat);
     else if (days < 2)
-        return "Yesterday";
+        return QString(QCoreApplication::translate("descriptiveTime", "Yesterday"));
     else if (days < 7)
-        return then.toString("dddd");
+        return then.toString(QStringLiteral("dddd"));
 
     return QLocale::system().toString(then.date(), QLocale::ShortFormat);
 }
@@ -196,9 +206,9 @@ utils::getMessageDescription(const TimelineEvent &event,
     using Notice     = mtx::events::RoomEvent<mtx::events::msg::Notice>;
     using Text       = mtx::events::RoomEvent<mtx::events::msg::Text>;
     using Video      = mtx::events::RoomEvent<mtx::events::msg::Video>;
-    using CallInvite = mtx::events::RoomEvent<mtx::events::msg::CallInvite>;
-    using CallAnswer = mtx::events::RoomEvent<mtx::events::msg::CallAnswer>;
-    using CallHangUp = mtx::events::RoomEvent<mtx::events::msg::CallHangUp>;
+    using CallInvite = mtx::events::RoomEvent<mtx::events::voip::CallInvite>;
+    using CallAnswer = mtx::events::RoomEvent<mtx::events::voip::CallAnswer>;
+    using CallHangUp = mtx::events::RoomEvent<mtx::events::voip::CallHangUp>;
     using Encrypted  = mtx::events::EncryptedEvent<mtx::events::msg::Encrypted>;
 
     if (std::holds_alternative<Audio>(event)) {
@@ -231,8 +241,8 @@ utils::getMessageDescription(const TimelineEvent &event,
 
         DescInfo info;
         info.userid = sender;
-        info.body =
-          QString(" %1").arg(messageDescription<Encrypted>(username, ""));
+        info.body   = QStringLiteral(" %1").arg(
+          messageDescription<Encrypted>(username, QLatin1String(""), sender == localUser));
         info.timestamp       = msg->origin_server_ts;
         info.descriptiveTime = utils::descriptiveTime(ts);
         info.event_id        = QString::fromStdString(msg->event_id);
@@ -250,8 +260,8 @@ utils::firstChar(const QString &input)
     if (input.isEmpty())
         return input;
 
-    for (auto const &c : input.toUcs4()) {
-        if (QString::fromUcs4(&c, 1) != QString("#"))
+    for (auto const &c : input.toStdU32String()) {
+        if (QString::fromUcs4(&c, 1) != QStringLiteral("#"))
             return QString::fromUcs4(&c, 1).toUpper();
     }
 
@@ -320,7 +330,7 @@ utils::event_body(const mtx::events::collections::TimelineEvents &e)
     if (auto ev = std::get_if<RoomEvent<msg::Video>>(&e); ev != nullptr)
         return QString::fromStdString(ev->content.body);
 
-    return "";
+    return QString();
 }
 
 QString
@@ -328,11 +338,10 @@ utils::mxcToHttp(const QUrl &url, const QString &server, int port)
 {
     auto mxcParts = mtx::client::utils::parse_mxc_url(url.toString().toStdString());
 
-    return QString("https://%1:%2/_matrix/media/r0/download/%3/%4")
+    return QStringLiteral("https://%1:%2/_matrix/media/r0/download/%3/%4")
       .arg(server)
       .arg(port)
-      .arg(QString::fromStdString(mxcParts.server))
-      .arg(QString::fromStdString(mxcParts.media_id));
+      .arg(QString::fromStdString(mxcParts.server), QString::fromStdString(mxcParts.media_id));
 }
 
 QString
@@ -345,8 +354,8 @@ utils::humanReadableFingerprint(const QString &ed25519)
 {
     QString fingerprint;
     for (int i = 0; i < ed25519.length(); i = i + 4) {
-        fingerprint.append(ed25519.midRef(i, 4));
-        if (i > 0 && i % 16 == 12)
+        fingerprint.append(QStringView(ed25519).mid(i, 4));
+        if (i > 0 && i == 20)
             fingerprint.append('\n');
         else if (i < ed25519.length())
             fingerprint.append(' ');
@@ -360,7 +369,8 @@ utils::linkifyMessage(const QString &body)
     // Convert to valid XML.
     auto doc = body;
     doc.replace(conf::strings::url_regex, conf::strings::url_html);
-    doc.replace(QRegularExpression("\\b(?<![\"'])(?>(matrix:[\\S]{5,}))(?![\"'])\\b"),
+    doc.replace(
+      QRegularExpression(QStringLiteral("\\b(?<![\"'])(?>(matrix:[\\S]{5,}))(?![\"'])\\b")),
                 conf::strings::url_html);
 
     return doc;
@@ -432,11 +442,9 @@ utils::markdownToHtml(const QString &text, bool rainbowify)
         // create iterator over node
         cmark_iter *iter = cmark_iter_new(node);
 
-        cmark_event_type ev_type;
-
         // First loop to get total text length
         int textLen = 0;
-        while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE) {
+        while (cmark_iter_next(iter) != CMARK_EVENT_DONE) {
             cmark_node *cur = cmark_iter_get_node(iter);
             // only text nodes (no code or semilar)
             if (cmark_node_get_type(cur) != CMARK_NODE_TEXT)
@@ -454,7 +462,7 @@ utils::markdownToHtml(const QString &text, bool rainbowify)
 
         // Second loop to rainbowify
         int charIdx = 0;
-        while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE) {
+        while (cmark_iter_next(iter) != CMARK_EVENT_DONE) {
             cmark_node *cur = cmark_iter_get_node(iter);
             // only text nodes (no code or semilar)
             if (cmark_node_get_type(cur) != CMARK_NODE_TEXT)
@@ -471,10 +479,11 @@ utils::markdownToHtml(const QString &text, bool rainbowify)
             while ((boundaryEnd = tbf.toNextBoundary()) != -1) {
                 charIdx++;
                 // Split text to get current char
-                auto curChar  = nodeText.midRef(boundaryStart, boundaryEnd - boundaryStart);
+                auto curChar =
+                  QStringView(nodeText).mid(boundaryStart, boundaryEnd - boundaryStart);
                 boundaryStart = boundaryEnd;
                 // Don't rainbowify whitespaces
-                if (curChar.trimmed().isEmpty() || codepointIsEmoji(curChar.toUcs4().first())) {
+                if (curChar.trimmed().isEmpty() || codepointIsEmoji(curChar.toUcs4().at(0))) {
                     buf.append(curChar);
                     continue;
                 }
@@ -487,7 +496,7 @@ utils::markdownToHtml(const QString &text, bool rainbowify)
                 auto colorString = color.name(QColor::NameFormat::HexRgb);
                 // create HTML element for current char
                 auto curCharColored =
-                  QString("<font color=\"%0\">%1</font>").arg(colorString).arg(curChar);
+                  QStringLiteral("<font color=\"%0\">%1</font>").arg(colorString).arg(curChar);
                 // append colored HTML element to buffer
                 buf.append(curCharColored);
             }
@@ -514,7 +523,8 @@ utils::markdownToHtml(const QString &text, bool rainbowify)
 
     auto result = linkifyMessage(escapeBlacklistedHtml(QString::fromStdString(html))).trimmed();
 
-    if (result.count("<p>") == 1 && result.startsWith("<p>") && result.endsWith("</p>")) {
+    if (result.count(QStringLiteral("<p>")) == 1 && result.startsWith(QLatin1String("<p>")) &&
+        result.endsWith(QLatin1String("</p>"))) {
         result = result.mid(3, result.size() - 3 - 4);
     }
 
@@ -529,16 +539,16 @@ utils::getFormattedQuoteBody(const RelatedInfo &related, const QString &html)
 
         switch (related.type) {
         case MsgType::File: {
-            return "sent a file.";
+            return QStringLiteral("sent a file.");
         }
         case MsgType::Image: {
-            return "sent an image.";
+            return QStringLiteral("sent an image.");
         }
         case MsgType::Audio: {
-            return "sent an audio file.";
+            return QStringLiteral("sent an audio file.");
         }
         case MsgType::Video: {
-            return "sent a video";
+            return QStringLiteral("sent a video");
         }
         default: {
             return related.quoted_formatted_body;
@@ -564,16 +574,16 @@ utils::getQuoteBody(const RelatedInfo &related)
 
     switch (related.type) {
     case MsgType::File: {
-        return "sent a file.";
+        return QStringLiteral("sent a file.");
     }
     case MsgType::Image: {
-        return "sent an image.";
+        return QStringLiteral("sent an image.");
     }
     case MsgType::Audio: {
-        return "sent an audio file.";
+        return QStringLiteral("sent an audio file.");
     }
     case MsgType::Video: {
-        return "sent a video";
+        return QStringLiteral("sent a video");
     }
     default: {
         return related.quoted_body;
@@ -598,13 +608,10 @@ utils::getQuoteBody(const RelatedInfo &related)
 uint32_t
 utils::hashQString(const QString &input)
 {
-    uint32_t hash = 0;
+    auto h = QCryptographicHash::hash(input.toUtf8(), QCryptographicHash::Sha1);
 
-    for (int i = 0; i < input.length(); i++) {
-        hash = input.at(i).digitValue() + ((hash << 5) - hash);
-    }
-
-    return hash;
+    return (static_cast<uint32_t>(h[0]) << 24) ^ (static_cast<uint32_t>(h[1]) << 16) ^
+           (static_cast<uint32_t>(h[2]) << 8) ^ static_cast<uint32_t>(h[3]);
 }
 
 QColor
@@ -615,9 +622,12 @@ utils::generateContrastingHexColor(const QString &input, const QColor &backgroun
     // Create a color for the input
     auto hash = hashQString(input);
     // create a hue value based on the hash of the input.
-    auto userHue = static_cast<int>(hash % 360);
+    // Adapted to make Nico blue
+    auto userHue =
+      static_cast<int>(static_cast<double>(hash - static_cast<uint32_t>(0x60'00'00'00)) /
+                       std::numeric_limits<uint32_t>::max() * 360.);
     // start with moderate saturation and lightness values.
-    auto sat       = 220;
+    auto sat       = 230;
     auto lightness = 125;
 
     // converting to a QColor makes the luminance calc easier.
@@ -633,10 +643,10 @@ utils::generateContrastingHexColor(const QString &input, const QColor &backgroun
     // try again and again until they do by modifying first
     // the lightness and then the saturation of the color.
     int iterationCount = 9;
-    while (contrast < 5) {
+    while (contrast < 4.5) {
         // if our lightness is at it's bounds, try changing
         // saturation instead.
-        if (lightness == 242 || lightness == 13) {
+        if (lightness >= 242 || lightness <= 13) {
             qreal newSat = qBound(26.0, sat * 1.25, 242.0);
 
             inputColor.setHsl(userHue, qFloor(newSat), lightness);
@@ -755,4 +765,126 @@ QString utils::httpMtxErrorToString(const mtx::http::RequestErr &err){
                 ", " + "Matrix Error Code: " + QString::number(int(err->matrix_error.errcode)) +
                  ")";
     return s;
+}
+
+void
+utils::removeDirectFromRoom(QString roomid)
+{
+    http::client()->get_account_data<mtx::events::account_data::Direct>(
+      [roomid](mtx::events::account_data::Direct ev, mtx::http::RequestErr e) {
+          if (e && e->status_code == 404)
+              ev = {};
+          else if (e) {
+              nhlog::net()->error("Failed to retrieve m.direct: {}", *e);
+              return;
+          }
+
+          auto r = roomid.toStdString();
+
+          for (auto it = ev.user_to_rooms.begin(); it != ev.user_to_rooms.end();) {
+              for (auto rit = it->second.begin(); rit != it->second.end();) {
+                  if (r == *rit)
+                      rit = it->second.erase(rit);
+                  else
+                      ++rit;
+              }
+
+              if (it->second.empty())
+                  it = ev.user_to_rooms.erase(it);
+              else
+                  ++it;
+          }
+
+          http::client()->put_account_data(ev, [r](mtx::http::RequestErr e) {
+              if (e)
+                  nhlog::net()->error("Failed to update m.direct: {}", *e);
+          });
+      });
+}
+void
+utils::markRoomAsDirect(QString roomid, std::vector<RoomMember> members)
+{
+    http::client()->get_account_data<mtx::events::account_data::Direct>(
+      [roomid, members](mtx::events::account_data::Direct ev, mtx::http::RequestErr e) {
+          if (e && e->status_code == 404)
+              ev = {};
+          else if (e) {
+              nhlog::net()->error("Failed to retrieve m.direct: {}", *e);
+              return;
+          }
+
+          auto local = utils::localUser();
+          auto r     = roomid.toStdString();
+
+          for (const auto &m : members) {
+              if (m.user_id != local) {
+                  ev.user_to_rooms[m.user_id.toStdString()].push_back(r);
+              }
+          }
+
+          http::client()->put_account_data(ev, [r](mtx::http::RequestErr e) {
+              if (e)
+                  nhlog::net()->error("Failed to update m.direct: {}", *e);
+          });
+      });
+}
+
+std::vector<std::string>
+utils::roomVias(const std::string &roomid)
+{
+    std::vector<std::string> vias;
+
+    {
+        auto members = cache::getMembers(roomid, 0, 100);
+        if (!members.empty()) {
+            vias.push_back(http::client()->user_id().hostname());
+            for (const auto &m : members) {
+                if (vias.size() >= 4)
+                    break;
+
+                auto user_id =
+                  mtx::identifiers::parse<mtx::identifiers::User>(m.user_id.toStdString());
+
+                auto server = user_id.hostname();
+                if (std::find(begin(vias), end(vias), server) == vias.end())
+                    vias.push_back(server);
+            }
+        }
+    }
+
+    if (vias.empty()) {
+        auto members = cache::getMembersFromInvite(roomid, 0, 100);
+        if (!members.empty()) {
+            vias.push_back(http::client()->user_id().hostname());
+            for (const auto &m : members) {
+                if (vias.size() >= 4)
+                    break;
+
+                auto user_id =
+                  mtx::identifiers::parse<mtx::identifiers::User>(m.user_id.toStdString());
+
+                auto server = user_id.hostname();
+                if (std::find(begin(vias), end(vias), server) == vias.end())
+                    vias.push_back(server);
+            }
+        }
+    }
+
+    if (vias.empty()) {
+        auto parents = cache::client()->getParentRoomIds(roomid);
+        for (const auto &p : parents) {
+            auto child =
+              cache::client()->getStateEvent<mtx::events::state::space::Child>(p, roomid);
+            if (child && child->content.via)
+                vias.insert(vias.end(), child->content.via->begin(), child->content.via->end());
+        }
+
+        std::sort(begin(vias), end(vias));
+        auto last = std::unique(begin(vias), end(vias));
+        vias.erase(last, end(vias));
+
+        // if (vias.size()> 3)
+        //     vias.erase(begin(vias)+3, end(vias));
+    }
+    return vias;
 }

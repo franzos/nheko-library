@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -13,10 +14,9 @@
 #include <QDateTime>
 #include <QTimer>
 #include <iostream>
+#include <tuple>
 
 static constexpr int TIMEOUT = 2 * 60 * 1000; // 2 minutes
-
-namespace msgs = mtx::events::msg;
 
 static mtx::events::msg::KeyVerificationMac
 key_verification_mac(mtx::crypto::SAS *sas,
@@ -36,6 +36,7 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
   , deviceIds(std::move(deviceIds_))
   //, model_(model)
 {
+    nhlog::crypto()->debug("CREATING NEW FLOW, {}, {}", flow_type, (void *)this);
     if (deviceIds.size() == 1)
         deviceId = deviceIds.front();
 
@@ -136,7 +137,8 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
             &Client::receivedDeviceVerificationCancel,
             this,
             [this](const mtx::events::msg::KeyVerificationCancel &msg) {
-                nhlog::crypto()->info("verification: received cancel");
+                nhlog::crypto()->info(
+                  "verification: received cancel, {} : {}", msg.code, msg.reason);
                 if (msg.transaction_id.has_value()) {
                     if (msg.transaction_id.value() != this->transaction_id)
                         return;
@@ -154,7 +156,8 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
       &Client::receivedDeviceVerificationKey,
       this,
       [this](const mtx::events::msg::KeyVerificationKey &msg) {
-          nhlog::crypto()->info("verification: received key");
+          nhlog::crypto()->info(
+            "verification: received key, sender {}, state {}", sender, state().toStdString());
           if (msg.transaction_id.has_value()) {
               if (msg.transaction_id.value() != this->transaction_id)
                   return;
@@ -164,7 +167,7 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
           }
 
           if (sender) {
-              if (state_ != WaitingForOtherToAccept) {
+              if (state_ != WaitingForOtherToAccept && state_ != WaitingForKeys) {
                   this->cancelVerification(OutOfOrder);
                   return;
               }
@@ -194,8 +197,8 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
           if (this->sender == false) {
               this->sendVerificationKey();
           } else {
-              if (this->commitment != mtx::crypto::bin2base64_unpadded(mtx::crypto::sha256(
-                                        msg.key + this->canonical_json.dump()))) {
+              if (this->commitment != mtx::crypto::bin2base64_unpadded(
+                                        mtx::crypto::sha256(msg.key + this->canonical_json))) {
                   this->cancelVerification(DeviceVerificationFlow::Error::MismatchedCommitment);
                   return;
               }
@@ -262,10 +265,11 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
                   // verified it
                   for (const auto &mac : msg.mac) {
                       if (their_keys.master_keys.keys.count(mac.first)) {
-                          json j = their_keys.master_keys;
+                          nlohmann::json j = their_keys.master_keys;
                           j.erase("signatures");
                           j.erase("unsigned");
-                          mtx::crypto::CrossSigningKeys master_key = j;
+                          mtx::crypto::CrossSigningKeys master_key =
+                            j.get<mtx::crypto::CrossSigningKeys>();
                           master_key.signatures[utils::localUser().toStdString()]
                                                ["ed25519:" + http::client()->device_id()] =
                             olm::client()->sign_message(j.dump());
@@ -277,7 +281,7 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
                           auto device_id = this->deviceId.toStdString();
 
                           if (their_keys.device_keys.count(device_id)) {
-                              json j = their_keys.device_keys.at(device_id);
+                              nlohmann::json j = their_keys.device_keys.at(device_id);
                               j.erase("signatures");
                               j.erase("unsigned");
 
@@ -287,7 +291,7 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
                                   continue;
                               auto ssk = mtx::crypto::PkSigning::from_seed(*secret);
 
-                              mtx::crypto::DeviceKeys dev = j;
+                              mtx::crypto::DeviceKeys dev = j.get<mtx::crypto::DeviceKeys>();
                               dev.signatures[utils::localUser().toStdString()]
                                             ["ed25519:" + ssk.public_key()] = ssk.sign(j.dump());
 
@@ -299,7 +303,7 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
                   // Sign their master key with user signing key
                   for (const auto &mac : msg.mac) {
                       if (their_keys.master_keys.keys.count(mac.first)) {
-                          json j = their_keys.master_keys;
+                          nlohmann::json j = their_keys.master_keys;
                           j.erase("signatures");
                           j.erase("unsigned");
 
@@ -309,7 +313,8 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
                               continue;
                           auto usk = mtx::crypto::PkSigning::from_seed(*secret);
 
-                          mtx::crypto::CrossSigningKeys master_key = j;
+                          mtx::crypto::CrossSigningKeys master_key =
+                            j.get<mtx::crypto::CrossSigningKeys>();
                           master_key.signatures[utils::localUser().toStdString()]
                                                ["ed25519:" + usk.public_key()] = usk.sign(j.dump());
 
@@ -352,7 +357,7 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
       &Client::receivedDeviceVerificationReady,
       this,
       [this](const mtx::events::msg::KeyVerificationReady &msg) {
-          nhlog::crypto()->info("verification: received ready");
+          nhlog::crypto()->info("verification: received ready {}", (void *)this);
           if (!sender) {
               if (msg.from_device != http::client()->device_id()) {
                   error_ = User;
@@ -400,7 +405,10 @@ DeviceVerificationFlow::DeviceVerificationFlow(QObject *,
               else {
                   this->deviceId = QString::fromStdString(msg.from_device);
               }
+          } else {
+              return;
           }
+          nhlog::crypto()->info("verification: received ready sending start {}", (void *)this);
           this->startVerificationRequest();
       });
 
@@ -427,23 +435,23 @@ DeviceVerificationFlow::state()
 {
     switch (state_) {
     case PromptStartVerification:
-        return "PromptStartVerification";
+        return QStringLiteral("PromptStartVerification");
     case CompareEmoji:
-        return "CompareEmoji";
+        return QStringLiteral("CompareEmoji");
     case CompareNumber:
-        return "CompareNumber";
+        return QStringLiteral("CompareNumber");
     case WaitingForKeys:
-        return "WaitingForKeys";
+        return QStringLiteral("WaitingForKeys");
     case WaitingForOtherToAccept:
-        return "WaitingForOtherToAccept";
+        return QStringLiteral("WaitingForOtherToAccept");
     case WaitingForMac:
-        return "WaitingForMac";
+        return QStringLiteral("WaitingForMac");
     case Success:
-        return "Success";
+        return QStringLiteral("Success");
     case Failed:
-        return "Failed";
+        return QStringLiteral("Failed");
     default:
-        return "";
+        return QString();
     }
 }
 
@@ -474,7 +482,7 @@ DeviceVerificationFlow::next()
     } else {
         switch (state_) {
         case PromptStartVerification:
-            if (canonical_json.is_null())
+            if (canonical_json.empty())
                 sendVerificationReady();
             else // legacy path without request and ready
                 acceptVerificationRequest();
@@ -543,7 +551,10 @@ DeviceVerificationFlow::handleStartMessage(const mtx::events::msg::KeyVerificati
     } else if (msg.relations.references()) {
         if (msg.relations.references() != this->relation.event_id)
             return;
+    } else {
+        return;
     }
+
     if ((std::find(msg.key_agreement_protocols.begin(),
                    msg.key_agreement_protocols.end(),
                    "curve25519-hkdf-sha256") != msg.key_agreement_protocols.end()) &&
@@ -566,14 +577,26 @@ DeviceVerificationFlow::handleStartMessage(const mtx::events::msg::KeyVerificati
             return;
         }
         if (!sender)
-            this->canonical_json = nlohmann::json(msg);
+            this->canonical_json = nlohmann::json(msg).dump();
         else {
-            if (utils::localUser().toStdString() < this->toClient.to_string()) {
-                this->canonical_json = nlohmann::json(msg);
+            // resolve glare
+            if (std::tuple(this->toClient.to_string(), this->deviceId.toStdString()) <
+                std::tuple(utils::localUser().toStdString(), http::client()->device_id())) {
+                // treat this as if the user with the smaller mxid or smaller deviceid (if the mxid
+                // was the same) was the sender of "start"
+                this->canonical_json = nlohmann::json(msg).dump();
+                this->sender         = false;
+            }
+
+            if (msg.method != mtx::events::msg::VerificationMethods::SASv1) {
+                cancelVerification(DeviceVerificationFlow::Error::UnknownMethod);
+                return;
             }
         }
 
-        if (state_ != PromptStartVerification)
+        // If we didn't send "start", accept the verification (otherwise wait for the other side to
+        // accept
+        if (state_ != PromptStartVerification && !sender)
             this->acceptVerificationRequest();
     } else {
         this->cancelVerification(DeviceVerificationFlow::Error::UnknownMethod);
@@ -584,6 +607,10 @@ DeviceVerificationFlow::handleStartMessage(const mtx::events::msg::KeyVerificati
 void
 DeviceVerificationFlow::acceptVerificationRequest()
 {
+    if (acceptSent)
+        return;
+    acceptSent = true;
+
     mtx::events::msg::KeyVerificationAccept req;
 
     req.method                      = mtx::events::msg::VerificationMethods::SASv1;
@@ -595,7 +622,7 @@ DeviceVerificationFlow::acceptVerificationRequest()
     else if (this->method == mtx::events::msg::SASMethods::Decimal)
         req.short_authentication_string = {mtx::events::msg::SASMethods::Decimal};
     req.commitment = mtx::crypto::bin2base64_unpadded(
-      mtx::crypto::sha256(this->sas->public_key() + this->canonical_json.dump()));
+      mtx::crypto::sha256(this->sas->public_key() + this->canonical_json));
 
     send(req);
     setState(WaitingForKeys);
@@ -624,6 +651,10 @@ DeviceVerificationFlow::sendVerificationDone()
 void
 DeviceVerificationFlow::startVerificationRequest()
 {
+    if (startSent)
+        return;
+    startSent = true;
+
     mtx::events::msg::KeyVerificationStart req;
 
     req.from_device                  = http::client()->device_id();
@@ -637,13 +668,13 @@ DeviceVerificationFlow::startVerificationRequest()
     if (this->type == DeviceVerificationFlow::Type::ToDevice) {
         mtx::requests::ToDeviceMessages<mtx::events::msg::KeyVerificationStart> body;
         req.transaction_id   = this->transaction_id;
-        this->canonical_json = nlohmann::json(req);
-    }
-    //  else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
+        this->canonical_json = nlohmann::json(req).dump();
+    } 
+    // else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
     //     req.relations.relations.push_back(this->relation);
     //     // Set synthesized to surpress the nheko relation extensions
     //     req.relations.synthesized = true;
-    //     this->canonical_json      = nlohmann::json(req);
+    //     this->canonical_json      = nlohmann::json(req).dump();
     // }
     send(req);
     setState(WaitingForOtherToAccept);
@@ -662,7 +693,7 @@ DeviceVerificationFlow::sendVerificationRequest()
 
         req.timestamp = (uint64_t)currentTime.toMSecsSinceEpoch();
 
-    } 
+    }
     // else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
     //     req.to      = this->toClient.to_string();
     //     req.msgtype = "m.key.verification.request";
@@ -672,7 +703,7 @@ DeviceVerificationFlow::sendVerificationRequest()
     //                   "not support this method, so you will need to use the legacy method of "
     //                   "key verification.";
     //     // clang-format on
-    // }
+    // } 
 
     send(req);
     setState(WaitingForOtherToAccept);
@@ -710,8 +741,8 @@ DeviceVerificationFlow::cancelVerification(DeviceVerificationFlow::Error error_c
     }
 
     this->error_ = error_code;
-    emit errorChanged();
     this->setState(Failed);
+    emit errorChanged();
 
     send(req);
 }
@@ -719,6 +750,10 @@ DeviceVerificationFlow::cancelVerification(DeviceVerificationFlow::Error error_c
 void
 DeviceVerificationFlow::sendVerificationKey()
 {
+    if (keySent)
+        return;
+    keySent = true;
+
     mtx::events::msg::KeyVerificationKey req;
 
     req.key = this->sas->public_key();
@@ -760,6 +795,10 @@ key_verification_mac(mtx::crypto::SAS *sas,
 void
 DeviceVerificationFlow::sendVerificationMac()
 {
+    if (macSent)
+        return;
+    macSent = true;
+
     std::map<std::string, std::string> key_list;
     key_list["ed25519:" + http::client()->device_id()] = olm::client()->identity_keys().ed25519;
 

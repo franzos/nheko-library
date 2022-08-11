@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -7,7 +8,6 @@
 #include <QObject>
 
 #include <mtx/responses/crypto.hpp>
-#include <nlohmann/json.hpp>
 
 #include "../CacheCryptoStructs.h"
 #include "../Logging.h"
@@ -35,7 +35,7 @@ using sas_ptr = std::unique_ptr<mtx::crypto::SAS>;
  * &&                 |      n  |                                 |                                         |
  * no canonical_json  |      a  |      (m.key.verification.start) |                                         | waitingForKeys
  *                    |      l  |<--------------------------------| Not sending to prevent the glare resolve| && no commitment
- *                    |         |                                 |                                         | && no canonical_json
+ *                    |         |                                 |                               (1)       | && no canonical_json
  *                    |         | m.key.verification.start        |                                         |
  * waitForOtherAccept |         |-------------------------------->| (IF NOT ALREADY ASKED,                  |
  * &&                 |         |                                 |  ASK FOR VERIFICATION REQUEST)          | promptStartVerify, if not accepted
@@ -55,6 +55,9 @@ using sas_ptr = std::unique_ptr<mtx::crypto::SAS>;
  *                    |         |                                 |                                         |
  * success/fail       |         |         m.key.verification.done |                                         | success/fail
  *                    |         |<------------------------------->|                                         |
+ *
+ *  (1) Sometimes the other side does send this start. In this case we run the glare algorithm and send an accept only if
+ *      We are the bigger mxid and deviceid (since we discard our start message). <- GLARE RESOLUTION
  */
 // clang-format on
 class DeviceVerificationFlow : public QObject
@@ -206,7 +209,7 @@ private:
     sas_ptr sas;
     std::string mac_method;
     std::string commitment;
-    nlohmann::json canonical_json;
+    std::string canonical_json;
 
     std::vector<int> sasList;
     UserKeyCache their_keys;
@@ -217,6 +220,8 @@ private:
     Error error_ = UnknownMethod;
 
     bool isMacVerified = false;
+
+    bool keySent = false, macSent = false, acceptSent = false, startSent = false;
 
     template<typename T>
     void send(T msg)
@@ -235,12 +240,12 @@ private:
                                          static_cast<int>(err->status_code));
               });
         }
-        //  else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
+        // else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
         //     if constexpr (!std::is_same_v<T, mtx::events::msg::KeyVerificationRequest>) {
         //         msg.relations.relations.push_back(this->relation);
         //         // Set synthesized to surpress the nheko relation extensions
         //         msg.relations.synthesized = true;
-        //     }
+        // }
         //     (model_)->sendMessageEvent(msg, mtx::events::to_device_content_to_type<T>);
         // }
 

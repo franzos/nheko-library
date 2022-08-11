@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -84,7 +85,7 @@ struct fmt::formatter<mtx::http::ClientError>
         bool prepend_comma = false;
         format_to(ctx.out(), "(");
         if (print_network_error || e.error_code) {
-            format_to(ctx.out(), "connection: {}", e.error_code);
+            format_to(ctx.out(), "connection: {}", e.error_code_string());
             prepend_comma = true;
         }
 

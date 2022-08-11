@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -11,6 +12,8 @@
 
 #include <QString>
 #include <QtGlobal>
+
+#include <mtx/log.hpp>
 
 namespace {
 std::shared_ptr<spdlog::logger> db_logger     = nullptr;

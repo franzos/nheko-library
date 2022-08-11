@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -19,10 +20,9 @@ Q_DECLARE_METATYPE(mtx::responses::Messages)
 Q_DECLARE_METATYPE(mtx::responses::Notifications)
 Q_DECLARE_METATYPE(mtx::responses::Rooms)
 Q_DECLARE_METATYPE(mtx::responses::Sync)
-Q_DECLARE_METATYPE(mtx::responses::JoinedGroups)
-Q_DECLARE_METATYPE(mtx::responses::GroupProfile)
+Q_DECLARE_METATYPE(mtx::responses::StateEvents)
 
-Q_DECLARE_METATYPE(nlohmann::json)
+// Q_DECLARE_METATYPE(nlohmann::json)
 Q_DECLARE_METATYPE(std::string)
 Q_DECLARE_METATYPE(std::vector<std::string>)
 Q_DECLARE_METATYPE(std::vector<QString>)
@@ -51,10 +51,9 @@ init()
     qRegisterMetaType<mtx::responses::Notifications>();
     qRegisterMetaType<mtx::responses::Rooms>();
     qRegisterMetaType<mtx::responses::Sync>();
-    qRegisterMetaType<mtx::responses::JoinedGroups>();
-    qRegisterMetaType<mtx::responses::GroupProfile>();
+    qRegisterMetaType<mtx::responses::StateEvents>();
     qRegisterMetaType<std::string>();
-    qRegisterMetaType<nlohmann::json>();
+    // qRegisterMetaType<nlohmann::json>();
     qRegisterMetaType<std::vector<std::string>>();
     qRegisterMetaType<std::vector<QString>>();
     qRegisterMetaType<std::map<QString, bool>>("std::map<QString, bool>");

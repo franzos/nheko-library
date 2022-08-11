@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -10,7 +11,7 @@
 #include <QVector>
 #include <mtx/responses.hpp>
 #include <mtx/responses/common.hpp>
-#include "Client.h"
+
 #include "CacheCryptoStructs.h"
 
 namespace verification {
@@ -129,8 +130,8 @@ public:
     bool isSelf() const;
     bool isLoading() const;
 
-    Q_INVOKABLE void verify(QString device = "");
-    Q_INVOKABLE void unverify(QString device = "");
+    Q_INVOKABLE void verify(QString device = QLatin1String(""));
+    Q_INVOKABLE void unverify(QString device = QLatin1String(""));
     Q_INVOKABLE void fetchDeviceList(const QString &userID);
     Q_INVOKABLE void refreshDevices();
     Q_INVOKABLE void banUser();
@@ -138,6 +139,7 @@ public:
     // Q_INVOKABLE void ignoreUser();
     Q_INVOKABLE void kickUser();
     Q_INVOKABLE void startChat();
+    Q_INVOKABLE void startChat(bool encryptionEnabled);
     Q_INVOKABLE void changeUsername(QString username);
     Q_INVOKABLE void changeDeviceName(QString deviceID, QString deviceName);
     Q_INVOKABLE void changeAvatar();
