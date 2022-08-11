@@ -655,7 +655,7 @@ Timeline::updateLastMessage()
                                 tr("You joined this room."),
                                 utils::descriptiveTime(time),
                                 ts,
-                                time,true};
+                                time};
             if (description != _lastMessage) {
                 if (_lastMessage.timestamp == 0) {
                     cache::client()->updateLastMessageTimestamp(_roomId.toStdString(),

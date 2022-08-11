@@ -49,8 +49,7 @@ createDescriptionInfo(const Event &event, const QString &localUser, const QStrin
                     utils::messageDescription<T>(username, body, sender == localUser),
                     utils::descriptiveTime(ts),
                     msg.origin_server_ts,
-                    ts,
-                    sender == localUser};
+                    ts};
 }
 
 std::string
@@ -247,7 +246,6 @@ utils::getMessageDescription(const TimelineEvent &event,
         info.descriptiveTime = utils::descriptiveTime(ts);
         info.event_id        = QString::fromStdString(msg->event_id);
         info.datetime        = ts;
-        info.isLocal         = sender == localUser;
         return info;
     }
 

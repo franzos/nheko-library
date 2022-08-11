@@ -23,13 +23,14 @@ public:
         static CallDevices instance;
         return instance;
     }
-
-    bool haveMic() const;
-    bool haveCamera() const;
     std::vector<std::string> names(bool isVideo, const std::string &defaultDevice) const;
     std::vector<std::string> resolutions(const std::string &cameraName) const;
     std::vector<std::string>
     frameRates(const std::string &cameraName, const std::string &resolution) const;
+
+public slots:
+    bool haveMic() const;
+    bool haveCamera() const;
 
 signals:
     void devicesChanged();

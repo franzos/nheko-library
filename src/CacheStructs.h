@@ -51,20 +51,19 @@ struct DescInfo
     QString descriptiveTime;
     uint64_t timestamp = 0;
     QDateTime datetime;
-    bool    isLocal;
 };
 
 inline bool
 operator==(const DescInfo &a, const DescInfo &b)
 {
-    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime, a.isLocal) ==
-           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime, b.isLocal);
+    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime) ==
+           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime);
 }
 inline bool
 operator!=(const DescInfo &a, const DescInfo &b)
 {
-    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime, a.isLocal) !=
-           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime, b.isLocal);
+    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime) !=
+           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime);
 }
 
 //! UI info associated with a room.
