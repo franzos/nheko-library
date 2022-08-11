@@ -98,7 +98,7 @@ public slots:
     QMap<QString, RoomInfo> joinedRoomList();
     QMap<QString, RoomInfo> inviteRoomList();
     RoomInfo roomInfo(const QString &room_id);
-    void startChat(QString userid, std::optional<bool> encryptionEnabled);
+    void startChat(QString userid, bool encryptionEnabled = false);
     void leaveRoom(const QString &room_id, const QString &reason);
     void createRoom(const mtx::requests::CreateRoom &req);
     void joinRoom(const QString &room, const QString &reason = "");

@@ -1201,7 +1201,7 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
 }
 
 void
-Client::startChat(QString userid, std::optional<bool> encryptionEnabled)
+Client::startChat(QString userid, bool encryptionEnabled)
 {
     auto joined_rooms = cache::joinedRooms();
     auto room_infos   = cache::getRoomInfo(joined_rooms);
@@ -1223,7 +1223,7 @@ Client::startChat(QString userid, std::optional<bool> encryptionEnabled)
     req.preset     = mtx::requests::Preset::TrustedPrivateChat;
     req.visibility = mtx::common::RoomVisibility::Private;
 
-    if (encryptionEnabled.value_or(false)) {
+    if (encryptionEnabled) {
         mtx::events::StrippedEvent<mtx::events::state::Encryption> enc;
         enc.type              = mtx::events::EventType::RoomEncryption;
         enc.content.algorithm = mtx::crypto::MEGOLM_ALGO;

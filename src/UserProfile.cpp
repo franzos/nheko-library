@@ -316,7 +316,7 @@ UserProfile::startChat(bool encryption)
 void
 UserProfile::startChat()
 {
-    Client::instance()->startChat(this->userid_, std::nullopt);
+    Client::instance()->startChat(this->userid_);
 }
 
 void
