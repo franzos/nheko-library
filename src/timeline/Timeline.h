@@ -3,7 +3,9 @@
 #include <QObject>
 #include <mtx/events/event_type.hpp>
 #include <mtx/events/collections.hpp>
+#include <mtx/events/power_levels.hpp>
 #include "EventStore.h"
+#include "../Cache_p.h"
 #include "../CacheStructs.h"
 #include "Permissions.h"
 
@@ -271,6 +273,11 @@ signals:
     void newReadReceipts(const std::vector<QString> &event_ids);
 
 public slots:
+    mtx::events::state::PowerLevels powerLevels() { 
+        return cache::client()
+                   ->getStateEvent<mtx::events::state::PowerLevels>(_roomId.toStdString())
+                   .value_or(mtx::events::StateEvent<mtx::events::state::PowerLevels>{})
+                   .content; };
     Permissions *permissions() { return &_permissions; };
     bool canFetchMore() const;
     void setDecryptDescription(bool decrypt) { _decryptDescription = decrypt; }
