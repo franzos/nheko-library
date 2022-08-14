@@ -3,7 +3,9 @@
 #include <QObject>
 #include <mtx/events/event_type.hpp>
 #include <mtx/events/collections.hpp>
+#include <mtx/events/power_levels.hpp>
 #include "EventStore.h"
+#include "../Cache_p.h"
 #include "../CacheStructs.h"
 #include "Permissions.h"
 
@@ -91,6 +93,12 @@ enum EventType
     ImagePackInAccountData,
     //! m.image_pack.rooms, currently im.ponies.emote_rooms
     ImagePackRooms,
+    // m.policy.rule.user
+    PolicyRuleUser,
+    // m.policy.rule.room
+    PolicyRuleRoom,
+    // m.policy.rule.server
+    PolicyRuleServer,
     // m.space.parent
     SpaceParent,
     // m.space.child
@@ -115,6 +123,7 @@ enum EventState
 };
 Q_ENUM_NS(EventState)
 }
+
 
 namespace {
 struct RoomEventType
@@ -196,20 +205,20 @@ struct RoomEventType
     {
         return qml_mtx_events::EventType::Redacted;
     }
-    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::CallInvite> &)
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::voip::CallInvite> &)
     {
         return qml_mtx_events::EventType::CallInvite;
     }
-    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::CallAnswer> &)
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::voip::CallAnswer> &)
     {
         return qml_mtx_events::EventType::CallAnswer;
     }
-    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::CallHangUp> &)
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::voip::CallHangUp> &)
     {
         return qml_mtx_events::EventType::CallHangUp;
     }
     qml_mtx_events::EventType
-    operator()(const mtx::events::Event<mtx::events::msg::CallCandidates> &)
+    operator()(const mtx::events::Event<mtx::events::voip::CallCandidates> &)
     {
         return qml_mtx_events::EventType::CallCandidates;
     }
@@ -219,6 +228,26 @@ struct RoomEventType
 }
 
 
+class StateKeeper
+{
+public:
+    StateKeeper(std::function<void()> &&fn)
+      : fn_(std::move(fn))
+    {}
+
+    ~StateKeeper() { fn_(); }
+
+private:
+    std::function<void()> fn_;
+};
+
+struct DecryptionResult
+{
+    //! The decrypted content as a normal plaintext event.
+    mtx::events::collections::TimelineEvents event;
+    //! Whether or not the decryption was successful.
+    bool isDecrypted = false;
+};
 
 class Timeline : public QObject {
 Q_OBJECT
@@ -244,6 +273,11 @@ signals:
     void newReadReceipts(const std::vector<QString> &event_ids);
 
 public slots:
+    mtx::events::state::PowerLevels powerLevels() { 
+        return cache::client()
+                   ->getStateEvent<mtx::events::state::PowerLevels>(_roomId.toStdString())
+                   .value_or(mtx::events::StateEvent<mtx::events::state::PowerLevels>{})
+                   .content; };
     Permissions *permissions() { return &_permissions; };
     bool canFetchMore() const;
     void setDecryptDescription(bool decrypt) { _decryptDescription = decrypt; }
@@ -278,6 +312,8 @@ public slots:
     QString viewDecryptedRawMessage(const QString &id);
     QString viewRawMessage(const QString &id);
     UserReceipts readReceipts(const QString &event_id);
+    DescInfo lastMessage() const;
+    uint64_t lastMessageTimestamp() const { return _lastMessage.timestamp; }
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);
@@ -297,7 +333,7 @@ private:
     Permissions _permissions;
     DescInfo _lastMessage{};
     bool _decryptDescription     = true;
-    int _notificationCount = 0, _highlightCount = 0;
+    uint64_t _notificationCount = 0, _highlightCount = 0;
     QStringList _typingUsers;
     friend struct SendMessageVisitor;
 };

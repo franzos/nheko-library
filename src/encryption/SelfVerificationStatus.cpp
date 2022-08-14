@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "SelfVerificationStatus.h"
 
+#include <QApplication>
+
+#include "Cache.h"
 #include "Cache_p.h"
 #include "Client.h"
 #include "Logging.h"
@@ -146,7 +150,7 @@ SelfVerificationStatus::setupCrosssigning(bool useSSSS, QString password, bool u
                     olm::client()->identity_keys().ed25519 &&
                   myKey.keys["curve25519:" + http::client()->device_id()] ==
                     olm::client()->identity_keys().curve25519) {
-                  json j = myKey;
+                  nlohmann::json j = myKey;
                   j.erase("signatures");
                   j.erase("unsigned");
 
@@ -208,8 +212,8 @@ SelfVerificationStatus::verifyMasterKey()
         (void)sig;
 
         auto d = QString::fromStdString(dev);
-        if (d.startsWith("ed25519:")) {
-            d.remove("ed25519:");
+        if (d.startsWith(QLatin1String("ed25519:"))) {
+            d.remove(QStringLiteral("ed25519:"));
 
             if (keys->device_keys.count(d.toStdString()))
                 devices.push_back(std::move(d));
@@ -236,6 +240,7 @@ SelfVerificationStatus::verifyUnverifiedDevices()
 
     auto keys  = cache::client()->userKeys(this_user);
     auto verif = cache::client()->verificationStatus(this_user);
+
     if (!keys)
         return;
 
@@ -269,13 +274,14 @@ SelfVerificationStatus::invalidate()
     if (!keys || keys->device_keys.find(http::client()->device_id()) == keys->device_keys.end()) {
         if (keys && (keys->seen_device_ids.count(http::client()->device_id()) ||
                      keys->seen_device_keys.count(olm::client()->identity_keys().curve25519))) {
-            emit Client::instance()->dropToLogin("Identity key changed. This breaks E2EE, so logging out.");
+            emit Client::instance()->dropToLogin(
+              tr("Identity key changed. This breaks E2EE, so logging out."));
             return;
         }
 
         cache::client()->markUserKeysOutOfDate({http::client()->user_id().to_string()});
 
-        QTimer::singleShot(1'000, [] {
+        QTimer::singleShot(1'000, this, [] {
             cache::client()->query_keys(http::client()->user_id().to_string(),
                                         [](const UserKeyCache &, mtx::http::RequestErr) {});
         });

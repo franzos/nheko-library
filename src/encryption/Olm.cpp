@@ -47,8 +47,8 @@ from_json(const nlohmann::json &obj, OlmMessage &msg)
     if (obj.at("content").at("algorithm") != OLM_ALGO)
         throw std::invalid_argument("invalid algorithm for olm message");
 
-    msg.sender     = obj.at("sender");
-    msg.sender_key = obj.at("content").at("sender_key");
+    msg.sender     = obj.at("sender").get<std::string>();
+    msg.sender_key = obj.at("content").at("sender_key").get<std::string>();
     msg.ciphertext = obj.at("content")
                        .at("ciphertext")
                        .get<std::map<std::string, mtx::events::msg::OlmCipherContent>>();
@@ -116,17 +116,17 @@ handle_to_device_messages(const std::vector<mtx::events::collections::DeviceEven
     nlohmann::json j_msg;
 
     for (const auto &msg : msgs) {
-        j_msg = std::visit([](auto &e) { return json(e); }, std::move(msg));
+        j_msg = std::visit([](auto &e) { return nlohmann::json(e); }, std::move(msg));
         if (j_msg.count("type") == 0) {
             nhlog::crypto()->warn("received message with no type field: {}", j_msg.dump(2));
             continue;
         }
 
-        std::string msg_type = j_msg.at("type");
+        std::string msg_type = j_msg.at("type").get<std::string>();
 
         if (msg_type == to_string(mtx::events::EventType::RoomEncrypted)) {
             try {
-                olm::OlmMessage olm_msg = j_msg;
+                olm::OlmMessage olm_msg = j_msg.get<olm::OlmMessage>();
                 cache::client()->query_keys(
                   olm_msg.sender, [olm_msg](const UserKeyCache &userKeys, mtx::http::RequestErr e) {
                       if (e) {
@@ -147,7 +147,8 @@ handle_to_device_messages(const std::vector<mtx::events::collections::DeviceEven
         } else if (msg_type == to_string(mtx::events::EventType::RoomKeyRequest)) {
             nhlog::crypto()->warn("handling key request event: {}", j_msg.dump(2));
             try {
-                mtx::events::DeviceEvent<mtx::events::msg::KeyRequest> req = j_msg;
+                mtx::events::DeviceEvent<mtx::events::msg::KeyRequest> req =
+                  j_msg.get<mtx::events::DeviceEvent<mtx::events::msg::KeyRequest>>();
                 if (req.content.action == mtx::events::msg::RequestAction::Request)
                     handle_key_request_message(req);
                 else
@@ -246,14 +247,14 @@ handle_olm_message(const OlmMessage &msg, const UserKeyCache &otherUserDeviceKey
             // claiming to have sent messages which they didn't. sender must correspond
             // to the user who sent the event, recipient to the local user, and
             // recipient_keys to the local ed25519 key.
-            std::string receiver_ed25519 = payload["recipient_keys"]["ed25519"];
+            std::string receiver_ed25519 = payload["recipient_keys"]["ed25519"].get<std::string>();
             if (receiver_ed25519.empty() ||
                 receiver_ed25519 != olm::client()->identity_keys().ed25519) {
                 nhlog::crypto()->warn("Decrypted event doesn't include our ed25519: {}",
                                       payload.dump());
                 return;
             }
-            std::string receiver = payload["recipient"];
+            std::string receiver = payload["recipient"].get<std::string>();
             if (receiver.empty() || receiver != http::client()->user_id().to_string()) {
                 nhlog::crypto()->warn("Decrypted event doesn't include our user_id: {}",
                                       payload.dump());
@@ -266,7 +267,7 @@ handle_olm_message(const OlmMessage &msg, const UserKeyCache &otherUserDeviceKey
             // this check, a client cannot be sure that the sender device owns the
             // private part of the ed25519 key it claims to have in the Olm payload.
             // This is crucial when the ed25519 key corresponds to a verified device.
-            std::string sender_ed25519 = payload["keys"]["ed25519"];
+            std::string sender_ed25519 = payload["keys"]["ed25519"].get<std::string>();
             if (sender_ed25519.empty()) {
                 nhlog::crypto()->warn("Decrypted event doesn't include sender ed25519: {}",
                                       payload.dump());
@@ -294,8 +295,8 @@ handle_olm_message(const OlmMessage &msg, const UserKeyCache &otherUserDeviceKey
             }
 
             {
-                std::string msg_type = payload["type"];
-                json event_array     = json::array();
+                std::string msg_type       = payload["type"].get<std::string>();
+                nlohmann::json event_array = nlohmann::json::array();
                 event_array.push_back(payload);
 
                 std::vector<mtx::events::collections::DeviceEvents> temp_events;
@@ -455,7 +456,7 @@ handle_pre_key_olm_message(const std::string &sender,
         return {};
     }
 
-    auto plaintext = json::parse(std::string((char *)output.data(), output.size()));
+    auto plaintext = nlohmann::json::parse(std::string((char *)output.data(), output.size()));
     nhlog::crypto()->debug("decrypted message: \n {}", plaintext.dump(2));
 
     try {
@@ -614,6 +615,7 @@ encrypt_group_message(const std::string &room_id, const std::string &device_id, 
         session_data.message_index              = 0;
         session_data.timestamp                  = QDateTime::currentMSecsSinceEpoch();
         session_data.sender_claimed_ed25519_key = olm::client()->identity_keys().ed25519;
+        session_data.sender_key                 = olm::client()->identity_keys().curve25519;
 
         sendSessionTo.clear();
 
@@ -635,7 +637,6 @@ encrypt_group_message(const std::string &room_id, const std::string &device_id, 
             MegolmSessionIndex index;
             index.room_id       = room_id;
             index.session_id    = session_id;
-            index.sender_key    = olm::client()->identity_keys().curve25519;
             auto megolm_session = olm::client()->init_inbound_group_session(session_key);
             backup_session_key(index, session_data, megolm_session);
             cache::saveInboundMegolmSession(index, std::move(megolm_session), session_data);
@@ -715,8 +716,8 @@ try_olm_decryption(const std::string &sender_key, const mtx::events::msg::OlmCip
         }
 
         try {
-            return json::parse(std::string_view((char *)text.data(), text.size()));
-        } catch (const json::exception &e) {
+            return nlohmann::json::parse(std::string_view((char *)text.data(), text.size()));
+        } catch (const nlohmann::json::exception &e) {
             nhlog::crypto()->critical("failed to parse the decrypted session msg: {} {}",
                                       e.what(),
                                       std::string_view((char *)text.data(), text.size()));
@@ -734,12 +735,12 @@ create_inbound_megolm_session(const mtx::events::DeviceEvent<mtx::events::msg::R
     MegolmSessionIndex index;
     index.room_id    = roomKey.content.room_id;
     index.session_id = roomKey.content.session_id;
-    index.sender_key = sender_key;
 
     try {
         GroupSessionData data{};
         data.forwarding_curve25519_key_chain = {sender_key};
         data.sender_claimed_ed25519_key      = sender_ed25519;
+        data.sender_key                      = sender_key;
 
         auto megolm_session =
           olm::client()->init_inbound_group_session(roomKey.content.session_key);
@@ -766,7 +767,6 @@ import_inbound_megolm_session(
     MegolmSessionIndex index;
     index.room_id    = roomKey.content.room_id;
     index.session_id = roomKey.content.session_id;
-    index.sender_key = roomKey.content.sender_key;
 
     try {
         auto megolm_session =
@@ -775,6 +775,7 @@ import_inbound_megolm_session(
         GroupSessionData data{};
         data.forwarding_curve25519_key_chain = roomKey.content.forwarding_curve25519_key_chain;
         data.sender_claimed_ed25519_key      = roomKey.content.sender_claimed_ed25519_key;
+        data.sender_key                      = roomKey.content.sender_key;
         // may have come from online key backup, so we can't trust it...
         data.trusted = false;
         // if we got it forwarded from the sender, assume it is trusted. They may still have
@@ -832,7 +833,7 @@ backup_session_key(const MegolmSessionIndex &idx,
         sessionData.algorithm                       = mtx::crypto::MEGOLM_ALGO;
         sessionData.forwarding_curve25519_key_chain = data.forwarding_curve25519_key_chain;
         sessionData.sender_claimed_keys["ed25519"]  = data.sender_claimed_ed25519_key;
-        sessionData.sender_key                      = idx.sender_key;
+        sessionData.sender_key                      = data.sender_key;
         sessionData.session_key = mtx::crypto::export_session(session.get(), -1);
 
         auto encrypt_session = mtx::crypto::encrypt_session(sessionData, public_key);
@@ -872,6 +873,73 @@ mark_keys_as_published()
     cache::saveOlmAccount(olm::client()->save(cache::client()->pickleSecret()));
 }
 
+void
+download_full_keybackup()
+{
+    if (!UserSettings::instance()->useOnlineKeyBackup()) {
+        // Online key backup disabled
+        return;
+    }
+
+    auto backupVersion = cache::client()->backupVersion();
+    if (!backupVersion) {
+        // no trusted OKB
+        return;
+    }
+
+    using namespace mtx::crypto;
+
+    auto decryptedSecret = cache::secret(mtx::secret_storage::secrets::megolm_backup_v1);
+    if (!decryptedSecret) {
+        // no backup key available
+        return;
+    }
+    auto sessionDecryptionKey = to_binary_buf(base642bin(*decryptedSecret));
+
+    http::client()->room_keys(
+      backupVersion->version,
+      [sessionDecryptionKey](const mtx::responses::backup::KeysBackup &bk,
+                             mtx::http::RequestErr err) {
+          if (err) {
+              if (err->status_code != 404)
+                  nhlog::crypto()->error("Failed to dowload backup {}:{}: {} - {}",
+                                         mtx::errors::to_string(err->matrix_error.errcode),
+                                         err->matrix_error.error);
+              return;
+          }
+
+          mtx::crypto::ExportedSessionKeys allKeys;
+          try {
+              for (const auto &[room, roomKey] : bk.rooms) {
+                  for (const auto &[session_id, encSession] : roomKey.sessions) {
+                      auto session = decrypt_session(encSession.session_data, sessionDecryptionKey);
+
+                      if (session.algorithm != mtx::crypto::MEGOLM_ALGO)
+                          // don't know this algorithm
+                          return;
+
+                      ExportedSession sess{};
+                      sess.session_id = session_id;
+                      sess.room_id    = room;
+                      sess.algorithm  = mtx::crypto::MEGOLM_ALGO;
+                      sess.forwarding_curve25519_key_chain =
+                        std::move(session.forwarding_curve25519_key_chain);
+                      sess.sender_claimed_keys = std::move(session.sender_claimed_keys);
+                      sess.sender_key          = std::move(session.sender_key);
+                      sess.session_key         = std::move(session.session_key);
+                      allKeys.sessions.push_back(std::move(sess));
+                  }
+              }
+
+              // call on UI thread
+              QTimer::singleShot(0, Client::instance(), [keys = std::move(allKeys)] {
+                  cache::importSessionKeys(keys);
+              });
+          } catch (const lmdb::error &e) {
+              nhlog::crypto()->critical("failed to save inbound megolm session: {}", e.what());
+          }
+      });
+}
 void
 lookup_keybackup(const std::string room, const std::string session_id)
 {
@@ -920,11 +988,11 @@ lookup_keybackup(const std::string room, const std::string session_id)
               MegolmSessionIndex index;
               index.room_id    = room;
               index.session_id = session_id;
-              index.sender_key = session.sender_key;
 
               GroupSessionData data{};
               data.forwarding_curve25519_key_chain = session.forwarding_curve25519_key_chain;
               data.sender_claimed_ed25519_key      = session.sender_claimed_keys["ed25519"];
+              data.sender_key                      = session.sender_key;
               // online key backup can't be trusted, because anyone can upload to it.
               data.trusted = false;
 
@@ -979,11 +1047,11 @@ send_key_request_for(mtx::events::EncryptedEvent<mtx::events::msg::Encrypted> e,
     request.request_id           = request_id;
     request.requesting_device_id = http::client()->device_id();
 
-    nhlog::crypto()->debug("m.room_key_request: {}", json(request).dump(2));
+    nhlog::crypto()->debug("m.room_key_request: {}", nlohmann::json(request).dump(2));
 
     std::map<mtx::identifiers::User, std::map<std::string, decltype(request)>> body;
-    body[mtx::identifiers::parse<mtx::identifiers::User>(e.sender)][e.content.device_id] = request;
-    body[http::client()->user_id()]["*"]                                                 = request;
+    body[mtx::identifiers::parse<mtx::identifiers::User>(e.sender)]["*"] = request;
+    body[http::client()->user_id()]["*"]                                 = request;
 
     http::client()->send_to_device(
       http::client()->generate_txn_id(), body, [e](mtx::http::RequestErr err) {
@@ -1011,29 +1079,28 @@ handle_key_request_message(const mtx::events::DeviceEvent<mtx::events::msg::KeyR
         return;
     }
 
-    // Check if we were the sender of the session being requested (unless it is actually us
-    // requesting the session).
-    if (req.sender != http::client()->user_id().to_string() &&
-        req.content.sender_key != olm::client()->identity_keys().curve25519) {
-        nhlog::crypto()->debug(
-          "ignoring key request {} because we did not create the requested session: "
-          "\nrequested({}) ours({})",
-          req.content.request_id,
-          req.content.sender_key,
-          olm::client()->identity_keys().curve25519);
-        return;
-    }
-
     // Check that the requested session_id and the one we have saved match.
     MegolmSessionIndex index{};
     index.room_id    = req.content.room_id;
     index.session_id = req.content.session_id;
-    index.sender_key = req.content.sender_key;
 
     // Check if we have the keys for the requested session.
     auto sessionData = cache::getMegolmSessionData(index);
     if (!sessionData) {
         nhlog::crypto()->warn("requested session not found in room: {}", req.content.room_id);
+        return;
+    }
+
+    // Check if we were the sender of the session being requested (unless it is actually us
+    // requesting the session).
+    if (req.sender != http::client()->user_id().to_string() &&
+        sessionData->sender_key != olm::client()->identity_keys().curve25519) {
+        nhlog::crypto()->debug(
+          "ignoring key request {} because we did not create the requested session: "
+          "\nrequested({}) ours({})",
+          req.content.request_id,
+          sessionData->sender_key,
+          olm::client()->identity_keys().curve25519);
         return;
     }
 
@@ -1098,7 +1165,7 @@ handle_key_request_message(const mtx::events::DeviceEvent<mtx::events::msg::KeyR
         forward_key.room_id     = index.room_id;
         forward_key.session_id  = index.session_id;
         forward_key.session_key = session_key;
-        forward_key.sender_key  = index.sender_key;
+        forward_key.sender_key  = sessionData->sender_key;
 
         // TODO(Nico): Figure out if this is correct
         forward_key.sender_claimed_ed25519_key      = sessionData->sender_claimed_ed25519_key;
@@ -1171,7 +1238,7 @@ decryptEvent(const MegolmSessionIndex &index,
 
     try {
         // Add missing fields for the event.
-        json body                = json::parse(msg_str);
+        nlohmann::json body      = nlohmann::json::parse(msg_str);
         body["event_id"]         = event.event_id;
         body["sender"]           = event.sender;
         body["origin_server_ts"] = event.origin_server_ts;
@@ -1196,8 +1263,9 @@ calculate_trust(const std::string &user_id, const MegolmSessionIndex &index)
     auto megolmData          = cache::client()->getMegolmSessionData(index);
     crypto::Trust trustlevel = crypto::Trust::Unverified;
 
-    if (megolmData && megolmData->trusted && status.verified_device_keys.count(index.sender_key))
-        trustlevel = status.verified_device_keys.at(index.sender_key);
+    if (megolmData && megolmData->trusted &&
+        status.verified_device_keys.count(megolmData->sender_key))
+        trustlevel = status.verified_device_keys.at(megolmData->sender_key);
 
     return trustlevel;
 }
@@ -1211,7 +1279,7 @@ send_encrypted_to_device_messages(const std::map<std::string, std::vector<std::s
 {
     static QMap<QPair<std::string, std::string>, qint64> rateLimit;
 
-    nlohmann::json ev_json = std::visit([](const auto &e) { return json(e); }, event);
+    nlohmann::json ev_json = std::visit([](const auto &e) { return nlohmann::json(e); }, event);
 
     std::map<std::string, std::vector<std::string>> keysToQuery;
     mtx::requests::ClaimKeys claims;
@@ -1334,7 +1402,7 @@ send_encrypted_to_device_messages(const std::map<std::string, std::vector<std::s
                         continue;
                     }
 
-                    auto otk = rd.second.begin()->at("key");
+                    auto otk = rd.second.begin()->at("key").get<std::string>();
 
                     auto sign_key = pks.at(user_id).at(device_id).ed25519;
                     auto id_key   = pks.at(user_id).at(device_id).curve25519;
@@ -1449,10 +1517,10 @@ send_encrypted_to_device_messages(const std::map<std::string, std::vector<std::s
                           if (!mtx::crypto::verify_identity_signature(
                                 dev.second, device_id, user_id)) {
                               nhlog::crypto()->warn("failed to verify identity keys: {}",
-                                                    json(dev.second).dump(2));
+                                                    nlohmann::json(dev.second).dump(2));
                               continue;
                           }
-                      } catch (const json::exception &e) {
+                      } catch (const nlohmann::json::exception &e) {
                           nhlog::crypto()->warn("failed to parse device key json: {}", e.what());
                           continue;
                       } catch (const mtx::crypto::olm_exception &e) {

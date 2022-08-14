@@ -117,6 +117,9 @@ formatVersion();
 //! set the format version to the current version
 void
 setCurrentFormat();
+//! migrates db to the current format
+bool
+runMigrations();
 
 QMap<QString, mtx::responses::Notifications>
 getTimelineMentions();

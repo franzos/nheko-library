@@ -18,9 +18,8 @@
 #include "../Client.h"
 #include "Logging.h"
 #include "MatrixClient.h"
+#include "UserSettings.h"
 #include "Utils.h"
-
-#include <UserSettings.h>
 
 #include "mtx/responses/turn_server.hpp"
 
@@ -36,14 +35,16 @@ extern "C"
 }
 #endif
 
-Q_DECLARE_METATYPE(std::vector<mtx::events::msg::CallCandidates::Candidate>)
-Q_DECLARE_METATYPE(mtx::events::msg::CallCandidates::Candidate)
+Q_DECLARE_METATYPE(std::vector<mtx::events::voip::CallCandidates::Candidate>)
+Q_DECLARE_METATYPE(mtx::events::voip::CallCandidates::Candidate)
 Q_DECLARE_METATYPE(mtx::responses::TurnServer)
 
 using namespace mtx::events;
-using namespace mtx::events::msg;
+using namespace mtx::events::voip;
 
 using webrtc::CallType;
+//! Session Description Object
+typedef RTCSessionDescriptionInit SDO;
 
 namespace {
 std::vector<std::string>
@@ -55,10 +56,9 @@ CallManager::CallManager(QObject *parent)
   , session_(WebRTCSession::instance())
   , turnServerTimer_(this)
 {
-    qRegisterMetaType<std::vector<mtx::events::msg::CallCandidates::Candidate>>();
-    qRegisterMetaType<mtx::events::msg::CallCandidates::Candidate>();
+    qRegisterMetaType<std::vector<mtx::events::voip::CallCandidates::Candidate>>();
+    qRegisterMetaType<mtx::events::voip::CallCandidates::Candidate>();
     qRegisterMetaType<mtx::responses::TurnServer>();
-
 
 #ifdef GSTREAMER_AVAILABLE
     // TODO: we need to check Nheko's approach that doesn't require the following
@@ -74,8 +74,10 @@ CallManager::CallManager(QObject *parent)
       this,
       [this](const std::string &sdp, const std::vector<CallCandidates::Candidate> &candidates) {
           nhlog::ui()->debug("WebRTC: call id: {} - sending offer", callid_);
-          emit newMessage(roomid_, CallInvite{callid_, sdp, "0", timeoutms_});
-          emit newMessage(roomid_, CallCandidates{callid_, candidates, "0"});
+          emit newMessage(
+            roomid_,
+            CallInvite{callid_, partyid_, SDO{sdp, SDO::Type::Offer}, "0", timeoutms_, invitee_});
+          emit newMessage(roomid_, CallCandidates{callid_, partyid_, candidates, "0"});
           std::string callid(callid_);
           QTimer::singleShot(timeoutms_, this, [this, callid]() {
               if (session_.state() == webrtc::State::OFFERSENT && callid == callid_) {
@@ -92,8 +94,8 @@ CallManager::CallManager(QObject *parent)
       this,
       [this](const std::string &sdp, const std::vector<CallCandidates::Candidate> &candidates) {
           nhlog::ui()->debug("WebRTC: call id: {} - sending answer", callid_);
-          emit newMessage(roomid_, CallAnswer{callid_, sdp, "0"});
-          emit newMessage(roomid_, CallCandidates{callid_, candidates, "0"});
+          emit newMessage(roomid_, CallAnswer{callid_, partyid_, "0", SDO{sdp, SDO::Type::Answer}});
+          emit newMessage(roomid_, CallCandidates{callid_, partyid_, candidates, "0"});
       });
 
     connect(&session_,
@@ -101,7 +103,7 @@ CallManager::CallManager(QObject *parent)
             this,
             [this](const CallCandidates::Candidate &candidate) {
                 nhlog::ui()->debug("WebRTC: call id: {} - sending ice candidate", callid_);
-                emit newMessage(roomid_, CallCandidates{callid_, {candidate}, "0"});
+                emit newMessage(roomid_, CallCandidates{callid_, partyid_, {candidate}, "0"});
             });
 
     connect(&turnServerTimer_, &QTimer::timeout, this, &CallManager::retrieveTurnServer);
@@ -129,9 +131,9 @@ CallManager::CallManager(QObject *parent)
             clear();
             break;
         case webrtc::State::ICEFAILED: {
-            QString error("Call connection failed.");
+            QString error(QStringLiteral("Call connection failed."));
             if (turnURIs_.empty())
-                error += " Your homeserver has no configured TURN server.";
+                error += QLatin1String(" Your homeserver has no configured TURN server.");
             nhlog::ui()->error(error.toStdString());
             emit Client::instance()->showNotification(error);
             hangUp(CallHangUp::Reason::ICEFailed);
@@ -219,6 +221,16 @@ callHangUpReasonString(CallHangUp::Reason reason)
         return "ICE failed";
     case CallHangUp::Reason::InviteTimeOut:
         return "Invite time out";
+    case CallHangUp::Reason::ICETimeOut:
+        return "ICE time out";
+    case CallHangUp::Reason::UserHangUp:
+        return "User hung up";
+    case CallHangUp::Reason::UserMediaFailed:
+        return "User media failed";
+    case CallHangUp::Reason::UserBusy:
+        return "User busy";
+    case CallHangUp::Reason::UnknownError:
+        return "Unknown error";
     default:
         return "User";
     }
@@ -231,7 +243,7 @@ CallManager::hangUp(CallHangUp::Reason reason)
     if (!callid_.empty()) {
         nhlog::ui()->debug(
           "WebRTC: call id: {} - hanging up ({})", callid_, callHangUpReasonString(reason));
-        emit newMessage(roomid_, CallHangUp{callid_, "0", reason});
+        emit newMessage(roomid_, CallHangUp{callid_, partyid_, "0", reason});
         endCall();
     }
 }
@@ -263,7 +275,7 @@ void
 CallManager::handleEvent(const RoomEvent<CallInvite> &callInviteEvent)
 {
     const char video[]     = "m=video";
-    const std::string &sdp = callInviteEvent.content.sdp;
+    const std::string &sdp = callInviteEvent.content.offer.sdp;
     bool isVideo           = std::search(sdp.cbegin(),
                                sdp.cend(),
                                std::cbegin(video),
@@ -284,7 +296,8 @@ CallManager::handleEvent(const RoomEvent<CallInvite> &callInviteEvent)
     if (isOnCall() || roomInfo.member_count != 2) {
         emit newMessage(
           QString::fromStdString(callInviteEvent.room_id),
-          CallHangUp{callInviteEvent.content.call_id, "0", CallHangUp::Reason::InviteTimeOut});
+          CallHangUp{
+            callInviteEvent.content.call_id, partyid_, "0", CallHangUp::Reason::InviteTimeOut});
         return;
     }
 
@@ -302,7 +315,7 @@ CallManager::handleEvent(const RoomEvent<CallInvite> &callInviteEvent)
 
     haveCallInvite_ = true;
     callType_       = isVideo ? CallType::VIDEO : CallType::VOICE;
-    inviteSDP_      = callInviteEvent.content.sdp;
+    inviteSDP_      = callInviteEvent.content.offer.sdp;
     emit newInviteState();
 }
 
@@ -376,7 +389,7 @@ CallManager::handleEvent(const RoomEvent<CallAnswer> &callAnswerEvent)
     }
 
     if (isOnCall() && callid_ == callAnswerEvent.content.call_id) {
-        if (!session_.acceptAnswer(callAnswerEvent.content.sdp)) {
+        if (!session_.acceptAnswer(callAnswerEvent.content.answer.sdp)) {
             nhlog::ui()->error("Problem setting up call.");
             emit Client::instance()->showNotification(QStringLiteral("Problem setting up call."));
             hangUp();
@@ -423,8 +436,8 @@ QStringList
 CallManager::devices(bool isVideo) const
 {
     QStringList ret;
-    const QString &defaultDevice = isVideo ? UserSettings::instance()->camera()
-                                           : UserSettings::instance()->microphone();
+    const QString &defaultDevice =
+      isVideo ? UserSettings::instance()->camera() : UserSettings::instance()->microphone();
     std::vector<std::string> devices =
       CallDevices::instance().names(isVideo, defaultDevice.toStdString());
     ret.reserve(devices.size());
