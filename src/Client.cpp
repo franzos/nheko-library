@@ -438,18 +438,22 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
                     return;
                 } else if (cacheVersion == cache::CacheVersion::Older) {
                     if (!cache::runMigrations()) {
-                        emit showNotification(tr("Migrating the cache to the current version failed. "
+                        QString message = tr("Migrating the cache to the current version failed. "
                                 "This can have different reasons. Please open an "
                                 "issue and try to use an older version in the mean "
                                 "time. Alternatively you can try deleting the cache "
-                                "manually."));
+                                "manually.");
+                        nhlog::db()->critical(message.toStdString());
+                        emit showNotification(message);
                         // QCoreApplication::quit();
                     }
                     loadStateFromCache();
                     return;
                 } else if (cacheVersion == cache::CacheVersion::Newer) {
-                    emit showNotification(tr("The cache on your disk is newer than this version of Nheko "
-                            "supports. Please update Nheko or clear your cache."));
+                    QString message = tr("The cache on your disk is newer than this version of Nheko "
+                            "supports. Please update Nheko or clear your cache.");
+                    nhlog::db()->critical(message.toStdString());
+                    emit showNotification(message);
                     // QCoreApplication::quit();
                     return;
                 }
