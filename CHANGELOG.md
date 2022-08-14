@@ -4,10 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## [0.1.9] - NOT RELEASED YET
+## [0.1.9]
 ### Updated
 
-* Update with upstream.
+* Merge with upstream@0.10.0.
 
 
 ## [0.1.8]
