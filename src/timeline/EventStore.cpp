@@ -48,9 +48,13 @@ EventStore::EventStore(std::string room_id, QObject *)
           cache::client()->storeEvent(room_id_, id, {timeline});
 
           if (!relatedTo.empty()) {
+              if (relatedTo == "pins") {
+                  emit pinsChanged();
+              } else {
               auto idx = idToIndex(relatedTo);
               if (idx)
                   emit dataChanged(*idx, *idx);
+          }
           }
       },
       Qt::QueuedConnection);
@@ -237,8 +241,8 @@ EventStore::EventStore(std::string room_id, QObject *)
 
                       std::visit(
                         [&pending_event, &original_encrypted, &session, this](auto &msg) {
-                            json doc = {{"type", mtx::events::to_string(msg.type)},
-                                        {"content", json(msg.content)},
+                            nlohmann::json doc = {{"type", mtx::events::to_string(msg.type)},
+                                                  {"content", nlohmann::json(msg.content)},
                                         {"room_id", room_id_}};
 
                             auto data = olm::encrypt_group_message_with_session(
@@ -384,6 +388,7 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
 
     for (const auto &event : events.events) {
         std::set<std::string> relates_to;
+        std::string edited_event;
         if (auto redaction =
               std::get_if<mtx::events::RedactionEvent<mtx::events::msg::Redaction>>(&event)) {
             // fixup reactions
@@ -402,8 +407,12 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
 
             relates_to.insert(redaction->redacts);
         } else {
-            for (const auto &r : mtx::accessors::relations(event).relations)
+            for (const auto &r : mtx::accessors::relations(event).relations) {
                 relates_to.insert(r.event_id);
+
+                if (r.rel_type == mtx::common::RelationType::Replace)
+                    edited_event = r.event_id;
+            }
         }
 
         for (const auto &relates_to_id : relates_to) {
@@ -422,6 +431,16 @@ EventStore::handleSync(const mtx::responses::Timeline &events)
                 Index index{room_id_, *idx};
                 events_.remove(index);
                 emit dataChanged(toExternalIdx(*idx), toExternalIdx(*idx));
+            }
+        }
+
+        if (!edited_event.empty()) {
+            for (const auto &downstream_event :
+                 cache::client()->relatedEvents(room_id_, edited_event)) {
+                auto idx = cache::client()->getTimelineIndex(room_id_, downstream_event);
+                if (idx) {
+                    emit dataChanged(toExternalIdx(*idx), toExternalIdx(*idx));
+                }
             }
         }
 
@@ -691,17 +710,15 @@ EventStore::decryptEvent(const IdIndex &idx,
             break;
         }
         case olm::DecryptionErrorCode::DbError:
-            nhlog::db()->critical("failed to retrieve megolm session with index ({}, {}, {})",
+            nhlog::db()->critical("failed to retrieve megolm session with index ({}, {})",
                                   index.room_id,
                                   index.session_id,
-                                  index.sender_key,
                                   decryptionResult.error_message.value_or(""));
             break;
         case olm::DecryptionErrorCode::DecryptionFailed:
-            nhlog::crypto()->critical("failed to decrypt message with index ({}, {}, {}): {}",
+            nhlog::crypto()->critical("failed to decrypt message with index ({},  {}): {}",
                                       index.room_id,
                                       index.session_id,
-                                      index.sender_key,
                                       decryptionResult.error_message.value_or(""));
             break;
         case olm::DecryptionErrorCode::ParsingFailed:
@@ -710,7 +727,7 @@ EventStore::decryptEvent(const IdIndex &idx,
             nhlog::crypto()->critical("Reply attack while decryptiong event {} in room {} from {}!",
                                       e.event_id,
                                       room_id_,
-                                      index.sender_key);
+                                      e.sender);
             break;
         case olm::DecryptionErrorCode::NoError:
             // unreachable
@@ -737,7 +754,6 @@ EventStore::requestSession(const mtx::events::EncryptedEvent<mtx::events::msg::E
     if (suppressKeyRequests)
         return;
 
-    // TODO: Look in key backup
     auto copy    = ev;
     copy.room_id = room_id_;
     if (pending_key_requests.count(ev.content.session_id)) {

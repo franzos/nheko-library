@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -8,8 +9,7 @@
 
 #include "CallDevices.h"
 #include "Logging.h"
-
-#include <UserSettings.h>
+#include "UserSettings.h"
 
 #ifdef GSTREAMER_AVAILABLE
 extern "C"
@@ -50,10 +50,13 @@ using FrameRate = std::pair<int, int>;
 std::optional<FrameRate>
 getFrameRate(const GValue *value)
 {
+    if (GST_VALUE_HOLDS_FRACTION(value)) {
         gint num = gst_value_get_fraction_numerator(value);
         gint den = gst_value_get_fraction_denominator(value);
         return FrameRate{num, den};
     }
+    return std::nullopt;
+}
 
 void
 addFrameRate(std::vector<std::string> &rates, const FrameRate &rate)
@@ -169,8 +172,7 @@ removeDevice(T &sources, GstDevice *device, bool changed)
     if (auto it = std::find_if(
           sources.begin(), sources.end(), [device](const auto &s) { return s.device == device; });
         it != sources.end()) {
-        nhlog::ui()->debug(
-          std::string("WebRTC: device ") + (changed ? "changed: " : "removed: ") + "{}", it->name);
+        nhlog::ui()->debug("WebRTC: device {}: {}", (changed ? "changed" : "removed"), it->name);
         gst_object_unref(device);
         sources.erase(it);
         return true;
@@ -362,6 +364,7 @@ CallDevices::videoDevice(std::pair<int, int> &resolution, std::pair<int, int> &f
         return nullptr;
     }
 }
+
 #else
 
 bool

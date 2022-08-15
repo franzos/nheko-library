@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -12,7 +13,9 @@
 #include "Logging.h"
 #include "UserProfile.h"
 #include "Utils.h"
+#include "UIA.h"
 #include "encryption/DeviceVerificationFlow.h"
+#include "encryption/VerificationManager.h"
 #include "mtx/responses/crypto.hpp"
 
 UserProfile::UserProfile(QString roomid,
@@ -23,7 +26,7 @@ UserProfile::UserProfile(QString roomid,
   , roomid_(roomid)
   , userid_(userid)
 {
-    globalAvatarUrl = "";
+    globalAvatarUrl = QLatin1String("");
 
     connect(this,
             &UserProfile::globalUsernameRetrieved,
@@ -39,19 +42,57 @@ UserProfile::UserProfile(QString roomid,
     if (!cache::client() || !cache::client()->isDatabaseReady())
     //     ||!Client::instance()->timeline())
         return;
+
     connect(
       cache::client(), &Cache::verificationStatusChanged, this, [this](const std::string &user_id) {
           if (user_id != this->userid_.toStdString())
               return;
+
           emit verificationStatiChanged();
       });
     fetchDeviceList(this->userid_);
 }
 
+QHash<int, QByteArray>
+DeviceInfoModel::roleNames() const
+{
+    return {
+      {DeviceId, "deviceId"},
+      {DeviceName, "deviceName"},
+      {VerificationStatus, "verificationStatus"},
+      {LastIp, "lastIp"},
+      {LastTs, "lastTs"},
+    };
+}
+
+QVariant
+DeviceInfoModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() >= (int)deviceList_.size() || index.row() < 0)
+        return {};
+
+    switch (role) {
+    case DeviceId:
+        return deviceList_[index.row()].device_id;
+    case DeviceName:
+        return deviceList_[index.row()].display_name;
+    case VerificationStatus:
+        return QVariant::fromValue(deviceList_[index.row()].verification_status);
+    case LastIp:
+        return deviceList_[index.row()].lastIp;
+    case LastTs:
+        return deviceList_[index.row()].lastTs;
+    default:
+        return {};
+    }
+}
+
 void
 DeviceInfoModel::reset(const std::vector<DeviceInfo> &deviceList)
 {
+    beginResetModel();
     this->deviceList_ = std::move(deviceList);
+    endResetModel();
 }
 
 DeviceInfoModel *
@@ -81,7 +122,7 @@ UserProfile::avatarUrl()
 bool
 UserProfile::isGlobalUserProfile() const
 {
-    return roomid_ == "";
+    return roomid_ == QLatin1String("");
 }
 
 crypto::Trust
@@ -101,26 +142,26 @@ UserProfile::isSelf() const
     return this->userid_ == utils::localUser();
 }
 
-// void
-// UserProfile::signOutDevice(const QString &deviceID)
-// {
-//     http::client()->delete_device(
-//       deviceID.toStdString(),
-//       UIA::instance()->genericHandler(tr("Sign out device %1").arg(deviceID)),
-//       [this, deviceID](mtx::http::RequestErr e) {
-//           if (e) {
-//               nhlog::ui()->critical("Failure when attempting to sign out device {}",
-//                                     deviceID.toStdString());
-//               return;
-//           }
-//           nhlog::ui()->info("Device {} successfully signed out!", deviceID.toStdString());
-//           // This is us. Let's update the interface accordingly
-//           if (isSelf() && deviceID.toStdString() == ::http::client()->device_id()) {
-//               ChatPage::instance()->dropToLoginPageCb(tr("You signed out this device."));
-//           }
-//           refreshDevices();
-//       });
-// }
+void
+UserProfile::signOutDevice(const QString &deviceID)
+{
+    http::client()->delete_device(
+      deviceID.toStdString(),
+      UIA::instance()->genericHandler(tr("Sign out device %1").arg(deviceID)),
+      [this, deviceID](mtx::http::RequestErr e) {
+          if (e) {
+              nhlog::ui()->critical("Failure when attempting to sign out device {}",
+                                    deviceID.toStdString());
+              return;
+          }
+          nhlog::ui()->info("Device {} successfully signed out!", deviceID.toStdString());
+          // This is us. Let's update the interface accordingly
+          if (isSelf() && deviceID.toStdString() == ::http::client()->device_id()) {
+              Client::instance()->dropToLogin(tr("You signed out this device."));
+          }
+          refreshDevices();
+      });
+}
 
 void
 UserProfile::refreshDevices()
@@ -132,8 +173,6 @@ UserProfile::refreshDevices()
 void
 UserProfile::fetchDeviceList(const QString &userID)
 {
-    auto localUser = utils::localUser();
-
     if (!cache::client() || !cache::client()->isDatabaseReady())
         return;
 
@@ -145,7 +184,6 @@ UserProfile::fetchDeviceList(const QString &userID)
               nhlog::net()->warn("failed to query device keys: {},{}",
                                  mtx::errors::to_string(err->matrix_error.errcode),
                                  static_cast<int>(err->status_code));
-              return;
           }
 
           // Ensure local key cache is up to date
@@ -159,7 +197,6 @@ UserProfile::fetchDeviceList(const QString &userID)
                     nhlog::net()->warn("failed to query device keys: {},{}",
                                        mtx::errors::to_string(err->matrix_error.errcode),
                                        static_cast<int>(err->status_code));
-                    return;
                 }
 
                 emit verificationStatiChanged();
@@ -177,7 +214,7 @@ UserProfile::updateVerificationStatus()
     if (!user_keys) {
         this->hasMasterKey   = false;
         this->isUserVerified = crypto::Trust::Unverified;
-        // this->deviceList_.reset({});
+        this->deviceList_.reset({});
         emit userStatusChanged();
         return;
     }
@@ -191,6 +228,7 @@ UserProfile::updateVerificationStatus()
     this->isUserVerified = verificationStatus.user_verified;
     emit userStatusChanged();
 
+    deviceInfo.reserve(devices.size());
     for (const auto &d : devices) {
         auto device = d.second;
         verification::Status verified =
@@ -203,9 +241,9 @@ UserProfile::updateVerificationStatus()
         if (isSelf() && device.device_id == ::http::client()->device_id())
             verified = verification::Status::SELF;
 
-        deviceInfo.push_back({QString::fromStdString(d.first),
+        deviceInfo.emplace_back(QString::fromStdString(d.first),
                               QString::fromStdString(device.unsigned_info.device_display_name),
-                              verified});
+                                verified);
     }
 
     // For self, also query devices without keys
@@ -217,7 +255,7 @@ UserProfile::updateVerificationStatus()
                   nhlog::net()->warn("failed to query devices: {} {}",
                                      err->matrix_error.error,
                                      static_cast<int>(err->status_code));
-                //   this->deviceList_.queueReset(std::move(deviceInfo));
+                  this->deviceList_.queueReset(std::move(deviceInfo));
                   emit devicesChanged();
                   return;
               }
@@ -229,34 +267,34 @@ UserProfile::updateVerificationStatus()
                           found = true;
                           // Gottem! Let's fill in the blanks
                           e.lastIp = QString::fromStdString(d.last_seen_ip);
-                          e.lastTs = d.last_seen_ts;
+                          e.lastTs = static_cast<qlonglong>(d.last_seen_ts);
                           break;
                       }
                   }
                   // No entry? Let's add one.
                   if (!found) {
-                      deviceInfo.push_back({QString::fromStdString(d.device_id),
+                      deviceInfo.emplace_back(QString::fromStdString(d.device_id),
                                             QString::fromStdString(d.display_name),
                                             verification::NOT_APPLICABLE,
                                             QString::fromStdString(d.last_seen_ip),
-                                            d.last_seen_ts});
+                                              d.last_seen_ts);
                   }
               }
 
-            //   this->deviceList_.queueReset(std::move(deviceInfo));
+              this->deviceList_.queueReset(std::move(deviceInfo));
               emit devicesChanged();
           });
         return;
     }
 
-    // this->deviceList_.queueReset(std::move(deviceInfo));
+    this->deviceList_.queueReset(std::move(deviceInfo));
     emit devicesChanged();
 }
 
 void
 UserProfile::banUser()
 {
-    // Client::instance()->banUser(this->userid_, "");
+    Client::instance()->timeline(roomid_)->banUser(this->userid_, "");
 }
 
 // void ignoreUser(){
@@ -266,7 +304,13 @@ UserProfile::banUser()
 void
 UserProfile::kickUser()
 {
-    // Client::instance()->kickUser(this->userid_, "");
+    Client::instance()->timeline(roomid_)->kickUser(this->userid_, "");
+}
+
+void
+UserProfile::startChat(bool encryption)
+{
+    Client::instance()->startChat(this->userid_, encryption);
 }
 
 void
@@ -315,7 +359,6 @@ UserProfile::changeDeviceName(QString deviceID, QString deviceName)
 void
 UserProfile::verify(QString device)
 {
-    
     if (!device.isEmpty())
         Client::instance()->verificationManager()->verifyDevice(userid_, device);
     else {
@@ -350,10 +393,10 @@ UserProfile::changeAvatar()
     // QMimeDatabase db;
     // QMimeType mime = db.mimeTypeForFile(fileName, QMimeDatabase::MatchContent);
 
-    // const auto format = mime.name().split("/")[0];
+    // const auto format = mime.name().split(QStringLiteral("/"))[0];
 
     // QFile file{fileName, this};
-    // if (format != "image") {
+    // if (format != QLatin1String("image")) {
     //     emit displayError(tr("The selected file is not an image"));
     //     return;
     // }

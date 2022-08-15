@@ -33,6 +33,7 @@ Q_DECLARE_METATYPE(std::optional<RelatedInfo>)
 Q_DECLARE_METATYPE(mtx::presence::PresenceState)
 Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
+Q_DECLARE_METATYPE(std::vector<DeviceInfo>)
 
 
 namespace {
@@ -90,8 +91,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     instance_->enableLogger(true);
     callManager_ = new CallManager(this);
     connect(callManager_,
-                qOverload<const QString &, const mtx::events::msg::CallInvite &>(&CallManager::newMessage),
-                [=](const QString &roomid, const mtx::events::msg::CallInvite &invite) {
+                qOverload<const QString &, const mtx::events::voip::CallInvite &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::voip::CallInvite &invite) {
                     nhlog::ui()->info("CALL INVITE: callid: {} - room: {}", invite.call_id, roomid.toStdString());
                     if (auto timeline = this->timeline(roomid)) {
                         timeline->sendMessageEvent(invite, mtx::events::EventType::CallInvite);
@@ -99,8 +100,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
                 });
 
     connect(callManager_,
-                qOverload<const QString &, const mtx::events::msg::CallCandidates &>(&CallManager::newMessage),
-                [=](const QString &roomid, const mtx::events::msg::CallCandidates &candidate) {
+                qOverload<const QString &, const mtx::events::voip::CallCandidates &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::voip::CallCandidates &candidate) {
                     nhlog::ui()->info("CALL CANDIDATE: callid: {} - room: {}", candidate.call_id, roomid.toStdString());
                     if (auto timeline = this->timeline(roomid)) {
                         timeline->sendMessageEvent(candidate, mtx::events::EventType::CallCandidates);
@@ -108,8 +109,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
                 });
 
     connect(callManager_,
-                qOverload<const QString &, const mtx::events::msg::CallAnswer &>(&CallManager::newMessage),
-                [=](const QString &roomid, const mtx::events::msg::CallAnswer &answer) {
+                qOverload<const QString &, const mtx::events::voip::CallAnswer &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::voip::CallAnswer &answer) {
                     nhlog::ui()->info("CALL ANSWER: callid: {} - room: {}", answer.call_id, roomid.toStdString());
                     if (auto timeline = this->timeline(roomid)) {
                         timeline->sendMessageEvent(answer, mtx::events::EventType::CallAnswer);
@@ -117,8 +118,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
                 });
 
     connect(callManager_,
-                qOverload<const QString &, const mtx::events::msg::CallHangUp &>(&CallManager::newMessage),
-                [=](const QString &roomid, const mtx::events::msg::CallHangUp &hangup) {
+                qOverload<const QString &, const mtx::events::voip::CallHangUp &>(&CallManager::newMessage),
+                [=](const QString &roomid, const mtx::events::voip::CallHangUp &hangup) {
                     nhlog::ui()->info("CALL HANGUP: callid: {} - room: {}", hangup.call_id, roomid.toStdString());
                     if (auto timeline = this->timeline(roomid)) {
                         timeline->sendMessageEvent(hangup, mtx::events::EventType::CallHangUp);
@@ -132,6 +133,8 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     qRegisterMetaType<mtx::presence::PresenceState>();
     qRegisterMetaType<mtx::secret_storage::AesHmacSha2KeyDescription>();
     qRegisterMetaType<SecretsToDecrypt>();
+    qRegisterMetaType<std::vector<DeviceInfo>>();
+
     _verificationManager = new VerificationManager(this);
     _authentication = new Authentication();
     connect(_authentication,
@@ -324,6 +327,16 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
       this, &Client::newSyncResponse, this, &Client::handleSyncResponse, Qt::QueuedConnection);
 
     connect(this, &Client::dropToLogin, this, &Client::dropToLoginCb);
+    connect(
+      this,
+      &Client::startRemoveFallbackKeyTimer,
+      this,
+      [this]() {
+          QTimer::singleShot(std::chrono::minutes(5), this, &Client::removeOldFallbackKey);
+          disconnect(
+            this, &Client::newSyncResponse, this, &Client::startRemoveFallbackKeyTimer);
+      },
+      Qt::QueuedConnection);
 
     // verification handlers
     connect(this,
@@ -344,6 +357,7 @@ Client::logoutCb()
     connectivityTimer_.stop();
     emit logoutOk();
 }
+
 void
 Client::loginCb(const mtx::responses::Login &res)
 {
@@ -362,6 +376,11 @@ Client::loginCb(const mtx::responses::Login &res)
     user.homeServer = homeserver;
     user.deviceId = device_id;
     user.accessToken = token;
+    loginDone(user);
+}
+
+void Client::loginDone(const UserInformation &user){
+    cache::deleteDB(cache::cacheDirectory(user.userId, userSettings_.data()->profile()));
     emit loginOk(user);
 }
 
@@ -421,13 +440,24 @@ Client::bootstrap(std::string userid, std::string homeserver, std::string token)
                 if (cacheVersion == cache::CacheVersion::Current) {
                     loadStateFromCache();
                     return;
+                } else if (cacheVersion == cache::CacheVersion::Older) {
+                    if (!cache::runMigrations()) {
+                        QString message = tr("Migrating the cache to the current version failed. "
+                                "This can have different reasons. Please open an "
+                                "issue and try to use an older version in the mean "
+                                "time. Alternatively you can try deleting the cache "
+                                "manually.");
+                        nhlog::db()->critical(message.toStdString());
+                        emit showNotification(message);
+                        // QCoreApplication::quit();
+                    }
+                    loadStateFromCache();
+                    return;
                 } else if (cacheVersion == cache::CacheVersion::Newer) {
-                    // TODO
-                    // QMessageBox::critical(
-                    //   this,
-                    //   tr("Incompatible cache version"),
-                    //   tr("The cache on your disk is newer than this version of Nheko "
-                    //      "supports. Please update Nheko or clear your cache."));
+                    QString message = tr("The cache on your disk is newer than this version of Nheko "
+                            "supports. Please update Nheko or clear your cache.");
+                    nhlog::db()->critical(message.toStdString());
+                    emit showNotification(message);
                     // QCoreApplication::quit();
                     return;
                 }
@@ -495,7 +525,7 @@ Client::loadStateFromCache()
         nhlog::db()->critical("failed to restore cache: {}", e.what());
         emit dropToLogin("Failed to restore save data. Please login again.");
         return;
-    } catch (const json::exception &e) {
+    } catch (const nlohmann::json::exception &e) {
         nhlog::db()->critical("failed to parse cache data: {}", e.what());
         emit dropToLogin("Failed to restore save data. Please login again.");
         return;
@@ -512,6 +542,7 @@ Client::loadStateFromCache()
     getBackupVersion();
     verifyOneTimeKeyCountAfterStartup();
     
+    connect(this, &Client::newSyncResponse, &Client::startRemoveFallbackKeyTimer);
     emit trySyncCb();
     emit prepareTimelines();
     auto up = new UserProfile("",utils::localUser());
@@ -616,6 +647,7 @@ Client::startInitialSync()
 
     http::client()->sync(opts, [this](const mtx::responses::Sync &res, mtx::http::RequestErr err) {
         // TODO: Initial Sync should include mentions as well...
+
         if (err) {
             const auto error      = QString::fromStdString(err->matrix_error.error);
             const auto msg        = tr("Please try to login again: %1").arg(error);
@@ -648,8 +680,8 @@ Client::startInitialSync()
             }
         }
 
+        QTimer::singleShot(0, this, [this, res] {
         nhlog::net()->info("initial sync completed");
-
         try {
             cache::client()->saveState(res);
             olm::handle_to_device_messages(res.to_device.events);
@@ -666,6 +698,7 @@ Client::startInitialSync()
         auto up = new UserProfile("",utils::localUser());
         (void) up; //TODO: review
     });
+    });
 }
 
 void
@@ -678,12 +711,13 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
         }
     } catch (const lmdb::error &e) {
         nhlog::db()->warn("Logged out in the mean time, dropping sync");
+        return;
     }
 
     nhlog::net()->debug("sync completed: {}", res.next_batch);
 
     // Ensure that we have enough one-time keys available.
-    ensureOneTimeKeyCount(res.device_one_time_keys_count);
+    ensureOneTimeKeyCount(res.device_one_time_keys_count, res.device_unused_fallback_key_types);
 
     // TODO: fine grained error handling
     try {
@@ -760,16 +794,19 @@ Client::trySync()
 }
 
 void
-Client::joinRoom(const QString &room_id)
+Client::joinRoom(const QString &room, const QString &reason)
 {
-    joinRoomVia(room_id, {});
+    joinRoomVia(room, {}, reason);
 }
 
 void
 Client::joinRoomVia(const QString &room_id,
-                      const std::vector<std::string> &via) {
+                      const std::vector<std::string> &via,
+                      const QString &reason) {
     http::client()->join_room(
-      room_id.toStdString(), via, [this, room_id](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
+      room_id.toStdString(),
+      via,
+      [this, room_id, reason, via](const mtx::responses::RoomId &roomId, mtx::http::RequestErr err) {
           if (err) {
               emit joinRoomFailed(QString::fromStdString(err->matrix_error.error));
               return;
@@ -790,11 +827,18 @@ Client::joinRoomVia(const QString &room_id,
 void
 Client::createRoom(const mtx::requests::CreateRoom &req)
 {
+    if (req.room_alias_name.find(":") != std::string::npos ||
+        req.room_alias_name.find("#") != std::string::npos) {
+        nhlog::net()->warn("Failed to create room: Some characters are not allowed in alias");
+        emit this->showNotification(tr("Room creation failed: Bad Alias"));
+        return;
+    }
+
     http::client()->create_room(
       req, [this](const mtx::responses::CreateRoom &res, mtx::http::RequestErr err) {
           if (err) {
-              const auto err_code   = mtx::errors::to_string(err->matrix_error.errcode);
-              const auto error      = err->matrix_error.error;
+              const auto err_code = mtx::errors::to_string(err->matrix_error.errcode);
+              const auto error    = err->matrix_error.error;
               const int status_code = static_cast<int>(err->status_code);
               nhlog::net()->warn("failed to create room: {} {} ({})", error, err_code, status_code);
               emit roomCreationFailed(QString::fromStdString(error));
@@ -808,17 +852,29 @@ Client::createRoom(const mtx::requests::CreateRoom &req)
 }
 
 void
-Client::leaveRoom(const QString &room_id)
+Client::leaveRoom(const QString &room_id, const QString &reason)
 {
     http::client()->leave_room(
       room_id.toStdString(),
       [this, room_id](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
               emit roomLeaveFailed(QString::fromStdString(err->matrix_error.error));
+              nhlog::net()->error("Failed to leave room '{}': {}", room_id.toStdString(), err);
+
+              if (err->status_code == 404 &&
+                  err->matrix_error.errcode == mtx::errors::ErrorCode::M_UNKNOWN) {
+                  nhlog::db()->debug(
+                    "Removing invite and room for {}, even though we couldn't leave.",
+                    room_id.toStdString());
+                  cache::client()->removeInvite(room_id.toStdString());
+                  cache::client()->removeRoom(room_id.toStdString());
+              }
               return;
           }
+
           emit leftRoom(room_id);
-      });
+      },
+      reason.toStdString());
 }
 
 void
@@ -829,6 +885,8 @@ Client::inviteUser(const QString &roomid,const QString &userid, const QString &r
       userid.toStdString(),
       [this, userid, roomid](const mtx::responses::Empty &, mtx::http::RequestErr err) {
           if (err) {
+              nhlog::net()->error(
+                "Failed to invite {} to {}: {}", userid.toStdString(), roomid.toStdString(), *err);
               emit userInvitationFailed(userid,
                                         roomid,
                                         QString::fromStdString(err->matrix_error.error));
@@ -907,26 +965,39 @@ Client::verifyOneTimeKeyCountAfterStartup()
           nhlog::crypto()->info(
             "Fetched server key count {} {}", count, mtx::crypto::SIGNED_CURVE25519);
 
-          ensureOneTimeKeyCount(key_counts);
+          ensureOneTimeKeyCount(key_counts, std::nullopt);
       });
 }
 
 void
-Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
+Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts,
+                              const std::optional<std::vector<std::string>> &unused_fallback_keys)
 {
     if (auto count = counts.find(mtx::crypto::SIGNED_CURVE25519); count != counts.end()) {
+        bool replace_fallback_key = false;
+        if (unused_fallback_keys &&
+            std::find(unused_fallback_keys->begin(),
+                      unused_fallback_keys->end(),
+                      mtx::crypto::SIGNED_CURVE25519) == unused_fallback_keys->end())
+            replace_fallback_key = true;
         nhlog::crypto()->debug(
-          "Updated server key count {} {}", count->second, mtx::crypto::SIGNED_CURVE25519);
+          "Updated server key count {} {}, fallback keys supported: {}, new fallback key: {}",
+          count->second,
+          mtx::crypto::SIGNED_CURVE25519,
+          unused_fallback_keys.has_value(),
+          replace_fallback_key);
 
-        if (count->second < MAX_ONETIME_KEYS) {
-            const int nkeys = MAX_ONETIME_KEYS - count->second;
+        if (count->second < MAX_ONETIME_KEYS || replace_fallback_key) {
+            const size_t nkeys =
+              count->second < MAX_ONETIME_KEYS ? (MAX_ONETIME_KEYS - count->second) : 0;
 
             nhlog::crypto()->info("uploading {} {} keys", nkeys, mtx::crypto::SIGNED_CURVE25519);
-            olm::client()->generate_one_time_keys(nkeys);
+            olm::client()->generate_one_time_keys(nkeys, replace_fallback_key);
 
             http::client()->upload_keys(
               olm::client()->create_upload_keys_request(),
-              [](const mtx::responses::UploadKeys &, mtx::http::RequestErr err) {
+              [replace_fallback_key, this](const mtx::responses::UploadKeys &,
+                                           mtx::http::RequestErr err) {
                   if (err) {
                       nhlog::crypto()->warn("failed to update one-time keys: {} {} {}",
                                             err->matrix_error.error,
@@ -939,6 +1010,10 @@ Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
 
                   // mark as published anyway, otherwise we may end up in a loop.
                   olm::mark_keys_as_published();
+
+                  if (replace_fallback_key) {
+                      emit startRemoveFallbackKeyTimer();
+                  }
               });
         } else if (count->second > 2 * MAX_ONETIME_KEYS) {
             nhlog::crypto()->warn("too many one-time keys, deleting 1");
@@ -957,6 +1032,13 @@ Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts)
               });
         }
     }
+}
+
+void
+Client::removeOldFallbackKey()
+{
+    olm::client()->forget_old_fallback_key();
+    olm::mark_keys_as_published();
 }
 
 void
@@ -1046,6 +1128,7 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
             nhlog::crypto()->error("Failed to derive secret key from passphrase: {}", e.what());
         }
     }
+
     if (!decryptionKey) {
         auto message = "Failed to decrypt secrets with the provided recovery key or passphrase";
         nhlog::crypto()->error(message);
@@ -1055,8 +1138,11 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
 
     auto deviceKeys = cache::client()->userKeys(http::client()->user_id().to_string());
     mtx::requests::KeySignaturesUpload req;
+
     for (const auto &[secretName, encryptedSecret] : secrets) {
         auto decrypted = mtx::crypto::decrypt(encryptedSecret, *decryptionKey, secretName);
+        nhlog::crypto()->debug("Secret {} decrypted: {}", secretName, !decrypted.empty());
+
         if (!decrypted.empty()) {
             cache::storeSecret(secretName, decrypted);
 
@@ -1069,7 +1155,7 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
                       olm::client()->identity_keys().ed25519 &&
                     myKey.keys["curve25519:" + http::client()->device_id()] ==
                       olm::client()->identity_keys().curve25519) {
-                    json j = myKey;
+                    nlohmann::json j = myKey;
                     j.erase("signatures");
                     j.erase("unsigned");
 
@@ -1085,10 +1171,11 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
 
                 if (deviceKeys->master_keys.user_id == http::client()->user_id().to_string() &&
                     deviceKeys->master_keys.keys["ed25519:" + mk.public_key()] == mk.public_key()) {
-                    json j = deviceKeys->master_keys;
+                    nlohmann::json j = deviceKeys->master_keys;
                     j.erase("signatures");
                     j.erase("unsigned");
-                    mtx::crypto::CrossSigningKeys master_key = j;
+                    mtx::crypto::CrossSigningKeys master_key =
+                      j.get<mtx::crypto::CrossSigningKeys>();
                     master_key.signatures[http::client()->user_id().to_string()]
                                          ["ed25519:" + http::client()->device_id()] =
                       olm::client()->sign_message(j.dump());
@@ -1099,7 +1186,8 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
         }
     }
 
-    if (!req.signatures.empty())
+    if (!req.signatures.empty()) {
+        nhlog::crypto()->debug("Uploading new signatures: {}", nlohmann::json(req).dump(2));
         http::client()->keys_signatures_upload(
           req, [](const mtx::responses::KeySignaturesUpload &res, mtx::http::RequestErr err) {
               if (err) {
@@ -1111,22 +1199,24 @@ Client::decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_sto
               for (const auto &[user_id, tmp] : res.errors)
                   for (const auto &[key_id, e] : tmp)
                       nhlog::net()->error("signature error for user '{}' and key "
-                                          "id {}: {}, {}",
+                                          "id {}: {} {}",
                                           user_id,
                                           key_id,
                                           mtx::errors::to_string(e.errcode),
                                           e.error);
           });
+    }
 }
 
 void
-Client::startChat(QString userid)
+Client::startChat(QString userid, bool encryptionEnabled)
 {
     auto joined_rooms = cache::joinedRooms();
     auto room_infos   = cache::getRoomInfo(joined_rooms);
 
-    for (std::string room_id : joined_rooms) {
-        if (room_infos[QString::fromStdString(room_id)].member_count == 2) {
+    for (const std::string &room_id : joined_rooms) {
+        if (const auto &info = room_infos[QString::fromStdString(room_id)];
+            info.member_count == 2 && !info.is_space) {
             auto room_members = cache::roomMembers(room_id);
             if (std::find(room_members.begin(), room_members.end(), (userid).toStdString()) !=
                 room_members.end()) {
@@ -1138,8 +1228,16 @@ Client::startChat(QString userid)
     }
 
     mtx::requests::CreateRoom req;
-    req.preset     = mtx::requests::Preset::PrivateChat;
+    req.preset     = mtx::requests::Preset::TrustedPrivateChat;
     req.visibility = mtx::common::RoomVisibility::Private;
+
+    if (encryptionEnabled) {
+        mtx::events::StrippedEvent<mtx::events::state::Encryption> enc;
+        enc.type              = mtx::events::EventType::RoomEncryption;
+        enc.content.algorithm = mtx::crypto::MEGOLM_ALGO;
+        req.initial_state.emplace_back(std::move(enc));
+    }
+
     if (utils::localUser() != userid) {
         req.invite    = {userid.toStdString()};
         req.is_direct = true;
@@ -1152,7 +1250,7 @@ void Client::loginWithPassword(QString deviceName, QString userId, QString passw
 }
 
 bool Client::hasValidUser(){
-     if (UserSettings::instance()->accessToken() != "") {
+    if (UserSettings::instance()->accessToken() != "") {
         return true;
     }
     return false;
@@ -1287,8 +1385,8 @@ void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setCMUserId(userInfo.cmUserId);
     userSettings_.data()->setAccessToken(userInfo.accessToken);
     userSettings_.data()->setDeviceId(userInfo.deviceId);
-    userSettings_.data()->setHomeserver(userInfo.homeServer);    
-    emit loginOk(userInfo);
+    userSettings_.data()->setHomeserver(userInfo.homeServer);
+    loginDone(userInfo);
 }
 
 QString Client::getLibraryVersion(){
@@ -1297,6 +1395,23 @@ QString Client::getLibraryVersion(){
 
 QVariantMap Client::loginOptions(QString server){
     return _authentication->availableLogin(server);
+}
+
+QVector<UserInformation> Client::knownUsers(const QString &filter){
+    QVector<UserInformation> knownUsers;
+    for(auto const& t: _timelines.toStdMap()){
+        auto members = t.second->getMembers();
+        for(auto const &m: members){
+            if(m.user_id != UserSettings::instance()->userId() && (m.user_id.contains(filter) || m.display_name.contains(filter))){
+                UserInformation uinfo;
+                uinfo.userId = m.user_id;
+                uinfo.displayName = m.display_name;
+                uinfo.avatarUrl = t.second->avatarUrl(m.user_id);
+                knownUsers.push_back(uinfo);
+            }
+        }
+    }
+    return knownUsers;
 }
 
 QString Client::extractHostName(QString userId){

@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -6,6 +7,7 @@
 
 #include <variant>
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QPixmap>
 #include <QRegularExpression>
@@ -14,6 +16,7 @@
 #include <mtxclient/http/client.hpp>
 
 #include <qmath.h>
+#include "CacheStructs.h"
 
 struct DescInfo;
 
@@ -91,8 +94,9 @@ event_body(const mtx::events::collections::TimelineEvents &event);
 //! Match widgets/events with a description message.
 template<class T>
 QString
-messageDescription(const QString &username = "",
-                   const QString &body     = "")
+messageDescription(const QString &username = QString(),
+                   const QString &body     = QString(),
+                   const bool isLocal      = false)
 {
     using Audio      = mtx::events::RoomEvent<mtx::events::msg::Audio>;
     using Emote      = mtx::events::RoomEvent<mtx::events::msg::Emote>;
@@ -102,37 +106,86 @@ messageDescription(const QString &username = "",
     using Sticker    = mtx::events::Sticker;
     using Text       = mtx::events::RoomEvent<mtx::events::msg::Text>;
     using Video      = mtx::events::RoomEvent<mtx::events::msg::Video>;
-    using CallInvite = mtx::events::RoomEvent<mtx::events::msg::CallInvite>;
-    using CallAnswer = mtx::events::RoomEvent<mtx::events::msg::CallAnswer>;
-    using CallHangUp = mtx::events::RoomEvent<mtx::events::msg::CallHangUp>;
+    using CallInvite = mtx::events::RoomEvent<mtx::events::voip::CallInvite>;
+    using CallAnswer = mtx::events::RoomEvent<mtx::events::voip::CallAnswer>;
+    using CallHangUp = mtx::events::RoomEvent<mtx::events::voip::CallHangUp>;
     using Encrypted  = mtx::events::EncryptedEvent<mtx::events::msg::Encrypted>;
 
     if (std::is_same<T, Audio>::value) {
-        return QString("sent an audio clip");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:",
+                                               "You sent an audio clip");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 sent an audio clip")
+              .arg(username);
     } else if (std::is_same<T, Image>::value) {
-        return ("sent an image");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You sent an image");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 sent an image")
+              .arg(username);
     } else if (std::is_same<T, File>::value) {
-        return ("sent a file");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You sent a file");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 sent a file")
+              .arg(username);
     } else if (std::is_same<T, Video>::value) {
-        return ("sent a video");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You sent a video");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 sent a video")
+              .arg(username);
     } else if (std::is_same<T, Sticker>::value) {
-        return ("sent a sticker");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You sent a sticker");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 sent a sticker")
+              .arg(username);
     } else if (std::is_same<T, Notice>::value) {
-        return ("sent a notification");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:",
+                                               "You sent a notification");
+        else
+            return QCoreApplication::translate("message-description sent:",
+                                               "%1 sent a notification")
+              .arg(username);
     } else if (std::is_same<T, Text>::value) {
-        return QString("%1").arg(body);
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You: %1").arg(body);
+        else
+            return QCoreApplication::translate("message-description sent:", "%1: %2")
+              .arg(username, body);
     } else if (std::is_same<T, Emote>::value) {
-        return QString("* %1 %2").arg(username).arg(body);
+        return QStringLiteral("* %1 %2").arg(username, body);
     } else if (std::is_same<T, Encrypted>::value) {
-        return ("sent an encrypted message");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:",
+                                               "You sent an encrypted message");
+        else
+            return QCoreApplication::translate("message-description sent:",
+                                               "%1 sent an encrypted message")
+              .arg(username);
     } else if (std::is_same<T, CallInvite>::value) {
-        return ("placed a call");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You placed a call");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 placed a call")
+              .arg(username);
     } else if (std::is_same<T, CallAnswer>::value) {
-            return ("answered a call");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You answered a call");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 answered a call")
+              .arg(username);
     } else if (std::is_same<T, CallHangUp>::value) {
-        return ("ended a call");
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You ended a call");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 ended a call")
+              .arg(username);
     } else {
-        return ("utils - Unknown Message Type");
+        return QCoreApplication::translate("utils", "Unknown Message Type");
     }
 }
 
@@ -239,4 +292,13 @@ bool
 isReply(const mtx::events::collections::TimelineEvents &e);
 
 QString httpMtxErrorToString(const mtx::http::RequestErr &err);
+
+void
+removeDirectFromRoom(QString roomid);
+
+void
+markRoomAsDirect(QString roomid, std::vector<RoomMember> members);
+
+std::vector<std::string>
+roomVias(const std::string &roomid);
 }

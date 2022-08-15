@@ -166,8 +166,8 @@ int main(int argc, char *argv[]) {
     });
 
     QObject::connect(callMgr,
-                     qOverload<const QString &, const mtx::events::msg::CallInvite &>(&CallManager::newMessage),
-                     [=](const QString &roomid, const mtx::events::msg::CallInvite &invite) {
+                     qOverload<const QString &, const mtx::events::voip::CallInvite &>(&CallManager::newMessage),
+                     [=](const QString &roomid, const mtx::events::voip::CallInvite &invite) {
                          nhlog::ui()->info(">>> CALL INVITE: callid: {} - room: {}", invite.call_id, roomid.toStdString());
                          if (auto timeline = client->timeline(roomid)) {
                              timeline->sendMessageEvent(invite, mtx::events::EventType::CallInvite);
@@ -175,8 +175,8 @@ int main(int argc, char *argv[]) {
                      });
 
     QObject::connect(callMgr,
-                     qOverload<const QString &, const mtx::events::msg::CallCandidates &>(&CallManager::newMessage),
-                     [=](const QString &roomid, const mtx::events::msg::CallCandidates &candidate) {
+                     qOverload<const QString &, const mtx::events::voip::CallCandidates &>(&CallManager::newMessage),
+                     [=](const QString &roomid, const mtx::events::voip::CallCandidates &candidate) {
                          nhlog::ui()->info(">>> CALL CANDIDATE: callid: {} - room: {}", candidate.call_id, roomid.toStdString());
                          if (auto timeline = client->timeline(roomid)) {
                              timeline->sendMessageEvent(candidate, mtx::events::EventType::CallCandidates);
@@ -184,8 +184,8 @@ int main(int argc, char *argv[]) {
                      });
 
     QObject::connect(callMgr,
-                     qOverload<const QString &, const mtx::events::msg::CallAnswer &>(&CallManager::newMessage),
-                     [=](const QString &roomid, const mtx::events::msg::CallAnswer &answer) {
+                     qOverload<const QString &, const mtx::events::voip::CallAnswer &>(&CallManager::newMessage),
+                     [=](const QString &roomid, const mtx::events::voip::CallAnswer &answer) {
                          nhlog::ui()->info(">>> CALL ANSWER: callid: {} - room: {}", answer.call_id, roomid.toStdString());
                          if (auto timeline = client->timeline(roomid)) {
                              timeline->sendMessageEvent(answer, mtx::events::EventType::CallAnswer);
@@ -193,8 +193,8 @@ int main(int argc, char *argv[]) {
                      });
 
     QObject::connect(callMgr,
-                     qOverload<const QString &, const mtx::events::msg::CallHangUp &>(&CallManager::newMessage),
-                     [=](const QString &roomid, const mtx::events::msg::CallHangUp &hangup) {
+                     qOverload<const QString &, const mtx::events::voip::CallHangUp &>(&CallManager::newMessage),
+                     [=](const QString &roomid, const mtx::events::voip::CallHangUp &hangup) {
                          nhlog::ui()->info(">>> CALL HANGUP: callid: {} - room: {}", hangup.call_id, roomid.toStdString());
                          if (auto timeline = client->timeline(roomid)) {
                              timeline->sendMessageEvent(hangup, mtx::events::EventType::CallHangUp);

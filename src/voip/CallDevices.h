@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -24,8 +25,8 @@ public:
     }
     std::vector<std::string> names(bool isVideo, const std::string &defaultDevice) const;
     std::vector<std::string> resolutions(const std::string &cameraName) const;
-    std::vector<std::string> frameRates(const std::string &cameraName,
-                                        const std::string &resolution) const;
+    std::vector<std::string>
+    frameRates(const std::string &cameraName, const std::string &resolution) const;
 
 public slots:
     bool haveMic() const;

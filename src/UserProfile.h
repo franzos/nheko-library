@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2021 Nheko Contributors
+// SPDX-FileCopyrightText: 2022 Nheko Contributors
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -63,7 +64,7 @@ public:
     qlonglong lastTs;
 };
 
-class DeviceInfoModel : public QObject
+class DeviceInfoModel : public QAbstractListModel
 {
     Q_OBJECT
 public:
@@ -81,7 +82,14 @@ public:
         (void)parent;
         connect(this, &DeviceInfoModel::queueReset, this, &DeviceInfoModel::reset);
     };
-    
+    QHash<int, QByteArray> roleNames() const override;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override
+    {
+        (void)parent;
+        return (int)deviceList_.size();
+    }
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+
 signals:
     void queueReset(const std::vector<DeviceInfo> &deviceList);
 public slots:
@@ -105,7 +113,7 @@ class UserProfile : public QObject
     Q_PROPERTY(bool isLoading READ isLoading NOTIFY loadingChanged)
     Q_PROPERTY(bool userVerificationEnabled READ userVerificationEnabled NOTIFY userStatusChanged)
     Q_PROPERTY(bool isSelf READ isSelf CONSTANT)
-    //Q_PROPERTY(TimelineModel *room READ room CONSTANT)
+
 public:
     UserProfile(QString roomid,
                 QString userid,
@@ -122,15 +130,16 @@ public:
     bool isSelf() const;
     bool isLoading() const;
 
-    Q_INVOKABLE void verify(QString device = "");
-    Q_INVOKABLE void unverify(QString device = "");
+    Q_INVOKABLE void verify(QString device = QLatin1String(""));
+    Q_INVOKABLE void unverify(QString device = QLatin1String(""));
     Q_INVOKABLE void fetchDeviceList(const QString &userID);
     Q_INVOKABLE void refreshDevices();
     Q_INVOKABLE void banUser();
-    // Q_INVOKABLE void signOutDevice(const QString &deviceID);
+    Q_INVOKABLE void signOutDevice(const QString &deviceID);
     // Q_INVOKABLE void ignoreUser();
     Q_INVOKABLE void kickUser();
     Q_INVOKABLE void startChat();
+    Q_INVOKABLE void startChat(bool encryptionEnabled);
     Q_INVOKABLE void changeUsername(QString username);
     Q_INVOKABLE void changeDeviceName(QString deviceID, QString deviceName);
     Q_INVOKABLE void changeAvatar();

@@ -11,8 +11,6 @@
 #include <optional>
 
 #include <QDateTime>
-#include <QDir>
-#include <QImage>
 #include <QString>
 
 #if __has_include(<lmdbxx/lmdb++.h>)
@@ -22,15 +20,18 @@
 #endif
 #include <nlohmann/json.hpp>
 
-#include <mtx/responses/messages.hpp>
 #include <mtx/responses/notifications.hpp>
 #include <mtx/responses/sync.hpp>
-#include <mtxclient/crypto/client.hpp>
+#include <mtxclient/crypto/types.hpp>
 #include <mtxclient/http/client.hpp>
 
 #include "CacheCryptoStructs.h"
 #include "CacheStructs.h"
 #include "Logging.h"
+
+namespace mtx::responses {
+struct Messages;
+}
 
 class Cache : public QObject
 {
@@ -135,6 +136,7 @@ public:
 
     cache::CacheVersion formatVersion();
     void setCurrentFormat();
+    bool runMigrations();
 
     std::vector<QString> roomIds();
     QMap<QString, mtx::responses::Notifications> getTimelineMentions();
@@ -164,6 +166,7 @@ public:
     RoomInfo singleRoomInfo(const std::string &room_id);
     std::vector<std::string> roomsWithStateUpdates(const mtx::responses::Sync &res);
     QMap<QString, RoomInfo> getRoomInfo(const std::vector<std::string> &rooms);
+    void updateLastMessageTimestamp(const std::string &room_id, uint64_t ts);
 
     //! Calculates which the read status of a room.
     //! Whether all the events in the timeline have been read.
@@ -316,6 +319,7 @@ signals:
     void roomReadStatus(const std::map<QString, bool> &status);
     void removeNotification(const QString &room_id, const QString &event_id);
     void userKeysUpdate(const std::string &sync_token, const mtx::responses::QueryKeys &keyQuery);
+    void userKeysUpdateFinalize(const std::string &user_id);
     void verificationStatusChanged(const std::string &userid);
     void selfVerificationStatusChanged();
     void secretChanged(const std::string name);
@@ -400,7 +404,7 @@ private:
                 // Lightweight representation of a member.
                 MemberInfo tmp{display_name, e->content.avatar_url};
 
-                membersdb.put(txn, e->state_key, json(tmp).dump());
+                membersdb.put(txn, e->state_key, nlohmann::json(tmp).dump());
                 break;
             }
             default: {
@@ -418,7 +422,7 @@ private:
         std::visit(
           [&txn, &statesdb, &stateskeydb, &eventsDb, &membersdb](const auto &e) {
               if constexpr (isStateEvent_<decltype(e)>) {
-                  eventsDb.put(txn, e.event_id, json(e).dump());
+                  eventsDb.put(txn, e.event_id, nlohmann::json(e).dump());
 
                   if (e.type != EventType::Unsupported) {
                       if (std::is_same_v<std::remove_cv_t<std::remove_reference_t<decltype(e)>>,
@@ -430,17 +434,17 @@ private:
                           else
                               stateskeydb.del(txn,
                                               to_string(e.type),
-                                              json::object({
+                                              nlohmann::json::object({
                                                              {"key", e.state_key},
                                                              {"id", e.event_id},
                                                            })
                                                 .dump());
                       } else if (e.state_key.empty())
-                          statesdb.put(txn, to_string(e.type), json(e).dump());
+                          statesdb.put(txn, to_string(e.type), nlohmann::json(e).dump());
                       else
                           stateskeydb.put(txn,
                                           to_string(e.type),
-                                          json::object({
+                                          nlohmann::json::object({
                                                          {"key", e.state_key},
                                                          {"id", e.event_id},
                                                        })
@@ -472,7 +476,7 @@ private:
                 }
             } else {
                 auto db                   = getStatesKeyDb(txn, room_id);
-                std::string d             = json::object({{"key", state_key}}).dump();
+                std::string d             = nlohmann::json::object({{"key", state_key}}).dump();
                 std::string_view data     = d;
                 std::string_view typeStrV = typeStr;
 
@@ -482,14 +486,15 @@ private:
 
                 try {
                     auto eventsDb = getEventsDb(txn, room_id);
-                    if (!eventsDb.get(txn, json::parse(data)["id"].get<std::string>(), value))
+                    if (!eventsDb.get(
+                          txn, nlohmann::json::parse(data)["id"].get<std::string>(), value))
                         return std::nullopt;
                 } catch (std::exception &e) {
                     return std::nullopt;
                 }
             }
 
-            return json::parse(value).get<mtx::events::StateEvent<T>>();
+            return nlohmann::json::parse(value).get<mtx::events::StateEvent<T>>();
         } catch (std::exception &e) {
             return std::nullopt;
         }
@@ -522,8 +527,10 @@ private:
                     first = false;
 
                     try {
-                        if (eventsDb.get(txn, json::parse(data)["id"].get<std::string>(), value))
-                            events.push_back(json::parse(value).get<mtx::events::StateEvent<T>>());
+                        if (eventsDb.get(
+                              txn, nlohmann::json::parse(data)["id"].get<std::string>(), value))
+                            events.push_back(
+                              nlohmann::json::parse(value).get<mtx::events::StateEvent<T>>());
                     } catch (std::exception &e) {
                         nhlog::db()->warn("Failed to parse state event: {}", e.what());
                     }

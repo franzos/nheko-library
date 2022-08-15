@@ -34,6 +34,7 @@
 #include "timeline/Timeline.h"
 #include "encryption/VerificationManager.h"
 #include "PresenceEmitter.h"
+#include "UserInformation.h"
 
 class UserSettings;
 class CallManager;
@@ -90,19 +91,21 @@ public:
                       .toStdString(), enable, enableDebugLogs);    
     }
     Q_INVOKABLE QVariantMap loginOptions(QString server);
-    
+    QVector<UserInformation> knownUsers(const QString &filter = "");
+
     CallManager *callManager() { return callManager_; }
 
 public slots:
     QMap<QString, RoomInfo> joinedRoomList();
     QMap<QString, RoomInfo> inviteRoomList();
     RoomInfo roomInfo(const QString &room_id);
-    void startChat(QString userid);
-    void leaveRoom(const QString &room_id);
+    void startChat(QString userid, bool encryptionEnabled = false);
+    void leaveRoom(const QString &room_id, const QString &reason);
     void createRoom(const mtx::requests::CreateRoom &req);
-    void joinRoom(const QString &room);
+    void joinRoom(const QString &room, const QString &reason = "");
     void joinRoomVia(const QString &room_id,
-                     const std::vector<std::string> &via);
+                     const std::vector<std::string> &via,
+                     const QString &reason      = "");
     void inviteUser(const QString &roomid, const QString &userid, const QString & reason);
     void receivedSessionKey(const QString &room_id, const QString &session_id);
     void decryptDownloadedSecrets(const std::string &recoveryKey, mtx::secret_storage::AesHmacSha2KeyDescription keyDesc,
@@ -166,6 +169,7 @@ signals:
     void joinRoomFailed(const QString &error);
     void userInvited(const QString &room_id, const QString user_id);
     void userInvitationFailed(const QString &room_id, const QString user_id, const QString &error);
+    void startRemoveFallbackKeyTimer();
     //
     void retrievedPresence(const QString &statusMsg, mtx::presence::PresenceState state);
     void decryptSidebarChanged();
@@ -195,6 +199,7 @@ private slots:
     void dropToLoginCb(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
     void prepareTimelinesCB();
+    void removeOldFallbackKey();
 
 private:
     static Client           *instance_;
@@ -209,7 +214,8 @@ private:
     void tryInitialSync();
     void trySync();
     void verifyOneTimeKeyCountAfterStartup();
-    void ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts);
+    void ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts,
+                               const std::optional<std::vector<std::string>> &fallback_keys);
     void getBackupVersion();
     void bootstrap(std::string userid, std::string homeserver, std::string token);
     void syncTimelines(const mtx::responses::Rooms &rooms);
@@ -217,6 +223,7 @@ private:
     void createTimelinesFromDB();
     void addTimeline(const QString &roomID); 
     void removeTimeline(const QString &roomID); 
+    void loginDone(const UserInformation &user);
 
     using UserID      = QString;
     using Membership  = mtx::events::StateEvent<mtx::events::state::Member>;

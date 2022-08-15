@@ -13,10 +13,23 @@ UserInformation loginInfo;
 QMap <QString, Timeline*> timelineMap;
 bool onetimeLogin = true;
 bool oneTimeFlagJustForTesst = true;
+Client *client;
+
+void login(){
+    QString deviceName = "test";
+    QString userId = "@hamzeh_test02:pantherx.org";
+    QString password = "powwow-babbling-deviator"; 
+    QString serverAddress = "https://matrix.pantherx.org";   
+    if(!onetimeLogin)
+        return;
+    client->loginWithPassword(deviceName, userId, password, serverAddress); 
+    onetimeLogin = false;
+}
+
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
-    auto client = Client::instance();
+    client = Client::instance();
     QObject::connect(client,  &Client::loginOk, [&](const UserInformation &res){
         loginInfo = res;
         client->start();
@@ -37,7 +50,7 @@ int main(int argc, char *argv[]){
         qInfo() << "User avatar      : " << avatar;
     });
 
-    QObject::connect(client, &Client::newUpdate,[client](const mtx::responses::Sync &sync){
+    QObject::connect(client, &Client::newUpdate,[&](const mtx::responses::Sync &sync){
         for(auto const &room: sync.rooms.join) {
             auto info = client->roomInfo(QString::fromStdString(room.first));
             qDebug() << "JOIN: " << QString::fromStdString(room.first) << info.name;
@@ -54,15 +67,8 @@ int main(int argc, char *argv[]){
     });
     
     QObject::connect(client,  &Client::dropToLogin, [&](const QString &msg){
-        QString deviceName = "test";
-        QString userId = "@hamzeh_test02:pantherx.org";
-        QString password = "powwow-babbling-deviator"; 
-        QString serverAddress = "https://matrix.pantherx.org";   
         qWarning() << msg;
-        if(!onetimeLogin)
-            return;
-        client->loginWithPassword(deviceName, userId, password, serverAddress); 
-        onetimeLogin = false;
+        login();
     });
 
     QObject::connect(client,  &Client::initiateFinished, [&](){
@@ -86,8 +92,9 @@ int main(int argc, char *argv[]){
                     auto events = timeline->getEvents(from, len);
                     for(auto const &e: events){
                         qDebug() << e.userid << e.event_id << e.body << e.timestamp;
-                        if(e.body == "Hamzeh: answer");
+                        if(e.body == "Hamzeh: answer"){
                             // timeline->sendMessage("Hi, I got your message");
+                        }
                     }
                     qDebug() << "-------------------------------------------------------------------------------";
                 });
@@ -136,6 +143,7 @@ int main(int argc, char *argv[]){
     });
     client->enableLogger(true,true);
     client->start();
+    // login();
     
     // QThread::sleep(10);
     // authentication->logout();
