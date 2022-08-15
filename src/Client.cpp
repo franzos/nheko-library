@@ -21,6 +21,7 @@
 #include "encryption/Olm.h"
 #include "voip/CallManager.h"
 #include "Application.h"
+#include "px/PxCMManager.h"
 
 Client *Client::instance_  = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
@@ -191,6 +192,9 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     connect(_cibaAuthForUserInfo, &CibaAuthentication::loginError, [&](const QString &message){
         emit cmUserInfoFailure(message);
     });
+
+    cmManager_ = new PxCMManager();
+
     //
     connect(this,
             &Client::downloadedSecrets,
@@ -1292,6 +1296,16 @@ void Client::serverDiscovery(QString hostName){
 }
 
 void Client::start(QString userId, QString homeServer, QString token){
+
+    if (userId.isEmpty()) {
+        auto account = cmManager_->getAccount(userId.toStdString());
+        if (account.has_value()) {
+            userId = QString::fromStdString(account.value().userId);
+            homeServer = QString::fromStdString(account.value().homeServer);
+            token = QString::fromStdString(account.value().accessToken);
+        }
+    }
+
     if(userId.isEmpty()){
         if(hasValidUser()){
           auto info = userInformation();

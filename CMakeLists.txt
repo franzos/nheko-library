@@ -20,6 +20,11 @@ if(VOIP)
 	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
 endif()
 
+option(PX_ACCOUNTS_INTEGRATION "Whether the integration with PantherX Accounts and Secrets services enabled or not" OFF)
+
+option(BUILD_EXAMPLES "Whether build the examples or not" OFF)
+option(BUILD_TESTS "Whether build the tests or not" OFF)
+
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
@@ -58,6 +63,7 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
+	src/px/PxCMManager.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
 	src/voip/WebRTCSession.cpp
@@ -163,6 +169,48 @@ set(MATRIX_LIB_DEPS
 	${SRC_FILES}
 	${MOC_HEADERS})
 
+set(DEP_LIBS 
+	MatrixClient::MatrixClient
+	cmark::cmark
+	spdlog::spdlog
+	Qt5::Gui
+	Qt5::Network
+	Qt5::QuickControls2
+	Qt5::Svg
+	nlohmann_json::nlohmann_json
+	lmdbxx::lmdbxx
+	liblmdb::lmdb)
+
+if (PX_ACCOUNTS_INTEGRATION)
+	message("PantherX Accounts and Secrets services integration set to enabled.")
+	
+	find_package(CapnProto CONFIG REQUIRED)
+	set(INTERFACE_DIR interfaces)
+	set(CAPNPC_SRC_PREFIX "${INTERFACE_DIR}" CACHE STRING "" FORCE)
+	set(CAPNPC_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/interfaces" CACHE STRING "" FORCE)
+	file(MAKE_DIRECTORY "${CAPNPC_OUTPUT_DIR}")
+	capnp_generate_cpp(CapnpSources CapnpHeaders
+		${INTERFACE_DIR}/Account.capnp
+		${INTERFACE_DIR}/AccountReader.capnp
+		${INTERFACE_DIR}/Secret.capnp)
+
+	include_directories(
+		${CapnProto_INCLUDE_DIRS}	
+		${CAPNPC_OUTPUT_DIR}
+		${CMAKE_CURRENT_BINARY_DIR})
+
+	add_definitions(-DPX_ACCOUNTS_INTEGRATION)
+	list(APPEND MATRIX_LIB_DEPS
+				src/px/RpcClient.cpp
+				src/px/PxAccountsClient.cpp
+				src/px/PxSecretsClient.cpp
+				${CapnpSources} ${CapnpHeaders})
+
+	list(APPEND DEP_LIBS
+				CapnProto::capnp-rpc)
+endif()
+
+
 IF(STATIC_LIB)
 	add_library (matrix-client-library ${MATRIX_LIB_DEPS})
 	message(" + Build as static library.")
@@ -175,17 +223,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 	set_target_properties(matrix-client-library PROPERTIES ENABLE_EXPORTS ON)
 endif()
 
-set(DEP_LIBS 
-	MatrixClient::MatrixClient
-	cmark::cmark
-	spdlog::spdlog
-	Qt5::Gui
-	Qt5::Network
-	Qt5::QuickControls2
-	Qt5::Svg
-	nlohmann_json::nlohmann_json
-	lmdbxx::lmdbxx
-	liblmdb::lmdb)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
 	list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
@@ -227,6 +264,18 @@ IF(BUILD_EXAMPLES)
 											PkgConfig::GSTREAMER)
 		target_compile_definitions(webrtc_example PRIVATE GSTREAMER_AVAILABLE)
 	endif(VOIP)
+
+	IF (PX_ACCOUNTS_INTEGRATION)
+		add_executable(account_integration examples/account_integration.cpp
+										   ${CapnpSources} ${CapnpHeaders})
+		target_link_libraries(account_integration matrix-client-library
+												  Qt5::Gui 
+												  Qt5::Widgets
+												  Qt5::Qml
+												  Qt5::QuickControls2
+												  Qt5::Network
+												  CapnProto::capnp-rpc)
+	ENDIF()
 	
 	message(" + \"examples\" will be built.")
 ENDIF()

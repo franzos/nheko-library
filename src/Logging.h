@@ -27,4 +27,6 @@ crypto();
 std::shared_ptr<spdlog::logger>
 dev();
 
+std::shared_ptr<spdlog::logger>
+px();
 }

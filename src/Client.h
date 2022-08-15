@@ -38,6 +38,7 @@
 
 class UserSettings;
 class CallManager;
+class PxCMManager;
 
 namespace mtx::requests {
 struct CreateRoom;
@@ -241,8 +242,9 @@ private:
     PresenceEmitter *_presenceEmitter = nullptr;
     std::atomic_bool isConnected_;
     // Global user settings.
-    CallManager *callManager_;
     QSharedPointer<UserSettings> userSettings_;    
+    CallManager *callManager_;
+    PxCMManager *cmManager_;
 };
 
 template<class Collection>
