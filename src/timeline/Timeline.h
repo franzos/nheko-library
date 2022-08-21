@@ -270,7 +270,6 @@ signals:
     void notificationsChanged();
     void typingUsersChanged(const QStringList &users);
     void forwardToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
-    void newReadReceipts(const std::vector<QString> &event_ids);
 
 public slots:
     mtx::events::state::PowerLevels powerLevels() { 

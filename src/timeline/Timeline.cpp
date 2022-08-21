@@ -230,10 +230,6 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
     _permissions(_roomId)
     {
     nhlog::dev()->debug("Timeline created for: \"" + roomId.toStdString() + "\"");
-    connect(cache::client(), &Cache::newReadReceipts,[&](const QString &room_id, const std::vector<QString> &event_ids){
-        if(room_id == _roomId)
-            emit newReadReceipts(event_ids);
-    });
     connect(this,
             &Timeline::newMessageToSend,
             this,
