@@ -8,6 +8,8 @@
 #include "../src/encryption/SelfVerificationStatus.h"
 #include "../src/encryption/DeviceVerificationFlow.h"
 #include "../src/encryption/VerificationManager.h"
+#include "../src/voip/InputDevices.h"
+#include "../src/voip/AudioInputControl.h"
 
 UserInformation loginInfo;
 QMap <QString, Timeline*> timelineMap;
@@ -143,6 +145,7 @@ int main(int argc, char *argv[]){
     });
     client->enableLogger(true,true);
     client->start();
+    // -----------------------------------------------------
     // login();
     
     // QThread::sleep(10);

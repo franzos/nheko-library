@@ -116,8 +116,6 @@ namespace
 
         gchar *name = gst_device_get_display_name(device);
         gchar *type = gst_device_get_device_class(device);
-        qDebug() << "******************************************************";
-        qDebug() << name << type;
         bool isVideo = (QString(type).contains("Video", Qt::CaseSensitive));
         g_free(type);
         nhlog::ui()->debug("WebRTC: {} device added: {}", isVideo ? "video" : "audio", name);
