@@ -150,8 +150,13 @@ int main(int argc, char *argv[]){
     // -----------------------------------------------------  Volume Control
     // AudioInputControl *aic = new AudioInputControl(); 
     // QTimer::singleShot(5000, [aic] {
-    //     aic->setVolume("Built-in Audio Analog Stereo" ,50);              
+    //     aic->setVolume("Built-in Audio Analog Stereo" ,50);
+    //     aic->deviceChanged("Built-in Audio Analog Stereo");           
     // });
+    // QObject::connect(aic, &AudioInputControl::levelChanged, [](qreal level){
+    //     qDebug() << level;
+    // });
+    // -----------------------------------------------------  
     // authentication->logout();
     return app.exec();     
 }

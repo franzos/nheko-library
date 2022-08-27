@@ -126,7 +126,6 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
         maxValue = qMin(maxValue, m_maxAmplitude);
         m_level = qreal(maxValue) / m_maxAmplitude;
     }
-    qDebug() <<"-";
 
     emit update();
     return len;

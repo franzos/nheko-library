@@ -84,8 +84,11 @@ void AudioInputControl::initializeAudio(const QString &deviceDesc)
 
 void AudioInputControl::deviceChanged(const QString &deviceDesc)
 {
-    m_audioInfo->stop();
-    m_audioInput->stop();
-    m_audioInput->disconnect(this);
+    if(!m_audioInfo.isNull())
+        m_audioInfo->stop();
+    if(!m_audioInput.isNull()){
+        m_audioInput->stop();
+        m_audioInput->disconnect(this);
+    }
     initializeAudio(deviceDesc);
 }
