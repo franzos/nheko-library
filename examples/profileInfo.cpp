@@ -147,8 +147,11 @@ int main(int argc, char *argv[]){
     client->start();
     // -----------------------------------------------------
     // login();
-    
-    // QThread::sleep(10);
+    // -----------------------------------------------------  Volume Control
+    // AudioInputControl *aic = new AudioInputControl(); 
+    // QTimer::singleShot(5000, [aic] {
+    //     aic->setVolume("Built-in Audio Analog Stereo" ,50);              
+    // });
     // authentication->logout();
     return app.exec();     
 }

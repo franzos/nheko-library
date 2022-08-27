@@ -191,8 +191,12 @@ void InputDevices::removeSource(uint32_t index){
 
 void InputDevices::updateSource(const pa_source_info &info){
     if(!_sources.count(info.index)){
-        _sources[info.index] = info;
-        nhlog::dev()->info("Audio Device Input: {} {} {}", info.index, info.name, info.description);
+        InputDeviceInfo devInfo;
+        devInfo.index = info.index;
+        devInfo.name  = QString(info.name);
+        devInfo.desc  = QString(info.description);
+        _sources[info.index] = devInfo;
+        nhlog::dev()->info("Audio Device Input: {} {} {}", devInfo.index, devInfo.name.toStdString(), devInfo.desc.toStdString());
         emit newDeviceStatus(info.index);
     }
 }
@@ -203,7 +207,6 @@ InputDevices::InputDevices(QObject *parent):
     g_assert(m);
     api = pa_glib_mainloop_get_api(m);
     g_assert(api);
-
     connect_to_pulse(this);
 }
 
@@ -216,7 +219,7 @@ void InputDevices::setVolume(uint32_t index, int volume){
         nhlog::dev()->warn("Input device index is not valid: ({})", index);
         return;
     }
-    nhlog::dev()->info("Set device input \"{}\" volume to {}%", _sources[index].name , volume);
+    nhlog::dev()->info("Set device input \"{}\" volume to {}%", _sources[index].name.toStdString() , volume);
     std::string volumeCommand = "pactl -- set-source-volume " + std::to_string(index) + " " + std::to_string(volume) + "%"; 
     nhlog::dev()->debug("Exec: {}", volumeCommand);
     system(volumeCommand.c_str());

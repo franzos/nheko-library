@@ -16,7 +16,7 @@ AudioInputControl::AudioInputControl(){
 void AudioInputControl::setVolume(const QString &deviceDesc, int volume){
     auto index = audioDeviceIndex(deviceDesc);
     if(index==-1){
-        nhlog::dev()->warn("Device description not found: {}" + deviceDesc.toStdString());
+        nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return;
     }
     _inputDevices.setVolume(index, volume);
@@ -25,8 +25,8 @@ void AudioInputControl::setVolume(const QString &deviceDesc, int volume){
 QAudioDeviceInfo AudioInputControl::audioDeviceInfo(const QString &deviceDesc){
     QString deviceName;
     auto sources = _inputDevices.sources();
-    for(auto source: sources.toStdMap()){
-        if(source.second.description == deviceDesc){
+    for(auto &source: sources.toStdMap()){
+        if(source.second.desc == deviceDesc){
             deviceName = source.second.name;
             break;
         }
@@ -44,10 +44,9 @@ QAudioDeviceInfo AudioInputControl::audioDeviceInfo(const QString &deviceDesc){
 
 int32_t AudioInputControl::audioDeviceIndex(const QString &deviceDesc){
     auto sources = _inputDevices.sources();
-    for(auto source: sources.toStdMap()){
-        if(source.second.description == deviceDesc){
+    for(auto &source: sources.toStdMap()){
+        if(source.second.desc == deviceDesc){
             return source.second.index;
-            break;
         }
     }
     return -1;
@@ -57,7 +56,7 @@ void AudioInputControl::initializeAudio(const QString &deviceDesc)
 {
     QAudioDeviceInfo deviceInfo = audioDeviceInfo(deviceDesc);
     if(deviceInfo.isNull()){
-        nhlog::dev()->warn("Device description not found: {}" + deviceDesc.toStdString());
+        nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return;
     }
     QAudioFormat format;
