@@ -11,6 +11,18 @@
 #include "../Logging.h"
 
 AudioInputControl::AudioInputControl(){
+    connect(&_inputDevices, &InputDevices::newDeviceStatus,[&](uint32_t index) {
+        emit newDeviceStatus(index);
+    });
+}
+
+int AudioInputControl::getVolume(const QString &deviceDesc){
+    auto index = audioDeviceIndex(deviceDesc);
+    if(index==-1){
+        nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
+        return 0;
+    }
+    return (_inputDevices.getVolume(index) * 100) / 65535;
 }
 
 void AudioInputControl::setVolume(const QString &deviceDesc, int volume){

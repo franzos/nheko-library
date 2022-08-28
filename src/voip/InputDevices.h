@@ -12,6 +12,7 @@ class InputDeviceInfo {
         int index;
         QString name;
         QString desc;
+        uint32_t volume;
 };
 
 class InputDevices : public QObject
@@ -30,6 +31,7 @@ signals:
 
 public slots:
     void setVolume(uint32_t index, int volume);
+    uint32_t getVolume(uint32_t index);
 
 private:
     QMap<uint32_t, InputDeviceInfo> _sources;
