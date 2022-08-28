@@ -4,6 +4,7 @@ project(matrix-client-library)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard")
 set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "Require C++ standard to be supported")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "compile as PIC by default")
+set(GLIB_MINIMUM_VERSION "2.50.0")
 
 include(CMakeDependentOption)
 
@@ -11,6 +12,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(GNUInstallDirs)
 include_directories(src)
+
+# find_package(GLIB "2.50.0" REQUIRED)
 
 find_package(PkgConfig REQUIRED) 
 pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
@@ -64,8 +67,11 @@ set(SRC_FILES
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
 	src/px/PxCMManager.cpp
+	src/voip/AudioInfo.cpp
+	src/voip/AudioInputControl.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
+	src/voip/InputDevices.cpp
 	src/voip/WebRTCSession.cpp
 	src/Cache.cpp
 	src/Client.cpp
@@ -113,8 +119,11 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/DeviceVerificationFlow.h
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
+	src/voip/AudioInfo.h
+	src/voip/AudioInputControl.h
 	src/voip/CallDevices.h
 	src/voip/CallManager.h
+	src/voip/InputDevices.h
 	src/voip/WebRTCSession.h
 	src/Authentication.h
 	src/CacheCryptoStructs.h
@@ -140,8 +149,11 @@ set(HEADERS
 	encryption/DeviceVerificationFlow.h
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
+	voip/AudioInfo.h
+	voip/AudioInputControl.h
 	voip/CallDevices.h
 	voip/CallManager.h
+	voip/InputDevices.h
 	voip/WebRTCSession.h
 	Authentication.h	
 	CacheCryptoStructs.h
@@ -210,7 +222,6 @@ if (PX_ACCOUNTS_INTEGRATION)
 				CapnProto::capnp-rpc)
 endif()
 
-
 IF(STATIC_LIB)
 	add_library (matrix-client-library ${MATRIX_LIB_DEPS})
 	message(" + Build as static library.")
@@ -227,7 +238,13 @@ endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
 	list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
 else()
-	list(APPEND DEP_LIBS px-auth-lib-cpp)
+	pkg_check_modules(
+		PULSE REQUIRED
+		libpulse>=5.0
+		libpulse-mainloop-glib>=0.9.16
+	)
+	find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
+	list(APPEND DEP_LIBS Qt5::Multimedia px-auth-lib-cpp)
 endif()
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+
+## [0.1.13]
+### Changed
+
+* Support set device input volume.
+* Support monitor device input level.
+
+
 ## [0.1.11]
 ### Fixed
 
