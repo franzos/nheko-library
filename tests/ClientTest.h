@@ -137,7 +137,7 @@ private slots:
         mtx::requests::CreateRoom roomRqs;
         roomRqs.room_alias_name = GetRandomString(10).toStdString();
         roomRqs.is_direct = false;
-        roomRqs.visibility = common::RoomVisibility::Public;
+        roomRqs.visibility = mtx::common::RoomVisibility::Public;
         roomRqs.name = GetRandomString(10).toStdString();
         roomRqs.topic = "test";
         connect(client, &Client::roomCreated,[&](const QString roomId){
@@ -218,7 +218,7 @@ private slots:
                 QFAIL(error.toStdString().c_str());
                 eventLoop.quit();
             });
-            client->leaveRoom(joinRoomId);
+            client->leaveRoom(joinRoomId, "reason");
             eventLoop.exec();
             disconnect(leftRoomSignal);
             disconnect(leftRoomErrorSignal);
@@ -238,7 +238,7 @@ private slots:
                 QFAIL(error.toStdString().c_str());
                 eventLoop.quit();
             });
-            client->leaveRoom(inviteRoomId);
+            client->leaveRoom(inviteRoomId, "reason");
             eventLoop.exec();
         }
     }
