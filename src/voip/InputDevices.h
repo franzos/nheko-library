@@ -8,11 +8,17 @@
 #include <QMap>
 
 class InputDeviceInfo {
+    Q_GADGET
     public:
         int index;
         QString name;
         QString desc;
-        uint32_t volume;
+        qreal volume;
+
+    Q_PROPERTY(int index MEMBER index)
+    Q_PROPERTY(QString name MEMBER name)
+    Q_PROPERTY(QString desc MEMBER desc)
+    Q_PROPERTY(int volume MEMBER volume)
 };
 
 class InputDevices : public QObject
@@ -30,8 +36,8 @@ signals:
     void newDeviceStatus(uint32_t index);
 
 public slots:
-    void setVolume(uint32_t index, int volume);
-    uint32_t getVolume(uint32_t index);
+    void setVolume(uint32_t index, qreal volume);
+    qreal getVolume(uint32_t index);
 
 private:
     QMap<uint32_t, InputDeviceInfo> _sources;

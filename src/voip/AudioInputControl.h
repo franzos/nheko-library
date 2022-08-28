@@ -18,9 +18,10 @@ public:
 public slots:
     void initializeAudio(const QString &deviceDesc);
     void deviceChanged(const QString &deviceDesc);
-    void setVolume(const QString &deviceDesc, int volume);
-    int getVolume(const QString &deviceDesc);
-
+    void setVolume(const QString &deviceDesc, qreal volume);
+    qreal getVolume(const QString &deviceDesc);
+    InputDeviceInfo deviceInfo(qint32 index);
+    
 private:
     QAudioDeviceInfo audioDeviceInfo(const QString &deviceDesc);
     int32_t audioDeviceIndex(const QString &deviceDesc);

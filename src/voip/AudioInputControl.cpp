@@ -16,16 +16,16 @@ AudioInputControl::AudioInputControl(){
     });
 }
 
-int AudioInputControl::getVolume(const QString &deviceDesc){
+qreal AudioInputControl::getVolume(const QString &deviceDesc){
     auto index = audioDeviceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return 0;
     }
-    return (_inputDevices.getVolume(index) * 100) / 65535;
+    return _inputDevices.getVolume(index);
 }
 
-void AudioInputControl::setVolume(const QString &deviceDesc, int volume){
+void AudioInputControl::setVolume(const QString &deviceDesc, qreal volume){
     auto index = audioDeviceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
@@ -103,4 +103,12 @@ void AudioInputControl::deviceChanged(const QString &deviceDesc)
         m_audioInput->disconnect(this);
     }
     initializeAudio(deviceDesc);
+}
+
+InputDeviceInfo AudioInputControl::deviceInfo(qint32 index){
+    InputDeviceInfo info;
+    if(_inputDevices.sources().count(index)){
+        info =_inputDevices.sources()[index];
+    }
+    return info;
 }
