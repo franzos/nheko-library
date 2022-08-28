@@ -1,4 +1,7 @@
 #include "InputDevices.h"
+
+#include <QtGlobal>
+#ifndef Q_OS_ANDROID
 #include <QDebug>
 #include <glib.h>
 #include "Logging.h"
@@ -233,3 +236,4 @@ qreal InputDevices::getVolume(uint32_t index){
     }
     return _sources[index].volume;
 }
+#endif

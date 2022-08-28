@@ -1,5 +1,6 @@
 #include "AudioInfo.h"
 
+#ifndef Q_OS_ANDROID
 #include <stdlib.h>
 #include <math.h>
 
@@ -130,3 +131,4 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
     emit update();
     return len;
 }
+#endif

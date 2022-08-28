@@ -16,11 +16,6 @@ include_directories(src)
 # find_package(GLIB "2.50.0" REQUIRED)
 
 find_package(PkgConfig REQUIRED) 
-pkg_check_modules(
-    PULSE REQUIRED
-    libpulse>=5.0
-    libpulse-mainloop-glib>=0.9.16
-)
 pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
 option(VOIP "Whether to enable the voip support. disable this if you don't have the gstreamer" ON)
@@ -37,7 +32,7 @@ find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
 find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui QuickControls2 QuickWidgets Svg Multimedia REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Gui QuickControls2 QuickWidgets Svg REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -194,7 +189,6 @@ set(DEP_LIBS
 	Qt5::Network
 	Qt5::QuickControls2
 	Qt5::Svg
-	Qt5::Multimedia
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
@@ -244,7 +238,13 @@ endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
 	list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
 else()
-	list(APPEND DEP_LIBS px-auth-lib-cpp)
+	pkg_check_modules(
+		PULSE REQUIRED
+		libpulse>=5.0
+		libpulse-mainloop-glib>=0.9.16
+	)
+	find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
+	list(APPEND DEP_LIBS Qt5::Multimedia px-auth-lib-cpp)
 endif()
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)

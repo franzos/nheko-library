@@ -1,5 +1,6 @@
 #pragma once 
-
+#include <QtGlobal>
+#ifndef Q_OS_ANDROID
 #include <QAudioInput>
 #include <QByteArray>
 #include <QObject>
@@ -35,3 +36,4 @@ private:
     QScopedPointer<QAudioInput> m_audioInput;
     InputDevices _inputDevices;
 };
+#endif

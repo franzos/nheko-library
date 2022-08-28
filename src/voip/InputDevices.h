@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QtGlobal>
+#ifndef Q_OS_ANDROID
 #include <QObject>
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
@@ -42,3 +44,4 @@ public slots:
 private:
     QMap<uint32_t, InputDeviceInfo> _sources;
 };
+#endif

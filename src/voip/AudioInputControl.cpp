@@ -1,5 +1,5 @@
 #include "AudioInputControl.h"
-
+#ifndef Q_OS_ANDROID
 #include <stdlib.h>
 #include <math.h>
 #include <QDateTime>
@@ -112,3 +112,4 @@ InputDeviceInfo AudioInputControl::deviceInfo(qint32 index){
     }
     return info;
 }
+#endif

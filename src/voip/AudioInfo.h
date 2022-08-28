@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <QtGlobal>
+#ifndef Q_OS_ANDROID
 #include <QAudioInput>
 #include <QByteArray>
 #include <QObject>
@@ -27,3 +29,4 @@ private:
 signals:
     void update();
 };
+#endif
