@@ -8,11 +8,11 @@
 #include <QScopedPointer>
 #include "AudioInfo.h"
 #include "InputDevices.h"
-
+#endif
 class AudioInputControl : public QObject
 {
     Q_OBJECT
-
+#ifndef Q_OS_ANDROID
 public:
     AudioInputControl();
 
@@ -35,5 +35,5 @@ private:
     QScopedPointer<AudioInfo> m_audioInfo;
     QScopedPointer<QAudioInput> m_audioInput;
     InputDevices _inputDevices;
-};
 #endif
+};

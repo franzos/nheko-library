@@ -8,7 +8,7 @@
 #include <pulse/ext-stream-restore.h>
 #include <pulse/ext-device-manager.h>
 #include <QMap>
-
+#endif
 class InputDeviceInfo {
     Q_GADGET
     public:
@@ -22,7 +22,7 @@ class InputDeviceInfo {
     Q_PROPERTY(QString desc MEMBER desc)
     Q_PROPERTY(int volume MEMBER volume)
 };
-
+#ifndef Q_OS_ANDROID
 class InputDevices : public QObject
 {
     Q_OBJECT

@@ -5,11 +5,12 @@
 #include <QAudioInput>
 #include <QByteArray>
 #include <QObject>
+#endif
 
 class AudioInfo : public QIODevice
 {
     Q_OBJECT
-
+#ifndef Q_OS_ANDROID
 public:
     AudioInfo(const QAudioFormat &format);
 
@@ -28,5 +29,5 @@ private:
 
 signals:
     void update();
-};
 #endif
+};
