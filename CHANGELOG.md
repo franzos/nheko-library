@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 
-## [0.1.12]
+## [0.1.13]
 ### Changed
 
 * Support set device input volume.
