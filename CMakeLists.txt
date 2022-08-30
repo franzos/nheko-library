@@ -244,7 +244,9 @@ else()
 		libpulse-mainloop-glib>=0.9.16
 	)
 	find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
-	list(APPEND DEP_LIBS Qt5::Multimedia px-auth-lib-cpp)
+	list(APPEND DEP_LIBS Qt5::Multimedia px-auth-lib-cpp
+                         ${PULSE_LDFLAGS}
+                         ${GLIB_LDFLAGS})
 endif()
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
