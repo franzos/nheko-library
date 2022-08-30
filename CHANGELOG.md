@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
 
+## [0.1.14]
+### Changed
+
+* Added missed depenecies to CMakeLists.txt.
+
+
 ## [0.1.13]
 ### Changed
 
