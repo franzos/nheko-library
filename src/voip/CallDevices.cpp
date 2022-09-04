@@ -73,31 +73,41 @@ namespace
     setDefaultDevice(bool isVideo)
     {
         auto settings = UserSettings::instance();
-        if (isVideo && settings->camera().isEmpty())
-        {
-            if (videoSources_.size())
-            {
-                const VideoSource &camera = videoSources_.front();
-                settings->setCamera(QString::fromStdString(camera.name));
-                if (camera.caps.size())
+        if (isVideo) {
+            if(settings->camera().isEmpty()){
+                if (videoSources_.size())
                 {
-                    settings->setCameraResolution(QString::fromStdString(camera.caps.front().resolution));
-                    if (camera.caps.front().frameRates.size())
+                    const VideoSource &camera = videoSources_.front();
+                    settings->setCamera(QString::fromStdString(camera.name));
+                    if (camera.caps.size())
                     {
-                        settings->setCameraFrameRate(QString::fromStdString(camera.caps.front().frameRates.front()));
+                        settings->setCameraResolution(QString::fromStdString(camera.caps.front().resolution));
+                        if (camera.caps.front().frameRates.size())
+                        {
+                            settings->setCameraFrameRate(QString::fromStdString(camera.caps.front().frameRates.front()));
+                        }
+                        else
+                        {
+                            nhlog::dev()->warn("Camera framerates is empty {}", camera.name);
+                        }
                     }
                     else
                     {
-                        nhlog::dev()->warn("Camera framerates is empty {}", camera.name);
+                        nhlog::dev()->warn("Camera caps is empty {}", camera.name);
                     }
                 }
                 else
-                {
-                    nhlog::dev()->warn("Camera caps is empty {}", camera.name);
-                }
+                    nhlog::dev()->warn("Video source is not available!");
             }
-            else
-                nhlog::dev()->warn("Video source is not available!");
+            if (settings->cameraResolution().isEmpty()){
+                settings->setCameraResolution(
+                            QString::fromStdString(CallDevices::instance().resolutions(settings->camera().toStdString()).front()));
+            }
+            if (settings->cameraFrameRate().isEmpty()){
+                settings->setCameraFrameRate(
+                            QString::fromStdString(
+                                    CallDevices::instance().frameRates(settings->camera().toStdString(), settings->cameraResolution().toStdString()).front()));
+            }
         }
         else if (!isVideo && settings->microphone().isEmpty())
         {
