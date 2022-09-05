@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.16]
+### Fixed
+
+* Fixing crash issue if video device resolution or framerates was empty.
+
 
 ## [0.1.15]
 ### Fixed

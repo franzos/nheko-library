@@ -100,13 +100,20 @@ namespace
                     nhlog::dev()->warn("Video source is not available!");
             }
             if (settings->cameraResolution().isEmpty()){
-                settings->setCameraResolution(
-                            QString::fromStdString(CallDevices::instance().resolutions(settings->camera().toStdString()).front()));
+                auto resolutions = CallDevices::instance().resolutions(settings->camera().toStdString());
+                if(resolutions.size())
+                    settings->setCameraResolution(QString::fromStdString(resolutions.front()));
+                else
+                    nhlog::dev()->warn("Camera resulotion error {}", settings->camera().toStdString());
             }
             if (settings->cameraFrameRate().isEmpty()){
-                settings->setCameraFrameRate(
-                            QString::fromStdString(
-                                    CallDevices::instance().frameRates(settings->camera().toStdString(), settings->cameraResolution().toStdString()).front()));
+                if(!settings->cameraResolution().isEmpty()){
+                    auto framerates = CallDevices::instance().frameRates(settings->camera().toStdString(), settings->cameraResolution().toStdString());
+                    if (framerates.size())
+                        settings->setCameraFrameRate(QString::fromStdString(framerates.front()));
+                    else 
+                        nhlog::dev()->warn("Camera framerate error {}", settings->camera().toStdString());;
+                }
             }
         }
         else if (!isVideo && settings->microphone().isEmpty())

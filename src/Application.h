@@ -1,1 +1,1 @@
-#define VERSION_LIBRARY "0.1.15"
+#define VERSION_LIBRARY "0.1.16"
