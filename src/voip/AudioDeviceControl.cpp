@@ -11,18 +11,21 @@
 #include "../Logging.h"
 
 AudioDeviceControl::AudioDeviceControl(){
-    connect(&_inputDevices, &InputDevices::newDeviceStatus,[&](uint32_t index) {
-        emit newDeviceStatus(index);
+    connect(&_audioDevices, &AudioDevices::newInputDeviceStatus,[&](uint32_t index) {
+        emit newInputDeviceStatus(index);
+    });
+    connect(&_audioDevices, &AudioDevices::newOutputDeviceStatus,[&](uint32_t index) {
+        emit newOutputDeviceStatus(index);
     });
 }
 
-qreal AudioDeviceControl::getVolume(const QString &deviceDesc){
+qreal AudioDeviceControl::getMicrophoneVolume(const QString &deviceDesc){
     auto index = audioDeviceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return 0;
     }
-    return _inputDevices.getVolume(index);
+    return _audioDevices.getMicrophoneVolume(index);
 }
 
 void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal volume){
@@ -31,16 +34,20 @@ void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal vo
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return;
     }
-    _inputDevices.setVolume(index, volume);
+    _audioDevices.setMicrophoneVolume(index, volume);
 }
 
 void AudioDeviceControl::setSpeakerVolume(qreal volume){
+    _audioDevices.setSpeakerVolume(volume);
+}
 
+qreal AudioDeviceControl::getSpeakerVolume(){
+    return _audioDevices.getSpeakerVolume();
 }
 
 QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc){
     QString deviceName;
-    auto sources = _inputDevices.sources();
+    auto sources = _audioDevices.sources();
     for(auto &source: sources.toStdMap()){
         if(source.second.desc == deviceDesc){
             deviceName = source.second.name;
@@ -59,7 +66,7 @@ QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc){
 }
 
 int32_t AudioDeviceControl::audioDeviceIndex(const QString &deviceDesc){
-    auto sources = _inputDevices.sources();
+    auto sources = _audioDevices.sources();
     for(auto &source: sources.toStdMap()){
         if(source.second.desc == deviceDesc){
             return source.second.index;
@@ -109,10 +116,10 @@ void AudioDeviceControl::deviceChanged(const QString &deviceDesc)
     initializeAudio(deviceDesc);
 }
 
-InputDeviceInfo AudioDeviceControl::deviceInfo(qint32 index){
-    InputDeviceInfo info;
-    if(_inputDevices.sources().count(index)){
-        info =_inputDevices.sources()[index];
+AudioDeviceInfo AudioDeviceControl::deviceInfo(qint32 index){
+    AudioDeviceInfo info;
+    if(_audioDevices.sources().count(index)){
+        info =_audioDevices.sources()[index];
     }
     return info;
 }

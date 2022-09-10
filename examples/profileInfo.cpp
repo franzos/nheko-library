@@ -8,7 +8,7 @@
 #include "../src/encryption/SelfVerificationStatus.h"
 #include "../src/encryption/DeviceVerificationFlow.h"
 #include "../src/encryption/VerificationManager.h"
-#include "../src/voip/InputDevices.h"
+#include "../src/voip/AudioDevices.h"
 #include "../src/voip/AudioDeviceControl.h"
 
 UserInformation loginInfo;
@@ -150,12 +150,15 @@ int main(int argc, char *argv[]){
     // -----------------------------------------------------  Volume Control
     // AudioDeviceControl *aic = new AudioDeviceControl(); 
     // QTimer::singleShot(5000, [aic] {
-    //     qDebug() << "Current Volume Value:" << aic->getVolume("Built-in Audio Analog Stereo");
+    //     qDebug() << "Current Volume Value:" << aic->getMicrophoneVolume("Built-in Audio Analog Stereo");
     //     aic->setMicrophoneVolume("Built-in Audio Analog Stereo" ,0.25);
     //     aic->deviceChanged("Built-in Audio Analog Stereo");           
+
+    //     aic->setSpeakerVolume(0.63);
+    //     qDebug() << "Speaker Volume:" << (aic->getSpeakerVolume()* 100);
     // });
     // QObject::connect(aic, &AudioDeviceControl::levelChanged, [](qreal level){
-    //     qDebug() << level;
+    //     // qDebug() << level;
     // });
     // -----------------------------------------------------  
     // authentication->logout();

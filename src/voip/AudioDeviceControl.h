@@ -7,7 +7,7 @@
 #include <QPixmap>
 #include <QScopedPointer>
 #include "AudioInfo.h"
-#include "InputDevices.h"
+#include "AudioDevices.h"
 #endif
 class AudioDeviceControl : public QObject
 {
@@ -20,9 +20,10 @@ public slots:
     void initializeAudio(const QString &deviceDesc);
     void deviceChanged(const QString &deviceDesc);
     void setMicrophoneVolume(const QString &deviceDesc, qreal volume);
+    qreal getMicrophoneVolume(const QString &deviceDesc);
     void setSpeakerVolume(qreal volume);
-    qreal getVolume(const QString &deviceDesc);
-    InputDeviceInfo deviceInfo(qint32 index);
+    qreal getSpeakerVolume();
+    AudioDeviceInfo deviceInfo(qint32 index);
     
 private:
     QAudioDeviceInfo audioDeviceInfo(const QString &deviceDesc);
@@ -30,11 +31,12 @@ private:
 
 signals:
     void levelChanged(const qreal &level);
-    void newDeviceStatus(qint32 index);
+    void newInputDeviceStatus(qint32 index);
+    void newOutputDeviceStatus(qint32 index);
 
 private:
     QScopedPointer<AudioInfo> m_audioInfo;
     QScopedPointer<QAudioInput> m_audioInput;
-    InputDevices _inputDevices;
+    AudioDevices _audioDevices;
 #endif
 };

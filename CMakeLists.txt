@@ -71,7 +71,7 @@ set(SRC_FILES
 	src/voip/AudioDeviceControl.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
-	src/voip/InputDevices.cpp
+	src/voip/AudioDevices.cpp
 	src/voip/WebRTCSession.cpp
 	src/Cache.cpp
 	src/Client.cpp
@@ -123,7 +123,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/voip/AudioDeviceControl.h
 	src/voip/CallDevices.h
 	src/voip/CallManager.h
-	src/voip/InputDevices.h
+	src/voip/AudioDevices.h
 	src/voip/WebRTCSession.h
 	src/Authentication.h
 	src/CacheCryptoStructs.h
@@ -153,7 +153,7 @@ set(HEADERS
 	voip/AudioDeviceControl.h
 	voip/CallDevices.h
 	voip/CallManager.h
-	voip/InputDevices.h
+	voip/AudioDevices.h
 	voip/WebRTCSession.h
 	Authentication.h	
 	CacheCryptoStructs.h

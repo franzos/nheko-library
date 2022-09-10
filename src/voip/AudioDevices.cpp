@@ -1,4 +1,4 @@
-#include "InputDevices.h"
+#include "AudioDevices.h"
 
 #include <QtGlobal>
 #ifndef Q_OS_ANDROID
@@ -22,13 +22,13 @@ void show_error(const char *txt) {
 
     snprintf(buf, sizeof(buf), "%s: %s", txt, pa_strerror(pa_context_errno(context)));
 
-//     QMessageBox::critical(nullptr, QObject::tr("Error"), QString::fromUtf8(buf));
-//     qApp->quit();
+    // QMessageBox::critical(nullptr, QObject::tr("Error"), QString::fromUtf8(buf));
+    // qApp->quit();
     // TODO
 }
 
 void source_cb(pa_context *, const pa_source_info *i, int eol, void *userdata) {
-    InputDevices *inputDevices = static_cast<InputDevices*>(userdata);
+    AudioDevices *inputDevices = static_cast<AudioDevices*>(userdata);
 
     if (eol < 0) {
         if (pa_context_errno(context) == PA_ERR_NOENTITY)
@@ -45,11 +45,45 @@ void source_cb(pa_context *, const pa_source_info *i, int eol, void *userdata) {
     inputDevices->updateSource(*i);
 }
 
+void sink_cb(pa_context *, const pa_sink_info *i, int eol, void *userdata) {
+    AudioDevices *inputDevices = static_cast<AudioDevices*>(userdata);
+
+    if (eol < 0) {
+        if (pa_context_errno(context) == PA_ERR_NOENTITY)
+            return;
+
+        show_error(QObject::tr("Sink callback failure").toUtf8().constData());
+        return;
+    }
+
+    if (eol > 0) {
+        // dec_outstanding(w);
+        return;
+    }
+
+#if HAVE_EXT_DEVICE_RESTORE_API
+    if (w->updateSink(*i))
+        ext_device_restore_subscribe_cb(c, PA_DEVICE_TYPE_SINK, i->index, w);
+#else
+    inputDevices->updateSink(*i);
+#endif
+}
+
 void subscribe_cb(pa_context *c, pa_subscription_event_type_t t, uint32_t index, void *userdata) {
-    InputDevices *inputDevice = static_cast<InputDevices*>(userdata);
+    AudioDevices *inputDevice = static_cast<AudioDevices*>(userdata);
 
     switch (t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) {
         case PA_SUBSCRIPTION_EVENT_SINK:
+            if ((t & PA_SUBSCRIPTION_EVENT_TYPE_MASK) == PA_SUBSCRIPTION_EVENT_REMOVE)
+                inputDevice->removeSink(index);
+            else {
+                pa_operation *o;
+                if (!(o = pa_context_get_sink_info_by_index(c, index, sink_cb, userdata))) {
+                    show_error(QObject::tr("pa_context_get_sink_info_by_index() failed").toUtf8().constData());
+                    return;
+                }
+                pa_operation_unref(o);
+            }
             break;
 
         case PA_SUBSCRIPTION_EVENT_SOURCE:
@@ -115,6 +149,11 @@ void context_state_callback(pa_context *c, void *userdata) {
 
             if (!(o = pa_context_get_source_info_list(c, source_cb, userdata))) {
                 show_error(QObject::tr("pa_context_get_source_info_list() failed").toUtf8().constData());
+                return;
+            }
+            pa_operation_unref(o);
+            if (!(o = pa_context_get_sink_info_list(c, sink_cb, userdata))) {
+                show_error(QObject::tr("pa_context_get_sink_info_list() failed").toUtf8().constData());
                 return;
             }
             pa_operation_unref(o);
@@ -186,15 +225,35 @@ gboolean connect_to_pulse(gpointer userdata) {
 
     return false;
 }
-void InputDevices::removeSource(uint32_t index){
+
+void AudioDevices::removeSource(uint32_t index){
     if (!_sources.count(index))
         return;
     _sources.remove(index);
 }
 
-void InputDevices::updateSource(const pa_source_info &info){
+void AudioDevices::removeSink(uint32_t index){
+    if (!_sinks.count(index))
+        return;
+    _sinks.remove(index);
+}
+
+void AudioDevices::updateSink(const pa_sink_info &info) {
+    if(!_sinks.count(info.index)){
+        AudioDeviceInfo devInfo;
+        devInfo.index = info.index;
+        devInfo.name  = QString(info.name);
+        devInfo.desc  = QString(info.description);
+        _sinks[info.index] = devInfo;
+        nhlog::dev()->info("Audio Device Output: {} {} {}", devInfo.index, devInfo.name.toStdString(), devInfo.desc.toStdString());
+    }
+    _sinks[info.index].volume = (info.volume.channels?(qreal)info.volume.values[0]:0) / 65535;
+    emit newOutputDeviceStatus(info.index);
+}
+
+void AudioDevices::updateSource(const pa_source_info &info){
     if(!_sources.count(info.index)){
-        InputDeviceInfo devInfo;
+        AudioDeviceInfo devInfo;
         devInfo.index = info.index;
         devInfo.name  = QString(info.name);
         devInfo.desc  = QString(info.description);
@@ -202,10 +261,10 @@ void InputDevices::updateSource(const pa_source_info &info){
         nhlog::dev()->info("Audio Device Input: {} {} {}", devInfo.index, devInfo.name.toStdString(), devInfo.desc.toStdString());
     }
     _sources[info.index].volume = (info.volume.channels?(qreal)info.volume.values[0]:0) / 65535;
-    emit newDeviceStatus(info.index);
+    emit newInputDeviceStatus(info.index);
 }
 
-InputDevices::InputDevices(QObject *parent):
+AudioDevices::AudioDevices(QObject *parent):
     QObject(parent){
     pa_glib_mainloop *m = pa_glib_mainloop_new(g_main_context_default());
     g_assert(m);
@@ -214,7 +273,7 @@ InputDevices::InputDevices(QObject *parent):
     connect_to_pulse(this);
 }
 
-void InputDevices::setVolume(uint32_t index, qreal volume){
+void AudioDevices::setMicrophoneVolume(uint32_t index, qreal volume){
     if(volume < 0 || volume > 1){
         nhlog::dev()->warn("Volume value is not correct: ({})", volume);
         return;
@@ -229,11 +288,29 @@ void InputDevices::setVolume(uint32_t index, qreal volume){
     system(volumeCommand.c_str());
 }
 
-qreal InputDevices::getVolume(uint32_t index){
+qreal AudioDevices::getMicrophoneVolume(uint32_t index){
     if(!_sources.count(index)){
         nhlog::dev()->warn("Input device index is not valid: ({})", index);
         return 0;
     }
     return _sources[index].volume;
 }
+
+void AudioDevices::setSpeakerVolume(qreal volume){
+    for(auto const &s: _sinks){
+        std::string volumeCommand = "pactl -- set-sink-volume " + std::to_string(s.index) + " " + std::to_string(int(volume * 100)) + "%"; 
+        nhlog::dev()->debug("Exec: {}", volumeCommand);
+        system(volumeCommand.c_str());
+    }
+}
+
+qreal AudioDevices::getSpeakerVolume(){
+    int index = 0; // TODO
+    if(!_sinks.count(index)){
+        nhlog::dev()->warn("Output device index is not valid: ({})", index);
+        return 0;
+    }
+    return _sinks[index].volume;
+}
+
 #endif
