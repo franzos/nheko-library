@@ -55,6 +55,8 @@ optional<CMAccount> PxCMManager::getAccount(const string &userId) {
     } else {
         nhlog::px()->info("there is no matrix account available");
     }
+#else
+    (void)userId;
 #endif
     return {};
 }

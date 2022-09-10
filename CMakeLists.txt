@@ -68,7 +68,7 @@ set(SRC_FILES
 	src/encryption/VerificationManager.cpp
 	src/px/PxCMManager.cpp
 	src/voip/AudioInfo.cpp
-	src/voip/AudioInputControl.cpp
+	src/voip/AudioDeviceControl.cpp
 	src/voip/CallDevices.cpp
 	src/voip/CallManager.cpp
 	src/voip/InputDevices.cpp
@@ -120,7 +120,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/encryption/SelfVerificationStatus.h
 	src/encryption/VerificationManager.h
 	src/voip/AudioInfo.h
-	src/voip/AudioInputControl.h
+	src/voip/AudioDeviceControl.h
 	src/voip/CallDevices.h
 	src/voip/CallManager.h
 	src/voip/InputDevices.h
@@ -150,7 +150,7 @@ set(HEADERS
 	encryption/SelfVerificationStatus.h
 	encryption/VerificationManager.h
 	voip/AudioInfo.h
-	voip/AudioInputControl.h
+	voip/AudioDeviceControl.h
 	voip/CallDevices.h
 	voip/CallManager.h
 	voip/InputDevices.h

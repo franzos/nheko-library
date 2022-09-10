@@ -1,4 +1,4 @@
-#include "AudioInputControl.h"
+#include "AudioDeviceControl.h"
 #ifndef Q_OS_ANDROID
 #include <stdlib.h>
 #include <math.h>
@@ -10,13 +10,13 @@
 #include "UserSettings.h"
 #include "../Logging.h"
 
-AudioInputControl::AudioInputControl(){
+AudioDeviceControl::AudioDeviceControl(){
     connect(&_inputDevices, &InputDevices::newDeviceStatus,[&](uint32_t index) {
         emit newDeviceStatus(index);
     });
 }
 
-qreal AudioInputControl::getVolume(const QString &deviceDesc){
+qreal AudioDeviceControl::getVolume(const QString &deviceDesc){
     auto index = audioDeviceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
@@ -25,7 +25,7 @@ qreal AudioInputControl::getVolume(const QString &deviceDesc){
     return _inputDevices.getVolume(index);
 }
 
-void AudioInputControl::setVolume(const QString &deviceDesc, qreal volume){
+void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal volume){
     auto index = audioDeviceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
@@ -34,7 +34,11 @@ void AudioInputControl::setVolume(const QString &deviceDesc, qreal volume){
     _inputDevices.setVolume(index, volume);
 }
 
-QAudioDeviceInfo AudioInputControl::audioDeviceInfo(const QString &deviceDesc){
+void AudioDeviceControl::setSpeakerVolume(qreal volume){
+
+}
+
+QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc){
     QString deviceName;
     auto sources = _inputDevices.sources();
     for(auto &source: sources.toStdMap()){
@@ -54,7 +58,7 @@ QAudioDeviceInfo AudioInputControl::audioDeviceInfo(const QString &deviceDesc){
     return QAudioDeviceInfo();
 }
 
-int32_t AudioInputControl::audioDeviceIndex(const QString &deviceDesc){
+int32_t AudioDeviceControl::audioDeviceIndex(const QString &deviceDesc){
     auto sources = _inputDevices.sources();
     for(auto &source: sources.toStdMap()){
         if(source.second.desc == deviceDesc){
@@ -64,7 +68,7 @@ int32_t AudioInputControl::audioDeviceIndex(const QString &deviceDesc){
     return -1;
 }
 
-void AudioInputControl::initializeAudio(const QString &deviceDesc)
+void AudioDeviceControl::initializeAudio(const QString &deviceDesc)
 {
     QAudioDeviceInfo deviceInfo = audioDeviceInfo(deviceDesc);
     if(deviceInfo.isNull()){
@@ -94,7 +98,7 @@ void AudioInputControl::initializeAudio(const QString &deviceDesc)
     m_audioInput->start(m_audioInfo.data());
 }
 
-void AudioInputControl::deviceChanged(const QString &deviceDesc)
+void AudioDeviceControl::deviceChanged(const QString &deviceDesc)
 {
     if(!m_audioInfo.isNull())
         m_audioInfo->stop();
@@ -105,7 +109,7 @@ void AudioInputControl::deviceChanged(const QString &deviceDesc)
     initializeAudio(deviceDesc);
 }
 
-InputDeviceInfo AudioInputControl::deviceInfo(qint32 index){
+InputDeviceInfo AudioDeviceControl::deviceInfo(qint32 index){
     InputDeviceInfo info;
     if(_inputDevices.sources().count(index)){
         info =_inputDevices.sources()[index];

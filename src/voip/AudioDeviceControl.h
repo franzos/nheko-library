@@ -9,17 +9,18 @@
 #include "AudioInfo.h"
 #include "InputDevices.h"
 #endif
-class AudioInputControl : public QObject
+class AudioDeviceControl : public QObject
 {
     Q_OBJECT
 #ifndef Q_OS_ANDROID
 public:
-    AudioInputControl();
+    AudioDeviceControl();
 
 public slots:
     void initializeAudio(const QString &deviceDesc);
     void deviceChanged(const QString &deviceDesc);
-    void setVolume(const QString &deviceDesc, qreal volume);
+    void setMicrophoneVolume(const QString &deviceDesc, qreal volume);
+    void setSpeakerVolume(qreal volume);
     qreal getVolume(const QString &deviceDesc);
     InputDeviceInfo deviceInfo(qint32 index);
     

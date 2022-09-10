@@ -9,7 +9,7 @@
 #include "../src/encryption/DeviceVerificationFlow.h"
 #include "../src/encryption/VerificationManager.h"
 #include "../src/voip/InputDevices.h"
-#include "../src/voip/AudioInputControl.h"
+#include "../src/voip/AudioDeviceControl.h"
 
 UserInformation loginInfo;
 QMap <QString, Timeline*> timelineMap;
@@ -148,13 +148,13 @@ int main(int argc, char *argv[]){
     // -----------------------------------------------------
     // login();
     // -----------------------------------------------------  Volume Control
-    // AudioInputControl *aic = new AudioInputControl(); 
+    // AudioDeviceControl *aic = new AudioDeviceControl(); 
     // QTimer::singleShot(5000, [aic] {
     //     qDebug() << "Current Volume Value:" << aic->getVolume("Built-in Audio Analog Stereo");
-    //     aic->setVolume("Built-in Audio Analog Stereo" ,0.25);
+    //     aic->setMicrophoneVolume("Built-in Audio Analog Stereo" ,0.25);
     //     aic->deviceChanged("Built-in Audio Analog Stereo");           
     // });
-    // QObject::connect(aic, &AudioInputControl::levelChanged, [](qreal level){
+    // QObject::connect(aic, &AudioDeviceControl::levelChanged, [](qreal level){
     //     qDebug() << level;
     // });
     // -----------------------------------------------------  
