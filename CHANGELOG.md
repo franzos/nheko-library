@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.18]
+### Changed
+
+* Minor change to make `knownUsers` accessible in QML.
+
+
 ## [0.1.17]
 ### Changed
 

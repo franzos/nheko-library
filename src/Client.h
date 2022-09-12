@@ -91,7 +91,7 @@ public:
                       .toStdString(), enable, enableDebugLogs);    
     }
     Q_INVOKABLE QVariantMap loginOptions(QString server);
-    QVector<UserInformation> knownUsers(const QString &filter = "");
+    Q_INVOKABLE QVector<UserInformation> knownUsers(const QString &filter = "");
 
     CallManager *callManager() { return callManager_; }
 
