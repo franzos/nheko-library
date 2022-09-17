@@ -332,6 +332,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
       &Client::startRemoveFallbackKeyTimer,
       this,
       [this]() {
+          nhlog::net()->info("Start singleShot timer to Marking keys as published!");
           QTimer::singleShot(std::chrono::minutes(5), this, &Client::removeOldFallbackKey);
           disconnect(
             this, &Client::newSyncResponse, this, &Client::startRemoveFallbackKeyTimer);
@@ -624,7 +625,7 @@ Client::tryInitialSync()
               emit dropToLogin(errorMsg);
               return;
           }
-
+          nhlog::net()->info("Marking keys as published in upload keys step!");
           olm::mark_keys_as_published();
 
           for (const auto &entry : res.one_time_key_counts)
@@ -1009,6 +1010,7 @@ Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts,
                   }
 
                   // mark as published anyway, otherwise we may end up in a loop.
+                  nhlog::net()->info("Marking keys as published in ensureOneTimeKeyCount step!");
                   olm::mark_keys_as_published();
 
                   if (replace_fallback_key) {
@@ -1037,6 +1039,7 @@ Client::ensureOneTimeKeyCount(const std::map<std::string, uint16_t> &counts,
 void
 Client::removeOldFallbackKey()
 {
+    nhlog::net()->info("Marking keys as published in removeOldFallbackKey step!");
     olm::client()->forget_old_fallback_key();
     olm::mark_keys_as_published();
 }
