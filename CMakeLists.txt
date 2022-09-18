@@ -31,8 +31,11 @@ option(BUILD_TESTS "Whether build the tests or not" OFF)
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
-find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui QuickControls2 QuickWidgets Svg REQUIRED)
+
+find_package(Qt6 COMPONENTS Core Gui QuickControls2 QuickWidgets Svg Network)
+if (NOT Qt6_FOUND)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui QuickControls2 QuickWidgets Svg Network)
+endif()
 
 set(
 	CMAKE_CXX_FLAGS
@@ -110,7 +113,7 @@ add_library(lmdbxx::lmdbxx ALIAS lmdbxx)
 
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
-qt5_wrap_cpp(MOC_HEADERS
+qt_wrap_cpp(MOC_HEADERS
 	src/timeline/EventStore.h
 	src/timeline/Permissions.h
 	src/timeline/Reaction.h
@@ -185,10 +188,10 @@ set(DEP_LIBS
 	MatrixClient::MatrixClient
 	cmark::cmark
 	spdlog::spdlog
-	Qt5::Gui
-	Qt5::Network
-	Qt5::QuickControls2
-	Qt5::Svg
+        Qt::Gui
+        Qt::Network
+        Qt::QuickControls2
+        Qt::Svg
 	nlohmann_json::nlohmann_json
 	lmdbxx::lmdbxx
 	liblmdb::lmdb)
@@ -243,8 +246,11 @@ else()
 		libpulse>=5.0
 		libpulse-mainloop-glib>=0.9.16
 	)
-	find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
-	list(APPEND DEP_LIBS Qt5::Multimedia px-auth-lib-cpp
+        find_package(Qt6 COMPONENTS Multimedia)
+        if (NOT Qt6_FOUND)
+            find_package(Qt5 5.15 REQUIRED COMPONENTS Multimedia)
+        endif()
+        list(APPEND DEP_LIBS Qt::Multimedia px-auth-lib-cpp
                          ${PULSE_LDFLAGS}
                          ${GLIB_LDFLAGS})
 endif()
