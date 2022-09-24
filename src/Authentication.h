@@ -17,6 +17,7 @@ public:
     void loginWithPassword(std::string deviceName, std::string userId, std::string password, std::string serverAddress);    
     void logout();
     void loginWithCiba(QString username,QString server,QString accessToken);
+    void cancelCibaLogin();
     void serverDiscovery(std::string hostName);
     QVariantMap availableLogin(const QString &server);
 

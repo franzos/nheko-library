@@ -114,6 +114,10 @@ void Authentication::loginCibaFlow(QString accessToken,QString username){
     }
 }
 
+void Authentication::cancelCibaLogin(){
+    _ciba->cancel();
+}
+
 QVariantMap Authentication::availableLogin(const QString &server){
     RestRequest restRequest;
     QVariantMap opt;

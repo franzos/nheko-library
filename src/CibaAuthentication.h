@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QTimer>
 
 
 struct RestRequestResponse
@@ -19,10 +20,16 @@ public:
     RestRequestResponse checkRegistration(QString accessToken);
     RestRequestResponse registeration(QString accessToken);
     RestRequestResponse login(QString accessToken,QString user);  
+    void cancel();
+
 signals:
     void loginOk(const QString &accessToken,const QString &username);
     void loginError(const QString &message);
+
 private:
     QString checkStatus(const QString &requestId);
     QString _serverAddress;  
+    QString _requestId;
+    QString _username;
+    QTimer  *_checkStatusTimer;
 };

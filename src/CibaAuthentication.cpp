@@ -6,7 +6,18 @@
 #include "RestRequest.h"
 #include "Logging.h"
 
-CibaAuthentication::CibaAuthentication(){
+#define CHECK_STATUS_TIMEOUT    5000
+
+CibaAuthentication::CibaAuthentication():
+    _checkStatusTimer(new QTimer(this)){
+        connect(_checkStatusTimer, &QTimer::timeout, [&](){
+            auto accessToken = checkStatus(_requestId);    
+            if(!accessToken.isEmpty()){
+                nhlog::net()->info("CIBA login done for " + _username.toStdString());
+                _checkStatusTimer->stop();
+                emit loginOk(accessToken, _username);
+            }
+        });
 }
 
 void CibaAuthentication::loginRequest(const QString &serverAddress, const QString &username, const QString &accessToken){
@@ -30,22 +41,9 @@ void CibaAuthentication::loginRequest(const QString &serverAddress, const QStrin
         if(jsonObj.contains("auth_req_id")) {
             requestId = jsonObj["auth_req_id"].toString();
             if(!requestId.isEmpty()) {
-                auto thread = new QThread(this);
-                auto context = new QObject() ;
-                context->moveToThread(thread);
-                QObject::connect(thread, &QThread::started, context, [&,this,requestId,username]() { 
-                    while(1){     
-                        auto accessToken = checkStatus(requestId);    
-                        if(accessToken.isEmpty()){
-                            sleep(5);
-                        } else {
-                            nhlog::net()->info("CIBA login done for " + username.toStdString());
-                            emit loginOk(accessToken,username); 
-                            break;
-                        }
-                    }        
-                });
-                thread->start();
+                _username  = username;
+                _requestId = requestId;
+                _checkStatusTimer->start(CHECK_STATUS_TIMEOUT);
                 return;  
             }
         }
@@ -101,4 +99,8 @@ RestRequestResponse CibaAuthentication::login(QString accessToken,QString user){
     QString urlLoginRequest = _serverAddress+"/_matrix/client/r0/login";
     output.status = restRequest.post( urlLoginRequest , headers, data, output.jsonRespnse);
     return output;
+}
+
+void CibaAuthentication::cancel(){
+    _checkStatusTimer->stop();
 }

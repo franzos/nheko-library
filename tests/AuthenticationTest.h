@@ -97,7 +97,24 @@ private slots:
         loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
     }
-    
+
+    void cibaLoginCancelTest(){
+        auto loginCibaTest = new Authentication();
+        QString userId = "fake.ciba.id@pantherx.org";
+        QString server = "https://matrix.pantherx.dev";
+        loginCibaTest->loginWithCiba(userId,server,""); 
+        QTimer::singleShot(2000,[&,loginCibaTest](){
+            loginCibaTest->cancelCibaLogin();
+            eventLoop.quit();
+        });
+
+        QTimer::singleShot(6000,[&](){
+            QFAIL("CIBA Canel request failed!");
+            eventLoop.quit();
+        });
+        eventLoop.exec();  
+    }
+
 // void loginWithCorrectCiba(){
 //         auto loginCibaTest = new Authentication();
 //         //QEventLoop eventLoop;

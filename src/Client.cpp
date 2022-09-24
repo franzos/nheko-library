@@ -1383,6 +1383,10 @@ void Client::loginWithCiba(QString username,QString server, QString accessToken)
     _authentication->loginWithCiba(username,server, accessToken);
 }
 
+void Client::cancelCibaLogin(){
+    _authentication->cancelCibaLogin();
+}
+
 void Client::loginCibaCb(UserInformation userInfo){
     userSettings_.data()->setUserId(userInfo.userId);
     userSettings_.data()->setCMUserId(userInfo.cmUserId);
