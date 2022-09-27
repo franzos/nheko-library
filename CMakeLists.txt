@@ -32,9 +32,9 @@ find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
 
-find_package(Qt6 COMPONENTS Core Gui QuickControls2 QuickWidgets Svg Network)
+find_package(Qt6 COMPONENTS Core Gui Widgets QuickControls2 QuickWidgets Svg Network)
 if (NOT Qt6_FOUND)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui QuickControls2 QuickWidgets Svg Network)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets QuickControls2 QuickWidgets Svg Network)
 endif()
 
 set(
@@ -42,7 +42,7 @@ set(
 	"${CMAKE_CXX_FLAGS} \
 	-Wall \
 	-Wextra \
-	-pipe \
+        -pipe \
 	-pedantic \
 	-fsized-deallocation \
 	-fdiagnostics-color=always \
@@ -270,9 +270,12 @@ endif()
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
-	find_package(Qt5 5.15 COMPONENTS Widgets Qml QuickControls2 QuickWidgets Svg REQUIRED)
+        find_package(Qt6 COMPONENTS Widgets Qml QuickControls2 QuickWidgets Svg)
+        if (NOT Qt6_FOUND)
+            find_package(Qt5 5.15 COMPONENTS Widgets Qml QuickControls2 QuickWidgets Svg REQUIRED)
+        endif()
 	add_executable(profileInfo examples/profileInfo.cpp)
-	target_link_libraries(profileInfo matrix-client-library Qt5::Widgets Qt5::Network)
+        target_link_libraries(profileInfo matrix-client-library Qt::Widgets Qt::Network)
 
 	if(VOIP)
 		set(CMAKE_AUTOMOC ON)
@@ -281,11 +284,11 @@ IF(BUILD_EXAMPLES)
 		add_executable(webrtc_example examples/webrtc.cpp
 									examples/webrtc.qrc)
 		target_link_libraries(webrtc_example matrix-client-library
-											Qt5::Gui 
-											Qt5::Widgets
-											Qt5::Qml
-											Qt5::QuickControls2
-											Qt5::Network
+                                                                                        Qt::Gui
+                                                                                        Qt::Widgets
+                                                                                        Qt::Qml
+                                                                                        Qt::QuickControls2
+                                                                                        Qt::Network
 											PkgConfig::GSTREAMER)
 		target_compile_definitions(webrtc_example PRIVATE GSTREAMER_AVAILABLE)
 	endif(VOIP)
@@ -294,11 +297,11 @@ IF(BUILD_EXAMPLES)
 		add_executable(account_integration examples/account_integration.cpp
 										   ${CapnpSources} ${CapnpHeaders})
 		target_link_libraries(account_integration matrix-client-library
-												  Qt5::Gui 
-												  Qt5::Widgets
-												  Qt5::Qml
-												  Qt5::QuickControls2
-												  Qt5::Network
+                                                                                                  Qt::Gui
+                                                                                                  Qt::Widgets
+                                                                                                  Qt::Qml
+                                                                                                  Qt::QuickControls2
+                                                                                                  Qt::Network
 												  CapnProto::capnp-rpc)
 	ENDIF()
 	
@@ -307,14 +310,18 @@ ENDIF()
 
 IF(BUILD_TESTS)
 	set(CMAKE_AUTOMOC ON)
-	find_package(Qt5Test)
-	find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
+
+        find_package(Qt6 COMPONENTS Widgets Test)
+        if (NOT Qt6_FOUND)
+            find_package(Qt5Test)
+            find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
+        endif()
 
 	enable_testing(true)
 	add_executable(run_test tests/main.cpp tests/testrunner.h 
 					tests/AuthenticationTest.h
 					tests/ClientTest.h
 					tests/UserSettingsTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library px-auth-lib-cpp Qt5::Gui Qt5::Network Qt5::Widgets)
+        target_link_libraries(run_test PRIVATE PUBLIC Qt::Test matrix-client-library px-auth-lib-cpp Qt::Gui Qt::Network Qt::Widgets)
 	message(" + \"tests\" will be built.")
 ENDIF()
