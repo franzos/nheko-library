@@ -5,8 +5,6 @@
 
 #include "SelfVerificationStatus.h"
 
-#include <QApplication>
-
 #include "Cache.h"
 #include "Cache_p.h"
 #include "Client.h"
