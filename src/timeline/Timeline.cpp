@@ -230,6 +230,8 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
     _permissions(_roomId)
     {
     nhlog::dev()->debug("Timeline created for: \"" + roomId.toStdString() + "\"");
+    this->_isEncrypted = cache::isRoomEncrypted(_roomId.toStdString());
+
     connect(this,
             &Timeline::newMessageToSend,
             this,
@@ -544,27 +546,27 @@ void Timeline::addEvents(const mtx::responses::Timeline &timeline){
                   }
               },
               e);
-        // else if (std::holds_alternative<StateEvent<state::Avatar>>(e))
-        //     emit roomAvatarUrlChanged();
-        // else if (std::holds_alternative<StateEvent<state::Name>>(e))
-        //     emit roomNameChanged();
-        // else if (std::holds_alternative<StateEvent<state::Topic>>(e))
-        //     emit roomTopicChanged();
-        // else if (std::holds_alternative<StateEvent<state::PinnedEvents>>(e))
-        //     emit pinnedMessagesChanged();
-        // else if (std::holds_alternative<StateEvent<state::Widget>>(e))
-        //     emit widgetLinksChanged();
-        // else if (std::holds_alternative<StateEvent<state::PowerLevels>>(e)) {
-        //     permissions_.invalidate();
-        //     emit permissionsChanged();
-        // } else if (std::holds_alternative<StateEvent<state::Member>>(e)) {
-        //     emit roomAvatarUrlChanged();
-        //     emit roomNameChanged();
-        //     emit roomMemberCountChanged();
-        // } else if (std::holds_alternative<StateEvent<state::Encryption>>(e)) {
-        //     this->isEncrypted_ = cache::isRoomEncrypted(room_id_.toStdString());
-        //     emit encryptionChanged();
-        // }
+        else if (std::holds_alternative<StateEvent<state::Avatar>>(e))
+            emit roomAvatarUrlChanged();
+        else if (std::holds_alternative<StateEvent<state::Name>>(e))
+            emit roomNameChanged();
+        else if (std::holds_alternative<StateEvent<state::Topic>>(e))
+            emit roomTopicChanged();
+        else if (std::holds_alternative<StateEvent<state::PinnedEvents>>(e))
+            emit pinnedMessagesChanged();
+        else if (std::holds_alternative<StateEvent<state::Widget>>(e))
+            emit widgetLinksChanged();
+        else if (std::holds_alternative<StateEvent<state::PowerLevels>>(e)) {
+            _permissions.invalidate();
+            emit permissionsChanged();
+        } else if (std::holds_alternative<StateEvent<state::Member>>(e)) {
+            emit roomAvatarUrlChanged();
+            emit roomNameChanged();
+            emit roomMemberCountChanged();
+        } else if (std::holds_alternative<StateEvent<state::Encryption>>(e)) {
+            this->_isEncrypted = cache::isRoomEncrypted(_roomId.toStdString());
+            emit encryptionChanged();
+        }
     }
     updateLastMessage();
 }

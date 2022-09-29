@@ -271,6 +271,15 @@ signals:
     void typingUsersChanged(const QStringList &users);
     void forwardToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
 
+    void encryptionChanged();
+    void roomNameChanged();
+    void roomTopicChanged();
+    void pinnedMessagesChanged();
+    void widgetLinksChanged();
+    void roomAvatarUrlChanged();
+    void permissionsChanged();
+    void roomMemberCountChanged();
+
 public slots:
     mtx::events::state::PowerLevels powerLevels() { 
         return cache::client()
@@ -297,6 +306,7 @@ public slots:
     QString avatarUrl(QString id) const;
     EventStore *events() {return &_events;};
     QStringList pinnedMessages() const;
+    bool isEncrypted() const { return _isEncrypted; }
     int roomMemberCount() const;
     bool isDirect() const { return roomMemberCount() <= 2; }
     QString directChatOtherUserId() const;
@@ -328,11 +338,12 @@ private:
     void sendEncryptedMessage(mtx::events::RoomEvent<T> msg, mtx::events::EventType eventType);
    
     mutable EventStore _events;
-    QString _roomId;
+    QString     _roomId;
     Permissions _permissions;
-    DescInfo _lastMessage{};
-    bool _decryptDescription     = true;
-    uint64_t _notificationCount = 0, _highlightCount = 0;
+    DescInfo    _lastMessage{};
+    bool        _decryptDescription     = true;
+    bool        _isEncrypted            = false;
+    uint64_t    _notificationCount = 0, _highlightCount = 0;
     QStringList _typingUsers;
     friend struct SendMessageVisitor;
 };
