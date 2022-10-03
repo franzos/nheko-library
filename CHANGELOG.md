@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.22]
+### Fixed
+
+* Fixing an issue to store server url.
+
 
 ## [0.1.21]
 ### Changed
