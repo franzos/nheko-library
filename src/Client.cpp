@@ -364,8 +364,7 @@ Client::loginCb(const mtx::responses::Login &res)
 {
     auto userid     = QString::fromStdString(res.user_id.to_string());
     auto device_id  = QString::fromStdString(res.device_id);
-    auto homeserver = QString::fromStdString(http::client()->server() + ":" +
-                                            std::to_string(http::client()->port()));
+    auto homeserver = QString::fromStdString(http::client()->server_url());
     auto token      = QString::fromStdString(res.access_token);
 
     userSettings_.data()->setUserId(userid);
