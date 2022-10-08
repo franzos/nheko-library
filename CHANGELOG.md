@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+
+## [0.1.23]
+### Fixed
+
+* Fixing the encryption issue after device verification.
+
+
 ## [0.1.22]
 ### Changed and Fixed
 

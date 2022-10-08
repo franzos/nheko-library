@@ -232,63 +232,22 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
     nhlog::dev()->debug("Timeline created for: \"" + roomId.toStdString() + "\"");
     this->_isEncrypted = cache::isRoomEncrypted(_roomId.toStdString());
 
+    connect(Client::instance(), &Client::initialSyncChanged, &_events, &EventStore::enableKeyRequests);
     connect(this,
             &Timeline::newMessageToSend,
             this,
             &Timeline::addPendingMessage,
             Qt::QueuedConnection);
     connect(this, &Timeline::addPendingMessageToStore, &_events, &EventStore::addPending);
-    connect(&_events, &EventStore::dataChanged, this, [this](int from, int to) {
-        // relatedEventCacheBuster++;
-        nhlog::ui()->debug(
-          "data changed {} to {}", _events.size() - to - 1, _events.size() - from - 1);
-        // emit eventsChanged(_events.size() - to - 1, _events.size() - from - 1);
-    });
-    connect(&_events, &EventStore::beginInsertRows, this, [this](int from, int to) {
-        nhlog::ui()->debug("begin insert from {} to {} (size: {})", from, to, to - from + 1);
-        emit newEventsStored(from, to - from + 1);
-    });
-    // connect(&_events, &EventStore::endInsertRows, this, [this]() {
-        // endInsertRows(); 
-    // });
-    // connect(&_events, &EventStore::beginResetModel, this, [this]() {
-        // beginResetModel(); 
-    // });
-    // connect(&_events, &EventStore::endResetModel, this, [this]() { 
-        // endResetModel(); 
-    // });
-    // connect(&_events, &EventStore::newEncryptedImage, this, &TimelineModel::newEncryptedImage);
-    // connect(&_events, &EventStore::fetchedMore, this, [this]() { 
-        // setPaginationInProgress(false); 
-    // });
     connect(&_events,
             &EventStore::startDMVerification,
             this,
             [this](mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> msg) {
-                (void)msg; // TODO
-                // Client::instance()->receivedRoomDeviceVerificationRequest(msg, this);
+                Client::instance()->receivedRoomDeviceVerificationRequest(msg, this);
             });
     connect(&_events, &EventStore::updateFlowEventId, this, [this](std::string event_id) {
-        (void)event_id; // TODO
-        // this->updateFlowEventId(event_id);
+        this->updateFlowEventId(event_id);
     });
-
-    // When a message is sent, check if the current edit/reply relates to that message,
-    // and update the event_id so that it points to the sent message and not the pending one.
-    connect(
-      &_events, &EventStore::messageSent, this, [this](std::string txn_id, std::string event_id) {
-          (void)txn_id; (void)event_id; // TODO
-        //   if (edit_.toStdString() == txn_id) {
-        //       edit_ = QString::fromStdString(event_id);
-        //       emit editChanged(edit_);
-        //   }
-        //   if (reply_.toStdString() == txn_id) {
-        //       reply_ = QString::fromStdString(event_id);
-        //       emit replyChanged(reply_);
-        //   }
-      });
-
-   
 }
 
 template<typename T>

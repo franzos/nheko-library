@@ -265,8 +265,6 @@ signals:
     void addPendingMessageToStore(mtx::events::collections::TimelineEvents event);
     void newCallEvent(const mtx::events::collections::TimelineEvents &event);
     void lastMessageChanged(const DescInfo &message);
-    // void eventsChanged(int from, int to);
-    void newEventsStored(int from, int len);
     void notificationsChanged();
     void typingUsersChanged(const QStringList &users);
     void forwardToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
@@ -279,6 +277,7 @@ signals:
     void roomAvatarUrlChanged();
     void permissionsChanged();
     void roomMemberCountChanged();
+    void updateFlowEventId(std::string event_id);
 
 public slots:
     mtx::events::state::PowerLevels powerLevels() { 
@@ -323,6 +322,10 @@ public slots:
     UserReceipts readReceipts(const QString &event_id);
     DescInfo lastMessage() const;
     uint64_t lastMessageTimestamp() const { return _lastMessage.timestamp; }
+    void receivedSessionKey(const std::string &session_key)
+    {
+        _events.receivedSessionKey(session_key);
+    }
 
 private slots:
     void addPendingMessage(mtx::events::collections::TimelineEvents event);

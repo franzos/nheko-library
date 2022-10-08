@@ -354,6 +354,7 @@ void
 Client::logoutCb()
 {
     nhlog::net()->info("Logged out");
+    changeInitialSyncStatge(true);
     deleteConfigs();
     connectivityTimer_.stop();
     emit logoutOk();
@@ -686,6 +687,7 @@ Client::startInitialSync()
             cache::client()->saveState(res);
             olm::handle_to_device_messages(res.to_device.events);
             cache::calculateRoomReadStatus();
+            changeInitialSyncStatge(false);
             emit initialSync(std::move(res));
         } catch (const lmdb::error &e) {
             nhlog::db()->error("failed to save state after initial sync: {}", e.what());
@@ -725,7 +727,7 @@ Client::handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_
         olm::handle_to_device_messages(res.to_device.events);
 
         auto updates = cache::getRoomInfo(cache::client()->roomsWithStateUpdates(res));
-
+        changeInitialSyncStatge(false);
         if( res.rooms.join.size() || res.rooms.invite.size() || res.rooms.leave.size()) {
             syncTimelines(res.rooms);
             emit newUpdate(res);
@@ -899,9 +901,8 @@ Client::inviteUser(const QString &roomid,const QString &userid, const QString &r
 void
 Client::receivedSessionKey(const QString &room_id, const QString &session_id)
 {
-    (void)room_id; (void)session_id; // TODO: review
-    // nhlog::crypto()->warn("TODO: using {} and {}", room_id, session_id);
-    // view_manager_->receivedSessionKey(room_id, session_id);
+    if(auto tl = timeline(room_id))
+        tl->receivedSessionKey(session_id.toStdString());
 }
 
 QString
@@ -1519,4 +1520,11 @@ void Client::forwardMessageToRoom(mtx::events::collections::TimelineEvents *e,
                 timeline_->sendMessageEvent(e.content, mtx::events::EventType::RoomMessage);
             }
         }, *e);
+}
+
+void Client::changeInitialSyncStatge(bool state){
+    if (_isInitialSync != state) {
+        _isInitialSync = state;
+        emit initialSyncChanged(state);
+    }
 }

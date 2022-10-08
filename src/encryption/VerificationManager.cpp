@@ -32,26 +32,26 @@ isValidTime(std::optional<uint64_t> t)
     return diff < 10min && diff > -5min;
 }
 
-// void
-// VerificationManager::receivedRoomDeviceVerificationRequest(
-//   const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
-//   TimelineModel *model)
-// {
-//     if (this->isInitialSync_)
-//         return;
+void
+VerificationManager::receivedRoomDeviceVerificationRequest(
+  const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
+  Timeline *model)
+{
+    if (this->isInitialSync_)
+        return;
 
-//     if (!isValidTime(message.origin_server_ts))
-//         return;
+    if (!isValidTime(message.origin_server_ts))
+        return;
 
-//     auto event_id = QString::fromStdString(message.event_id);
-//     if (!this->dvList.contains(event_id)) {
-//         if (auto flow = DeviceVerificationFlow::NewInRoomVerification(
-//               this, model, message.content, QString::fromStdString(message.sender), event_id)) {
-//             dvList[event_id] = flow;
-//             emit newDeviceVerificationRequest(flow.data());
-//         }
-//     }
-// }
+    auto event_id = QString::fromStdString(message.event_id);
+    if (!this->dvList.contains(event_id)) {
+        if (auto flow = DeviceVerificationFlow::NewInRoomVerification(
+              this, model, message.content, QString::fromStdString(message.sender), event_id)) {
+            dvList[event_id] = flow;
+            emit newDeviceVerificationRequest(flow.data());
+        }
+    }
+}
 
 void
 VerificationManager::receivedDeviceVerificationRequest(
@@ -105,41 +105,40 @@ VerificationManager::receivedDeviceVerificationStart(
 void
 VerificationManager::verifyUser(QString userid)
 {
-    (void)userid; // TODO - to fix unused warning
-    // auto joined_rooms = cache::joinedRooms();
-    // auto room_infos   = cache::getRoomInfo(joined_rooms);
+    auto joined_rooms = cache::joinedRooms();
+    auto room_infos   = cache::getRoomInfo(joined_rooms);
 
-    // for (const std::string &room_id : joined_rooms) {
-    //     if ((room_infos[QString::fromStdString(room_id)].member_count == 2) &&
-    //         cache::isRoomEncrypted(room_id)) {
-    //         auto room_members = cache::roomMembers(room_id);
-    //         if (std::find(room_members.begin(), room_members.end(), (userid).toStdString()) !=
-    //             room_members.end()) {
-    //             if (auto model = rooms_->getRoomById(QString::fromStdString(room_id))) {
-    //                 auto flow =
-    //                   DeviceVerificationFlow::InitiateUserVerification(this, model.data(), userid);
-    //                 std::unique_ptr<QObject> context{new QObject(flow.get())};
-    //                 QObject *pcontext = context.get();
-    //                 connect(
-    //                   model.data(),
-    //                   &TimelineModel::updateFlowEventId,
-    //                   pcontext,
-    //                   [this, flow, context = std::move(context)](std::string eventId) mutable {
-    //                       if (context->parent() == flow.get()) {
-    //                           dvList[QString::fromStdString(eventId)] = flow;
-    //                           context.reset();
-    //                       }
-    //                   });
-    //                 emit newDeviceVerificationRequest(flow.data());
-    //                 return;
-    //             }
-    //         }
-    //     }
-    // }
+    for (const std::string &room_id : joined_rooms) {
+        if ((room_infos[QString::fromStdString(room_id)].member_count == 2) &&
+            cache::isRoomEncrypted(room_id)) {
+            auto room_members = cache::roomMembers(room_id);
+            if (std::find(room_members.begin(), room_members.end(), (userid).toStdString()) !=
+                room_members.end()) {
+                if (auto model = Client::instance()->timeline(QString::fromStdString(room_id))) {
+                    auto flow =
+                      DeviceVerificationFlow::InitiateUserVerification(this, model, userid);
+                    std::unique_ptr<QObject> context{new QObject(flow.get())};
+                    QObject *pcontext = context.get();
+                    connect(
+                      model,
+                      &Timeline::updateFlowEventId,
+                      pcontext,
+                      [this, flow, context = std::move(context)](std::string eventId) mutable {
+                          if (context->parent() == flow.get()) {
+                              dvList[QString::fromStdString(eventId)] = flow;
+                              context.reset();
+                          }
+                      });
+                    emit newDeviceVerificationRequest(flow.data());
+                    return;
+                }
+            }
+        }
+    }
 
-    // emit ChatPage::instance()->showNotification(
-    //   tr("No encrypted private chat found with this user. Create an "
-    //      "encrypted private chat with this user and try again."));
+    emit Client::instance()->showNotification(
+      tr("No encrypted private chat found with this user. Create an "
+         "encrypted private chat with this user and try again."));
 }
 
 void

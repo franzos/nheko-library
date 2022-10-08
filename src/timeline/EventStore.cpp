@@ -16,7 +16,7 @@
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
-// #include "UserSettingsPage.h"
+#include "UserSettings.h"
 #include "Utils.h"
 
 Q_DECLARE_METATYPE(Reaction)
@@ -268,15 +268,15 @@ EventStore::EventStore(std::string room_id, QObject *)
               }
           }
 
-        //   http::client()->read_event(
-        //     room_id_,
-        //     event_id,
-        //     [this, event_id](mtx::http::RequestErr err) {
-        //         if (err) {
-        //             nhlog::net()->warn("failed to read_event ({}, {})", room_id_, event_id);
-        //         }
-        //     },
-        //     !UserSettings::instance()->readReceipts());
+          http::client()->read_event(
+            room_id_,
+            event_id,
+            [this, event_id](mtx::http::RequestErr err) {
+                if (err) {
+                    nhlog::net()->warn("failed to read_event ({}, {})", room_id_, event_id);
+                }
+            },
+            !UserSettings::instance()->readReceipts());
 
           auto idx = idToIndex(event_id);
 
@@ -753,13 +753,11 @@ EventStore::requestSession(const mtx::events::EncryptedEvent<mtx::events::msg::E
     // we may not want to request keys during initial sync and such
     if (suppressKeyRequests)
         return;
-
     auto copy    = ev;
     copy.room_id = room_id_;
     if (pending_key_requests.count(ev.content.session_id)) {
         auto &r = pending_key_requests.at(ev.content.session_id);
         r.events.push_back(copy);
-
         // automatically request once every 10 min, manually every 1 min
         qint64 delay = manual ? 60 : (60 * 10);
         if (r.requested_at + delay < QDateTime::currentSecsSinceEpoch()) {

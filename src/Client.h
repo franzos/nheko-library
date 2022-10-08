@@ -160,6 +160,7 @@ signals:
     void prepareTimelines();
     void initializeEmptyViews();
     void newNotifications(const mtx::responses::Notifications &notifications);
+    void initialSyncChanged(bool isInitialSync);
 
     // room signals
     void leftRoom(const QString &room_id);
@@ -178,9 +179,9 @@ signals:
     void receivedDeviceVerificationAccept(const mtx::events::msg::KeyVerificationAccept &message);
     void receivedDeviceVerificationRequest(const mtx::events::msg::KeyVerificationRequest &message,
                                            std::string sender);
-    // void receivedRoomDeviceVerificationRequest(
-    //   const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
-    //   TimelineModel *model);
+    void receivedRoomDeviceVerificationRequest(
+      const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
+      Timeline *model);
     void receivedDeviceVerificationCancel(const mtx::events::msg::KeyVerificationCancel &message);
     void receivedDeviceVerificationKey(const mtx::events::msg::KeyVerificationKey &message);
     void receivedDeviceVerificationMac(const mtx::events::msg::KeyVerificationMac &message);
@@ -209,7 +210,7 @@ private:
     PX::AUTH::UserProfile   *_cmUserInfo;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
-
+    bool                    _isInitialSync = true;
     Client(QSharedPointer<UserSettings> userSettings = UserSettings::initialize(std::nullopt));
     void startInitialSync();
     void tryInitialSync();
@@ -225,7 +226,8 @@ private:
     void addTimeline(const QString &roomID); 
     void removeTimeline(const QString &roomID); 
     void loginDone(const UserInformation &user);
-
+    void changeInitialSyncStatge(bool state);
+    
     using UserID      = QString;
     using Membership  = mtx::events::StateEvent<mtx::events::state::Member>;
     using Memberships = std::map<std::string, Membership>;

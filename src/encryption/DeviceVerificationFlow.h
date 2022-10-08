@@ -12,6 +12,7 @@
 #include "../CacheCryptoStructs.h"
 #include "../Logging.h"
 #include "../MatrixClient.h"
+#include "../timeline/Timeline.h"
 #include "Olm.h"
 
 class QTimer;
@@ -105,12 +106,12 @@ public:
     };
     Q_ENUM(Error)
 
-    // static QSharedPointer<DeviceVerificationFlow>
-    // NewInRoomVerification(QObject *parent_,
-    //                       TimelineModel *timelineModel_,
-    //                       const mtx::events::msg::KeyVerificationRequest &msg,
-    //                       QString other_user_,
-    //                       QString event_id_);
+    static QSharedPointer<DeviceVerificationFlow>
+    NewInRoomVerification(QObject *parent_,
+                          Timeline *timeline,
+                          const mtx::events::msg::KeyVerificationRequest &msg,
+                          QString other_user_,
+                          QString event_id_);
     static QSharedPointer<DeviceVerificationFlow>
     NewToDeviceVerification(QObject *parent_,
                             const mtx::events::msg::KeyVerificationRequest &msg,
@@ -121,8 +122,8 @@ public:
                             const mtx::events::msg::KeyVerificationStart &msg,
                             QString other_user_,
                             QString txn_id_);
-    // static QSharedPointer<DeviceVerificationFlow>
-    // InitiateUserVerification(QObject *parent_, TimelineModel *timelineModel_, QString userid);
+    static QSharedPointer<DeviceVerificationFlow>
+    InitiateUserVerification(QObject *parent_, Timeline *timeline_, QString userid);
     static QSharedPointer<DeviceVerificationFlow>
     InitiateDeviceVerification(QObject *parent, QString userid, std::vector<QString> devices);
 
@@ -163,6 +164,7 @@ signals:
 private:
     DeviceVerificationFlow(QObject *,
                            DeviceVerificationFlow::Type flow_type,
+                           Timeline *timeline,
                            QString userID,
                            std::vector<QString> deviceIds_);
     void setState(State state)
@@ -213,7 +215,7 @@ private:
 
     std::vector<int> sasList;
     UserKeyCache their_keys;
-    // TimelineModel *model_;
+    Timeline *model_;
     mtx::common::Relation relation;
 
     State state_ = PromptStartVerification;
@@ -239,15 +241,14 @@ private:
                                          err->matrix_error.error,
                                          static_cast<int>(err->status_code));
               });
+        } else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
+            if constexpr (!std::is_same_v<T, mtx::events::msg::KeyVerificationRequest>) {
+                msg.relations.relations.push_back(this->relation);
+                // Set synthesized to surpress the nheko relation extensions
+                msg.relations.synthesized = true;
         }
-        // else if (this->type == DeviceVerificationFlow::Type::RoomMsg && model_) {
-        //     if constexpr (!std::is_same_v<T, mtx::events::msg::KeyVerificationRequest>) {
-        //         msg.relations.relations.push_back(this->relation);
-        //         // Set synthesized to surpress the nheko relation extensions
-        //         msg.relations.synthesized = true;
-        // }
-        //     (model_)->sendMessageEvent(msg, mtx::events::to_device_content_to_type<T>);
-        // }
+            (model_)->sendMessageEvent(msg, mtx::events::to_device_content_to_type<T>);
+        }
 
         nhlog::net()->debug("Sent verification step: {} in state: {}",
                             mtx::events::to_string(mtx::events::to_device_content_to_type<T>),

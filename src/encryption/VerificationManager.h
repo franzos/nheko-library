@@ -13,7 +13,7 @@
 #include <mtx/events/encrypted.hpp>
 
 #include "SelfVerificationStatus.h"
-
+#include "../timeline/Timeline.h"
 class DeviceVerificationFlow;
 
 class VerificationManager : public QObject
@@ -33,9 +33,9 @@ signals:
     void newDeviceVerificationRequest(DeviceVerificationFlow *flow);
 
 public slots:
-    // void receivedRoomDeviceVerificationRequest(
-    //   const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
-    //   TimelineModel *model);
+    void receivedRoomDeviceVerificationRequest(
+      const mtx::events::RoomEvent<mtx::events::msg::KeyVerificationRequest> &message,
+      Timeline *model);
     void receivedDeviceVerificationRequest(const mtx::events::msg::KeyVerificationRequest &msg,
                                            std::string sender);
     void receivedDeviceVerificationStart(const mtx::events::msg::KeyVerificationStart &msg,
@@ -45,5 +45,4 @@ private:
     QHash<QString, QSharedPointer<DeviceVerificationFlow>> dvList;
     bool isInitialSync_ = false;
     SelfVerificationStatus *_selfVerificationStatus = nullptr;
-    // RoomlistModel *rooms_;
 };
