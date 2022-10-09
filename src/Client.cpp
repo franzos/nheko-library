@@ -516,7 +516,6 @@ Client::loadStateFromCache()
 
     try {
         olm::client()->load(cache::restoreOlmAccount(), cache::client()->pickleSecret());
-        emit initializeEmptyViews();
         cache::calculateRoomReadStatus();
     } catch (const mtx::crypto::olm_exception &e) {
         nhlog::crypto()->critical("failed to restore olm account: {}", e.what());

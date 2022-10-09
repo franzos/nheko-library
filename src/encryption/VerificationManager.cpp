@@ -15,7 +15,7 @@ VerificationManager::VerificationManager(QObject *parent)
   : QObject(parent)
   , _selfVerificationStatus(new SelfVerificationStatus(parent))
 {
-    connect((Client*)parent,&Client::initializeEmptyViews,_selfVerificationStatus,&SelfVerificationStatus::invalidate);
+    connect((Client*)parent,&Client::prepareTimelines,_selfVerificationStatus,&SelfVerificationStatus::invalidate);
 }
 
 static bool

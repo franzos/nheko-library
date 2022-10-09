@@ -158,7 +158,6 @@ signals:
     void newUpdate(const mtx::responses::Sync &sync);
     void initialSync(const mtx::responses::Sync &sync);
     void prepareTimelines();
-    void initializeEmptyViews();
     void newNotifications(const mtx::responses::Notifications &notifications);
     void initialSyncChanged(bool isInitialSync);
 
