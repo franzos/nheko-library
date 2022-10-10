@@ -230,8 +230,13 @@ Timeline::Timeline(const QString &roomId, QObject *parent):
     _permissions(_roomId)
     {
     nhlog::dev()->debug("Timeline created for: \"" + roomId.toStdString() + "\"");
-    this->_isEncrypted = cache::isRoomEncrypted(_roomId.toStdString());
-
+    _isEncrypted       = cache::isRoomEncrypted(_roomId.toStdString());
+    auto roomInfo      = cache::singleRoomInfo(_roomId.toStdString());
+    _isSpace           = roomInfo.is_space;
+    _notificationCount = roomInfo.notification_count;
+    _highlightCount    = roomInfo.highlight_count;
+    _lastMessage.timestamp   = roomInfo.approximate_last_modification_ts; 
+    
     connect(Client::instance(), &Client::initialSyncChanged, &_events, &EventStore::enableKeyRequests);
     connect(this,
             &Timeline::newMessageToSend,

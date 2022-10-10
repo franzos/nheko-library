@@ -346,6 +346,7 @@ private:
     DescInfo    _lastMessage{};
     bool        _decryptDescription     = true;
     bool        _isEncrypted            = false;
+    bool        _isSpace                = false;
     uint64_t    _notificationCount = 0, _highlightCount = 0;
     QStringList _typingUsers;
     friend struct SendMessageVisitor;

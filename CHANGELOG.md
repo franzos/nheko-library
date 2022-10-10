@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.25]
+### Fixed
+
+* Fixing issue in reading the unread messages from db after loading the application.
+
+
 ## [0.1.24]
 ### Fixed
 
