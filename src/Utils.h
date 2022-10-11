@@ -291,7 +291,7 @@ readImage(const QByteArray &data);
 bool
 isReply(const mtx::events::collections::TimelineEvents &e);
 
-QString httpMtxErrorToString(const mtx::http::RequestErr &err);
+QString httpMtxErrorToString(mtx::http::RequestErr &err);
 
 void
 removeDirectFromRoom(QString roomid);
