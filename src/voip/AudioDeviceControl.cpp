@@ -123,4 +123,49 @@ AudioDeviceInfo AudioDeviceControl::deviceInfo(qint32 index){
     }
     return info;
 }
+
+#else
+
+AudioDeviceControl::AudioDeviceControl() {}
+
+qreal AudioDeviceControl::getMicrophoneVolume(const QString &deviceDesc) {
+    Q_UNUSED(deviceDesc);
+    return 0.0;
+}
+
+void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal volume) {
+    Q_UNUSED(deviceDesc);
+    Q_UNUSED(volume);
+}
+
+void AudioDeviceControl::setSpeakerVolume(qreal volume) {
+    Q_UNUSED(volume);
+}
+
+qreal AudioDeviceControl::getSpeakerVolume() {
+    return 0.0;
+}
+
+QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc) {
+    Q_UNUSED(deviceDesc);
+    return QAudioDeviceInfo {};
+}
+
+int32_t AudioDeviceControl::audioDeviceIndex(const QString &deviceDesc) {
+    Q_UNUSED(deviceDesc);
+    return -1;
+}
+
+void AudioDeviceControl::initializeAudio(const QString &deviceDesc) {
+    Q_UNUSED(deviceDesc);
+}
+
+void AudioDeviceControl::deviceChanged(const QString &deviceDesc) {
+    Q_UNUSED(deviceDesc);
+}
+
+AudioDeviceInfo AudioDeviceControl::deviceInfo(qint32 index) {
+    Q_UNUSED(index);
+    return AudioDeviceInfo {};
+}
 #endif

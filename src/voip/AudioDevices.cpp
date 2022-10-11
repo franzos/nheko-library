@@ -1,6 +1,7 @@
 #include "AudioDevices.h"
 
 #include <QtGlobal>
+
 #ifndef Q_OS_ANDROID
 #include <QDebug>
 #include <glib.h>
@@ -311,6 +312,45 @@ qreal AudioDevices::getSpeakerVolume(){
         return 0;
     }
     return _sinks[index].volume;
+}
+
+
+#else
+
+AudioDevices::AudioDevices(QObject* parent): QObject(parent) {}
+
+void AudioDevices::removeSource(uint32_t index) {
+    Q_UNUSED(index);
+}
+
+void AudioDevices::removeSink(uint32_t index) {
+    Q_UNUSED(index);
+}
+
+void AudioDevices::updateSink(const pa_sink_info &info) {
+    Q_UNUSED(info);
+}
+
+void AudioDevices::updateSource(const pa_source_info &info) {
+    Q_UNUSED(info);
+}
+
+void AudioDevices::setMicrophoneVolume(uint32_t index, qreal volume) {
+    Q_UNUSED(index);
+    Q_UNUSED(volume);
+}
+
+qreal AudioDevices::getMicrophoneVolume(uint32_t index) {
+    Q_UNUSED(index);
+    return 0;
+}
+
+void AudioDevices::setSpeakerVolume(qreal volume) {
+    Q_UNUSED(volume);
+}
+
+qreal AudioDevices::getSpeakerVolume() {
+    return 0;
 }
 
 #endif
