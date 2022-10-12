@@ -1,18 +1,25 @@
 #pragma once 
-#include <QtGlobal>
-#ifndef Q_OS_ANDROID
-#include <QAudioInput>
 #include <QByteArray>
 #include <QObject>
 #include <QPixmap>
 #include <QScopedPointer>
+#include <QtGlobal>
+
+#ifndef Q_OS_ANDROID
+#include <QAudioInput>
+#else
+
+struct QAudioDeviceInfo {};
+struct QAudioInput {};
+
+#endif
+
 #include "AudioInfo.h"
 #include "AudioDevices.h"
-#endif
+
 class AudioDeviceControl : public QObject
 {
     Q_OBJECT
-#ifndef Q_OS_ANDROID
 public:
     AudioDeviceControl();
 
@@ -38,5 +45,4 @@ private:
     QScopedPointer<AudioInfo> m_audioInfo;
     QScopedPointer<QAudioInput> m_audioInput;
     AudioDevices _audioDevices;
-#endif
 };
