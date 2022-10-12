@@ -751,7 +751,7 @@ utils::isReply(const mtx::events::collections::TimelineEvents &e)
     return mtx::accessors::relations(e).reply_to().has_value();
 }
 
-QString utils::httpMtxErrorToString(const mtx::http::RequestErr &err){
+QString utils::httpMtxErrorToString(mtx::http::RequestErr &err){
     auto error = err->matrix_error.error;
     if (error.empty()){            
         error = err->parse_error;

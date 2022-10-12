@@ -1,12 +1,15 @@
 #include "AudioInfo.h"
 
-#ifndef Q_OS_ANDROID
 #include <stdlib.h>
 #include <math.h>
-
 #include <QDebug>
-#include <QAudioInput>
 #include <qendian.h>
+
+#ifndef Q_OS_ANDROID
+#include <QAudioInput>
+#endif
+
+#ifndef Q_OS_ANDROID
 
 AudioInfo::AudioInfo(const QAudioFormat &format)
     : m_format(format)
@@ -131,4 +134,25 @@ qint64 AudioInfo::writeData(const char *data, qint64 len)
     emit update();
     return len;
 }
+
+#else 
+
+AudioInfo::AudioInfo(const QAudioFormat &format) : m_format(format) {}
+
+void AudioInfo::start() {} 
+
+void AudioInfo::stop() {}
+
+qint64 AudioInfo::readData(char *data, qint64 maxLen) {
+    Q_UNUSED(data);
+    Q_UNUSED(maxLen);
+    return 0;
+}
+
+qint64 AudioInfo::writeData(const char *data, qint64 len) {
+    Q_UNUSED(data);
+    Q_UNUSED(len);
+    return 0;
+}
+
 #endif
