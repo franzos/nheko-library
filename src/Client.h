@@ -25,6 +25,8 @@
 #include <QStandardPaths>
 
 #include <px-auth-lib-cpp/UserProfile.h>
+#include <px-auth-lib-cpp/Authentication.h>
+#include <px-auth-lib-cpp/CibaAuthentication.h>
 #include "Authentication.h"
 #include "UserSettings.h"
 #include "Cache.h"
@@ -195,7 +197,6 @@ signals:
 private slots:
     void logoutCb();
     void loginCb(const mtx::responses::Login &res);
-    void loginCibaCb(UserInformation userInfo);
     void removeRoom(const QString &room_id);
     void dropToLoginCb(const QString &msg);
     void handleSyncResponse(const mtx::responses::Sync &res, const QString &prev_batch_token);
@@ -205,8 +206,8 @@ private slots:
 private:
     static Client           *instance_;
     Authentication          *_authentication;
-    CibaAuthentication      *_cibaAuthForUserInfo;
-    PX::AUTH::UserProfile   *_cmUserInfo;
+    PX::AUTH::CibaAuthentication *_cibaAuthentication;
+    PX::AUTH::UserProfile        *_cmUserInfo;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
     bool                    _isInitialSync = true;

@@ -96,44 +96,5 @@ private slots:
         std::string serverAddress = "https://matrix.pantherx.org";   
         loginTestWrong->loginWithPassword(deviceName, userId, password, serverAddress); 
         eventLoop.exec();        
-    }
-
-    void cibaLoginCancelTest(){
-        auto loginCibaTest = new Authentication();
-        QString userId = "fake.ciba.id@pantherx.org";
-        QString server = "https://matrix.pantherx.dev";
-        loginCibaTest->loginWithCiba(userId,server,""); 
-        QTimer::singleShot(2000,[&,loginCibaTest](){
-            loginCibaTest->cancelCibaLogin();
-            eventLoop.quit();
-        });
-
-        QTimer::singleShot(6000,[&](){
-            QFAIL("CIBA Canel request failed!");
-            eventLoop.quit();
-        });
-        eventLoop.exec();  
-    }
-
-// void loginWithCorrectCiba(){
-//         auto loginCibaTest = new Authentication();
-//         //QEventLoop eventLoop;
-//         QObject::connect(loginCibaTest,  &Authentication::loginCibaOk, [&](UserInformation res){            
-//             eventLoop.quit();
-//         });
-
- 
-//         QObject::connect(loginCibaTest,  &Authentication::loginCibaErrorOccurred, [&](const std::string &out){
-//             QFAIL(out.c_str());
-//             eventLoop.quit();
-//         });              
-      
-
-//         QString userId = "ff.ss@pantherx.org";
-//         QString server = "https://matrix.pantherx.dev";
-//         loginCibaTest->loginWithCiba(userId,server); 
-//         eventLoop.exec();  
-         
-//     }
-       
+    }       
 };

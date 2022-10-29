@@ -57,7 +57,6 @@ endif()
 #
 set(SRC_FILES
 	src/Authentication.cpp
-	src/CibaAuthentication.cpp
 	src/timeline/EventStore.cpp
 	src/timeline/Permissions.cpp
 	src/timeline/Reaction.cpp
@@ -83,7 +82,6 @@ set(SRC_FILES
 	src/UserProfile.cpp
 	src/UserSettings.cpp
 	src/Utils.cpp
-	src/RestRequest.cpp
 	)
 
 include(FeatureSummary)
@@ -135,8 +133,6 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/UserProfile.h	
 	src/UserSettings.h	
 	src/Authentication.h
-	src/CibaAuthentication.h
-	src/RestRequest.h
 	src/UserInformation.h
 )
 
@@ -165,7 +161,6 @@ set(HEADERS
 	UserSettings.h	
 	Authentication.h	
 	Application.h
-	RestRequest.h
 	Cache.h	
 	EventAccessors.h
 	Logging.h
@@ -173,7 +168,6 @@ set(HEADERS
 	PresenceEmitter.h
 	UIA.h
 	Utils.h
-	CibaAuthentication.h
 	UserInformation.h
 )
 

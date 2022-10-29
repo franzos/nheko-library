@@ -34,7 +34,7 @@ Q_DECLARE_METATYPE(mtx::presence::PresenceState)
 Q_DECLARE_METATYPE(mtx::secret_storage::AesHmacSha2KeyDescription)
 Q_DECLARE_METATYPE(SecretsToDecrypt)
 Q_DECLARE_METATYPE(std::vector<DeviceInfo>)
-
+Q_DECLARE_METATYPE(PX::AUTH::LOGIN_TYPE)
 
 namespace {
 template<template<class...> class Op, class... Args>
@@ -147,16 +147,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
             this,
             &Client::loginCb,
             Qt::QueuedConnection);
-    connect(_authentication,
-            &Authentication::loginCibaOk,
-            this,
-            &Client::loginCibaCb);
     connect(_authentication, &Authentication::loginErrorOccurred, [&](const std::string &msg) {
-        nhlog::net()->info("login failed: {}", msg);
-        QString err =QString::fromStdString(msg);
-        emit loginErrorOccurred(err);
-    });
-    connect(_authentication, &Authentication::loginCibaErrorOccurred, [&](const std::string &msg) {
         nhlog::net()->info("login failed: {}", msg);
         QString err =QString::fromStdString(msg);
         emit loginErrorOccurred(err);
@@ -184,15 +175,28 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit cmUserInfoFailure(message);
     });
 
-    _cibaAuthForUserInfo = new CibaAuthentication();
-    connect(_cibaAuthForUserInfo, &CibaAuthentication::loginOk, [&](const QString &accessToken, const QString &username){
-        Q_UNUSED(username);
-        _cmUserInfo->update(accessToken);
-    });
-    connect(_cibaAuthForUserInfo, &CibaAuthentication::loginError, [&](const QString &message){
-        emit cmUserInfoFailure(message);
+    _cibaAuthentication = new PX::AUTH::CibaAuthentication();
+    connect(_cibaAuthentication, &PX::AUTH::CibaAuthentication::loginDone, [&](const PX::AUTH::CMUserInfo &userInfo){
+        _cmUserInfo->update(userInfo.accessToken);
+        userSettings_.data()->setUserId(userInfo.userId);
+        userSettings_.data()->setCMUserId(userInfo.cmUserId);
+        userSettings_.data()->setAccessToken(userInfo.accessToken);
+        userSettings_.data()->setDeviceId(userInfo.deviceId);
+        userSettings_.data()->setHomeserver(userInfo.homeServer);
+        UserInformation uinfo;
+        uinfo.userId   = userInfo.userId;
+        uinfo.cmUserId = userInfo.cmUserId;
+        uinfo.accessToken = userInfo.accessToken;
+        uinfo.deviceId    = userInfo.deviceId;
+        uinfo.homeServer  = userInfo.homeServer;
+        loginDone(uinfo);    
     });
 
+    connect(_cibaAuthentication, &PX::AUTH::CibaAuthentication::loginError, [&](const QString &message){
+        nhlog::net()->info("login failed: {}", message.toStdString());
+        emit loginErrorOccurred(message);
+        emit cmUserInfoFailure(message);
+    });
     cmManager_ = new PxCMManager();
 
     //
@@ -1059,7 +1063,8 @@ Client::getProfileInfo(QString userid)
 }
 
 void Client::getCMuserInfo() {
-    _cibaAuthForUserInfo->loginRequest(UserSettings::instance()->homeserver(),UserSettings::instance()->cmUserId());
+    _cibaAuthentication->setServer(UserSettings::instance()->homeserver());
+    _cibaAuthentication->loginRequest(UserSettings::instance()->cmUserId());
 }
 
 void
@@ -1379,20 +1384,12 @@ void Client::removeTimeline(const QString &roomID){
 }
 
 void Client::loginWithCiba(QString username,QString server, QString accessToken){
-    _authentication->loginWithCiba(username,server, accessToken);
+    _cibaAuthentication->setServer(server);
+    _cibaAuthentication->loginRequest(username, accessToken);
 }
 
 void Client::cancelCibaLogin(){
-    _authentication->cancelCibaLogin();
-}
-
-void Client::loginCibaCb(UserInformation userInfo){
-    userSettings_.data()->setUserId(userInfo.userId);
-    userSettings_.data()->setCMUserId(userInfo.cmUserId);
-    userSettings_.data()->setAccessToken(userInfo.accessToken);
-    userSettings_.data()->setDeviceId(userInfo.deviceId);
-    userSettings_.data()->setHomeserver(userInfo.homeServer);
-    loginDone(userInfo);
+    _cibaAuthentication->cancel();
 }
 
 QString Client::getLibraryVersion(){
@@ -1400,7 +1397,12 @@ QString Client::getLibraryVersion(){
 }
 
 QVariantMap Client::loginOptions(QString server){
-    return _authentication->availableLogin(server);
+    QVariantMap loginOptions;
+    auto lopts = PX::AUTH::Authentication::instance()->loginOptions(server);
+    for(auto const &k: lopts.keys()){
+        loginOptions.insert(QVariant((int)k).toString(), QVariant(lopts.value(k)));
+    }
+    return loginOptions;
 }
 
 QVector<UserInformation> Client::knownUsers(const QString &filter){
