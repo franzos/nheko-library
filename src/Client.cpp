@@ -175,18 +175,26 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit cmUserInfoFailure(message);
     });
 
+    _cibaAuthenticationForCMuserInfo = new PX::AUTH::CibaAuthentication();
+    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::CibaAuthentication::loginDone, [&](const PX::AUTH::CMUserInfo &userInfo){
+        _cmUserInfo->update(userInfo.cmAccessToken);
+    });
+    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::CibaAuthentication::loginError, [&](const QString &message){
+        nhlog::net()->info("login failed: {}", message.toStdString());
+        emit cmUserInfoFailure(message);
+    });
+
     _cibaAuthentication = new PX::AUTH::CibaAuthentication();
     connect(_cibaAuthentication, &PX::AUTH::CibaAuthentication::loginDone, [&](const PX::AUTH::CMUserInfo &userInfo){
-        _cmUserInfo->update(userInfo.accessToken);
         userSettings_.data()->setUserId(userInfo.userId);
-        userSettings_.data()->setCMUserId(userInfo.cmUserId);
-        userSettings_.data()->setAccessToken(userInfo.accessToken);
+        userSettings_.data()->setAccessToken(userInfo.matrixAccessToken);
         userSettings_.data()->setDeviceId(userInfo.deviceId);
         userSettings_.data()->setHomeserver(userInfo.homeServer);
+        userSettings_.data()->setCMUserId(userInfo.cmUserId);
         UserInformation uinfo;
         uinfo.userId   = userInfo.userId;
         uinfo.cmUserId = userInfo.cmUserId;
-        uinfo.accessToken = userInfo.accessToken;
+        uinfo.accessToken = userInfo.matrixAccessToken;
         uinfo.deviceId    = userInfo.deviceId;
         uinfo.homeServer  = userInfo.homeServer;
         loginDone(uinfo);    
@@ -195,7 +203,6 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     connect(_cibaAuthentication, &PX::AUTH::CibaAuthentication::loginError, [&](const QString &message){
         nhlog::net()->info("login failed: {}", message.toStdString());
         emit loginErrorOccurred(message);
-        emit cmUserInfoFailure(message);
     });
     cmManager_ = new PxCMManager();
 
@@ -1063,8 +1070,8 @@ Client::getProfileInfo(QString userid)
 }
 
 void Client::getCMuserInfo() {
-    _cibaAuthentication->setServer(UserSettings::instance()->homeserver());
-    _cibaAuthentication->loginRequest(UserSettings::instance()->cmUserId());
+    _cibaAuthenticationForCMuserInfo->setServer(UserSettings::instance()->homeserver());
+    _cibaAuthenticationForCMuserInfo->loginRequest(UserSettings::instance()->cmUserId());
 }
 
 void

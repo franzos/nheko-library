@@ -207,6 +207,7 @@ private:
     static Client           *instance_;
     Authentication          *_authentication;
     PX::AUTH::CibaAuthentication *_cibaAuthentication;
+    PX::AUTH::CibaAuthentication *_cibaAuthenticationForCMuserInfo;
     PX::AUTH::UserProfile        *_cmUserInfo;
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
