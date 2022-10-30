@@ -21,7 +21,10 @@
 #include "encryption/Olm.h"
 #include "voip/CallManager.h"
 #include "Application.h"
-#include "px/PxCMManager.h"
+
+#ifdef PX_ACCOUNTS_INTEGRATION
+#include <MatrixBridge.h>
+#endif
 
 Client *Client::instance_  = nullptr;
 constexpr int CHECK_CONNECTIVITY_INTERVAL = 15'000;
@@ -192,8 +195,6 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     connect(_cibaAuthForUserInfo, &CibaAuthentication::loginError, [&](const QString &message){
         emit cmUserInfoFailure(message);
     });
-
-    cmManager_ = new PxCMManager();
 
     //
     connect(this,
@@ -1299,14 +1300,17 @@ void Client::serverDiscovery(QString hostName){
 
 void Client::start(QString userId, QString homeServer, QString token){
 
+#ifdef PX_ACCOUNTS_INTEGRATION
     if (userId.isEmpty()) {
-        auto account = cmManager_->getAccount(userId.toStdString());
+        PxAccounts::MatrixBridge bridge; 
+        auto account = bridge.getAccount(userId.toStdString());
         if (account.has_value()) {
             userId = QString::fromStdString(account.value().userId);
             homeServer = QString::fromStdString(account.value().homeServer);
             token = QString::fromStdString(account.value().accessToken);
         }
     }
+#endif
 
     if(userId.isEmpty()){
         if(hasValidUser()){

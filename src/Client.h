@@ -38,7 +38,6 @@
 
 class UserSettings;
 class CallManager;
-class PxCMManager;
 
 namespace mtx::requests {
 struct CreateRoom;
@@ -246,7 +245,6 @@ private:
     // Global user settings.
     QSharedPointer<UserSettings> userSettings_;    
     CallManager *callManager_;
-    PxCMManager *cmManager_;
 };
 
 template<class Collection>

@@ -66,7 +66,6 @@ set(SRC_FILES
 	src/encryption/DeviceVerificationFlow.cpp
 	src/encryption/SelfVerificationStatus.cpp
 	src/encryption/VerificationManager.cpp
-	src/px/PxCMManager.cpp
 	src/voip/AudioInfo.cpp
 	src/voip/AudioDeviceControl.cpp
 	src/voip/CallDevices.cpp
@@ -197,28 +196,11 @@ if (PX_ACCOUNTS_INTEGRATION)
 	message("PantherX Accounts and Secrets services integration set to enabled.")
 	
 	find_package(CapnProto CONFIG REQUIRED)
-	set(INTERFACE_DIR interfaces)
-	set(CAPNPC_SRC_PREFIX "${INTERFACE_DIR}" CACHE STRING "" FORCE)
-	set(CAPNPC_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/interfaces" CACHE STRING "" FORCE)
-	file(MAKE_DIRECTORY "${CAPNPC_OUTPUT_DIR}")
-	capnp_generate_cpp(CapnpSources CapnpHeaders
-		${INTERFACE_DIR}/Account.capnp
-		${INTERFACE_DIR}/AccountReader.capnp
-		${INTERFACE_DIR}/Secret.capnp)
-
-	include_directories(
-		${CapnProto_INCLUDE_DIRS}	
-		${CAPNPC_OUTPUT_DIR}
-		${CMAKE_CURRENT_BINARY_DIR})
-
+	find_package(PxAccountsMatrixBridge REQUIRED)
 	add_definitions(-DPX_ACCOUNTS_INTEGRATION)
-	list(APPEND MATRIX_LIB_DEPS
-				src/px/RpcClient.cpp
-				src/px/PxAccountsClient.cpp
-				src/px/PxSecretsClient.cpp
-				${CapnpSources} ${CapnpHeaders})
 
 	list(APPEND DEP_LIBS
+				PxAccountsMatrixBridge::px-accounts-matrix-bridge
 				CapnProto::capnp-rpc)
 endif()
 
@@ -285,14 +267,14 @@ IF(BUILD_EXAMPLES)
 	endif(VOIP)
 
 	IF (PX_ACCOUNTS_INTEGRATION)
-		add_executable(account_integration examples/account_integration.cpp
-										   ${CapnpSources} ${CapnpHeaders})
+		add_executable(account_integration examples/account_integration.cpp)
 		target_link_libraries(account_integration matrix-client-library
 												  Qt5::Gui 
 												  Qt5::Widgets
 												  Qt5::Qml
 												  Qt5::QuickControls2
 												  Qt5::Network
+												  PxAccountsMatrixBridge::px-accounts-matrix-bridge
 												  CapnProto::capnp-rpc)
 	ENDIF()
 	
