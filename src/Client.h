@@ -23,10 +23,7 @@
 #include <QPoint>
 #include <QTimer>
 #include <QStandardPaths>
-
-#include <px-auth-lib-cpp/UserProfile.h>
-#include <px-auth-lib-cpp/Authentication.h>
-#include <px-auth-lib-cpp/CibaAuthentication.h>
+#include "Features.h"
 #include "Authentication.h"
 #include "UserSettings.h"
 #include "Cache.h"
@@ -37,6 +34,11 @@
 #include "encryption/VerificationManager.h"
 #include "PresenceEmitter.h"
 #include "UserInformation.h"
+#if CIBA_AUTHENTICATION
+#include <px-auth-lib-cpp/UserProfile.h>
+#include <px-auth-lib-cpp/Authentication.h>
+#include <px-auth-lib-cpp/CibaAuthentication.h>
+#endif
 
 class UserSettings;
 class CallManager;
@@ -84,7 +86,9 @@ public:
     VerificationManager *verificationManager() { return _verificationManager; }
     Q_INVOKABLE PresenceEmitter *presenceEmitter() { return _presenceEmitter; }
     Q_INVOKABLE void getProfileInfo(QString userid = utils::localUser());
+#if CIBA_AUTHENTICATION
     Q_INVOKABLE void getCMuserInfo();
+#endif
     Q_INVOKABLE void start(QString userId = "", QString homeServer = "", QString token = "");
     Q_INVOKABLE void stop();
     Q_INVOKABLE void enableLogger(bool enable, bool enableDebugLogs = false){
@@ -92,7 +96,7 @@ public:
                       .arg(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation))
                       .toStdString(), enable, enableDebugLogs);    
     }
-    Q_INVOKABLE QVariantMap loginOptions(QString server);
+    Q_INVOKABLE QVariantMap loginOptions(const QString & server);
     Q_INVOKABLE QVector<UserInformation> knownUsers(const QString &filter = "");
 
     CallManager *callManager() { return callManager_; }
@@ -114,8 +118,10 @@ public slots:
                                   const SecretsToDecrypt &secrets);
     // Authentication
     void loginWithPassword(QString deviceName, QString userId, QString password, QString serverAddress);
+#if CIBA_AUTHENTICATION
     void loginWithCiba(QString username,QString server,QString accessToken = "");
     void cancelCibaLogin();
+#endif
     bool hasValidUser();
     UserInformation userInformation();
     void userInformation(const QString &mxid);
@@ -148,9 +154,10 @@ signals:
     void userAvatarReady(const QString &avatar);
     void userInfoLoaded(const UserInformation &userinfo);
     void userInfoLoadingFailed(const QString &message);
+#if CIBA_AUTHENTICATION
     void cmUserInfoUpdated(const PX::AUTH::UserProfileInfo &info);
     void cmUserInfoFailure(const QString &message);
-
+#endif
     // sync signals
     void trySyncCb();
     void tryDelayedSyncCb();
@@ -206,9 +213,11 @@ private slots:
 private:
     static Client           *instance_;
     Authentication          *_authentication;
+#if CIBA_AUTHENTICATION
     PX::AUTH::CibaAuthentication *_cibaAuthentication;
     PX::AUTH::CibaAuthentication *_cibaAuthenticationForCMuserInfo;
     PX::AUTH::UserProfile        *_cmUserInfo;
+#endif
     QString _clientName;
     QMap<QString, Timeline *> _timelines;
     bool                    _isInitialSync = true;

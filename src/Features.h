@@ -1,0 +1,1 @@
+#define CIBA_AUTHENTICATION 0

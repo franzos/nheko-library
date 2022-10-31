@@ -7,6 +7,18 @@
 #include <mtx/requests.hpp>
 #include "MatrixClient.h"
 #include "UserInformation.h"
+#include "Features.h"
+#if CIBA_AUTHENTICATION
+#include <px-auth-lib-cpp/Authentication.h>   
+#else
+namespace PX::AUTH{
+Q_NAMESPACE
+enum class LOGIN_TYPE{
+    PASSWORD,
+};
+Q_ENUM_NS(LOGIN_TYPE)
+}
+#endif 
 
 class Authentication: public QObject{
  Q_OBJECT

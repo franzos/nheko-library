@@ -20,9 +20,21 @@ pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
 
 option(VOIP "Whether to enable the voip support. disable this if you don't have the gstreamer" ON)
 if(VOIP)
+	message(" + VOIP: enabled.")
 	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
 endif()
 
+option(CIBA_AUTHENTICATION "Whether the CIBA authentication method enabled or not" OFF)
+if(CIBA_AUTHENTICATION)
+	message(" + CIBA: enabled.")
+	FILE(WRITE src/Features.h
+	"#define CIBA_AUTHENTICATION 1"
+	)
+else()
+	FILE(WRITE src/Features.h
+	"#define CIBA_AUTHENTICATION 0"
+	)
+endif()
 option(PX_ACCOUNTS_INTEGRATION "Whether the integration with PantherX Accounts and Secrets services enabled or not" OFF)
 
 option(BUILD_EXAMPLES "Whether build the examples or not" OFF)
@@ -163,6 +175,7 @@ set(HEADERS
 	Application.h
 	Cache.h	
 	EventAccessors.h
+	Features.h
 	Logging.h
 	MatrixClient.h
 	PresenceEmitter.h
@@ -188,7 +201,7 @@ set(DEP_LIBS
 	liblmdb::lmdb)
 
 if (PX_ACCOUNTS_INTEGRATION)
-	message("PantherX Accounts and Secrets services integration set to enabled.")
+	message("PantherX Accounts/Secrets integration: enabled")
 	
 	find_package(CapnProto CONFIG REQUIRED)
 	set(INTERFACE_DIR interfaces)
@@ -230,17 +243,22 @@ endif()
 
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
-	list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
+	if(CIBA_AUTHENTICATION)
+		list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
+	endif()
 else()
 	pkg_check_modules(
 		PULSE REQUIRED
 		libpulse>=5.0
 		libpulse-mainloop-glib>=0.9.16
 	)
+	if(CIBA_AUTHENTICATION)
+		list(APPEND DEP_LIBS px-auth-lib-cpp)
+	endif()
 	find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
-	list(APPEND DEP_LIBS Qt5::Multimedia px-auth-lib-cpp
-                         ${PULSE_LDFLAGS}
-                         ${GLIB_LDFLAGS})
+	list(APPEND DEP_LIBS Qt5::Multimedia
+						${PULSE_LDFLAGS}
+						${GLIB_LDFLAGS})
 endif()
 
 pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
@@ -303,6 +321,6 @@ IF(BUILD_TESTS)
 					tests/AuthenticationTest.h
 					tests/ClientTest.h
 					tests/UserSettingsTest.h)
-	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library px-auth-lib-cpp Qt5::Gui Qt5::Network Qt5::Widgets)
+	target_link_libraries(run_test PRIVATE PUBLIC Qt5::Test matrix-client-library Qt5::Gui Qt5::Network Qt5::Widgets)
 	message(" + \"tests\" will be built.")
 ENDIF()

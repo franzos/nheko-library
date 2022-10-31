@@ -167,6 +167,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit discoveryErrorOccurred(msg);            
     }); 
     // -------------------- to get CM user info
+#if CIBA_AUTHENTICATION
     _cmUserInfo = new PX::AUTH::UserProfile();
     connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdated, [&](const PX::AUTH::UserProfileInfo &info){
         emit cmUserInfoUpdated(info);
@@ -204,6 +205,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         nhlog::net()->info("login failed: {}", message.toStdString());
         emit loginErrorOccurred(message);
     });
+#endif
     cmManager_ = new PxCMManager();
 
     //
@@ -1069,11 +1071,12 @@ Client::getProfileInfo(QString userid)
       });
 }
 
+#if CIBA_AUTHENTICATION
 void Client::getCMuserInfo() {
     _cibaAuthenticationForCMuserInfo->setServer(UserSettings::instance()->homeserver());
     _cibaAuthenticationForCMuserInfo->loginRequest(UserSettings::instance()->cmUserId());
 }
-
+#endif
 void
 Client::getBackupVersion()
 {
@@ -1389,7 +1392,7 @@ void Client::removeTimeline(const QString &roomID){
         delete timeline;
     }
 }
-
+#if CIBA_AUTHENTICATION
 void Client::loginWithCiba(QString username,QString server, QString accessToken){
     _cibaAuthentication->setServer(server);
     _cibaAuthentication->loginRequest(username, accessToken);
@@ -1398,14 +1401,21 @@ void Client::loginWithCiba(QString username,QString server, QString accessToken)
 void Client::cancelCibaLogin(){
     _cibaAuthentication->cancel();
 }
-
+#endif
 QString Client::getLibraryVersion(){
     return QString::fromStdString(VERSION_LIBRARY);
 }
 
-QVariantMap Client::loginOptions(QString server){
+QVariantMap Client::loginOptions(const QString &server){
     QVariantMap loginOptions;
+#if CIBA_AUTHENTICATION
     auto lopts = PX::AUTH::Authentication::instance()->loginOptions(server);
+#else
+    Q_UNUSED(server)
+    QMap<PX::AUTH::LOGIN_TYPE, QString> lopts;
+    lopts[PX::AUTH::LOGIN_TYPE::PASSWORD]="Password";
+#endif
+
     for(auto const &k: lopts.keys()){
         loginOptions.insert(QVariant((int)k).toString(), QVariant(lopts.value(k)));
     }
