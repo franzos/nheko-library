@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## [0.1.26] - NOT RELEAED YET
+## [0.1.26]
 ### Changed
 
 * CIBA related things removed to the `px-auth-library-cpp`.
