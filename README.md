@@ -45,6 +45,20 @@ The `tests` won't be built as default, so you can run `qmake` as follow to enabl
 cmake -DBUILD_TESTS=ON ..
 ```
 
+**4.** Building with CIBA authentication support
+
+```bash
+cmake -DCIBA_AUTHENTICATION=ON ..
+```
+
+**5.** PantherX Accounts And Secrets service integration
+In order to have the support for PantherX Online Accounts and Secret services integration, we need to build the library with the following flag: `-DPX_ACCOUNTS_INTEGRATION=ON`
+
+```bash
+cmake -DCIBA_AUTHENTICATION=ON ..
+```
+
+
 ## Integration
 #### 1. create instance 
 ```
@@ -93,13 +107,3 @@ std::map<QString, RoomInfo> Client::joinedRoomList()
 * `Cache` (qml and media): `~/.cache/matrix-client-library/APP_NAME/`
 * `Cache Info`: `~/.cache/matrix-client-library/APP_NAME/info`
 
-
-## PantherX Accounts And Secrets service integration
-
-in order to have the support for PantherX Online Accounts and Secret services integration, we need to build the library with the following flag: `-DPX_ACCOUNTS_INTEGRATION=ON`
-
-```shell
-$ mkdir build && cd build
-$ cmake -DPX_ACCOUNTS_INTEGRATION=ON ..
-$ make
-```
