@@ -8,7 +8,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 ### Changed
 
 * CIBA related things removed to the `px-auth-library-cpp`.
+* move account integration stuff to lib.
 * Enable/Disable the CIBA codes by a build flag.
+* Enable/Disable PantherX Accounts/Secrets integration by a build flag.
 
 
 ## [0.1.25]
