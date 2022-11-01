@@ -202,13 +202,11 @@ set(DEP_LIBS
 if (PX_ACCOUNTS_INTEGRATION)
 	message("PantherX Accounts/Secrets integration: enabled")
 	
-	find_package(CapnProto CONFIG REQUIRED)
 	find_package(PxAccountsMatrixBridge REQUIRED)
 	add_definitions(-DPX_ACCOUNTS_INTEGRATION)
 
 	list(APPEND DEP_LIBS
-				PxAccountsMatrixBridge::px-accounts-matrix-bridge
-				CapnProto::capnp-rpc)
+				PxAccountsMatrixBridge::px-accounts-matrix-bridge)
 endif()
 
 IF(STATIC_LIB)
@@ -286,8 +284,7 @@ IF(BUILD_EXAMPLES)
 												  Qt5::Qml
 												  Qt5::QuickControls2
 												  Qt5::Network
-												  PxAccountsMatrixBridge::px-accounts-matrix-bridge
-												  CapnProto::capnp-rpc)
+												  PxAccountsMatrixBridge::px-accounts-matrix-bridge)
 	ENDIF()
 	
 	message(" + \"examples\" will be built.")
