@@ -14,6 +14,7 @@
 namespace PX::AUTH{
 Q_NAMESPACE
 enum class LOGIN_TYPE{
+    UNKNOWN, // For compatibility with px-auth-library-cpp Enum
     PASSWORD,
 };
 Q_ENUM_NS(LOGIN_TYPE)
