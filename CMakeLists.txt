@@ -201,12 +201,13 @@ set(DEP_LIBS
 
 if (PX_ACCOUNTS_INTEGRATION)
 	message("PantherX Accounts/Secrets integration: enabled")
-	
+	find_package(CapnProto CONFIG REQUIRED)
 	find_package(PxAccountsMatrixBridge REQUIRED)
 	add_definitions(-DPX_ACCOUNTS_INTEGRATION)
 
 	list(APPEND DEP_LIBS
-				PxAccountsMatrixBridge::px-accounts-matrix-bridge)
+				PxAccountsMatrixBridge::px-accounts-matrix-bridge
+				CapnProto::capnp-rpc)
 endif()
 
 IF(STATIC_LIB)
