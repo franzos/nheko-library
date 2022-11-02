@@ -16,7 +16,9 @@ include_directories(src)
 # find_package(GLIB "2.50.0" REQUIRED)
 
 find_package(PkgConfig REQUIRED) 
-pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+	pkg_check_modules(libcurl REQUIRED IMPORTED_TARGET libcurl)
+endif()
 
 option(VOIP "Whether to enable the voip support. disable this if you don't have the gstreamer" ON)
 if(VOIP)
@@ -242,7 +244,10 @@ else()
 						${GLIB_LDFLAGS})
 endif()
 
-pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+	pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
+endif()
+
 install(TARGETS matrix-client-library DESTINATION lib)
 foreach(HEADER ${HEADERS})
 	string(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.29]
+### Fixed
+
+* Fixing an issue in LOGIN_TYPE enum.
+* Add guard to not link coeurl and curl in android OS.
+
+
 ## [0.1.28]
 ### Fixed
 
