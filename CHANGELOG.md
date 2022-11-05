@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
-## [0.1.29]
+## [0.1.30]
 ### Fixed
 
 * Fixing an issue in LOGIN_TYPE enum.
