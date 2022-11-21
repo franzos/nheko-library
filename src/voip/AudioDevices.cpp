@@ -2,7 +2,7 @@
 
 #include <QtGlobal>
 
-#ifndef Q_OS_ANDROID
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 #include <QDebug>
 #include <glib.h>
 #include "Logging.h"

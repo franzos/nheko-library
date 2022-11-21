@@ -1,5 +1,5 @@
 #include "AudioDeviceControl.h"
-#ifndef Q_OS_ANDROID
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 #include <stdlib.h>
 #include <math.h>
 #include <QDateTime>

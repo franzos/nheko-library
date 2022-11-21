@@ -5,11 +5,11 @@
 #include <QDebug>
 #include <qendian.h>
 
-#ifndef Q_OS_ANDROID
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 #include <QAudioInput>
 #endif
 
-#ifndef Q_OS_ANDROID
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 
 AudioInfo::AudioInfo(const QAudioFormat &format)
     : m_format(format)

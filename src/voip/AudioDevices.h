@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QtGlobal>
 
-#ifndef Q_OS_ANDROID
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
 #include <pulse/ext-stream-restore.h>

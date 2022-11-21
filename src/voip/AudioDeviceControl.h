@@ -5,7 +5,7 @@
 #include <QScopedPointer>
 #include <QtGlobal>
 
-#ifndef Q_OS_ANDROID
+#if !defined(Q_OS_ANDROID) && !defined(Q_OS_IOS)
 #include <QAudioInput>
 #else
 

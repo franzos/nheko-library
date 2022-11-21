@@ -229,6 +229,10 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Android")
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
 	endif()
+elseif(IOS)
+	if(CIBA_AUTHENTICATION)
+		list(APPEND DEP_LIBS px-auth-lib-cpp)
+	endif()
 else()
 	pkg_check_modules(
 		PULSE REQUIRED
@@ -244,7 +248,7 @@ else()
 						${GLIB_LDFLAGS})
 endif()
 
-if (NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
+if (NOT CMAKE_SYSTEM_NAME STREQUAL "Android" AND NOT IOS)
 	pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
 endif()
 
