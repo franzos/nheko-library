@@ -1551,3 +1551,19 @@ void Client::changeInitialSyncStatge(bool state){
         emit initialSyncChanged(state);
     }
 }
+
+void Client::registerPushers(const QString &url, const QString &appId, const QString &appDiplayName, const QString &pushKey){
+    mtx::requests::SetPusher pusher;
+    pusher.pushkey = pushKey.toStdString();
+    pusher.kind = "http";
+    pusher.app_id = appId.toStdString();
+    pusher.app_display_name = appDiplayName.toStdString();
+    pusher.device_display_name = UserSettings::instance()->deviceId().toStdString();
+    pusher.lang = "en";
+    pusher.data.url = (url + "/_matrix/push/v1/notify").toStdString();
+    pusher.data.format = "event_id_only";
+    pusher.append = false;
+    http::client()->set_pusher(pusher, [&](const mtx::responses::Empty&, const std::optional<mtx::http::ClientError>& error) {
+        ;
+    });
+}
