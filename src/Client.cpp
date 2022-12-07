@@ -1553,6 +1553,7 @@ void Client::changeInitialSyncStatge(bool state){
 }
 
 void Client::registerPushers(const QString &url, const QString &appId, const QString &appDiplayName, const QString &pushKey){
+#if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
     mtx::requests::SetPusher pusher;
     pusher.pushkey = pushKey.toStdString();
     pusher.kind = "http";
@@ -1564,6 +1565,13 @@ void Client::registerPushers(const QString &url, const QString &appId, const QSt
     pusher.data.format = "event_id_only";
     pusher.append = false;
     http::client()->set_pusher(pusher, [&](const mtx::responses::Empty&, const std::optional<mtx::http::ClientError>& error) {
-        ;
+        if(error){
+            auto s = utils::httpMtxErrorToString(error.value()).toStdString();
+            nhlog::crypto()->critical(
+                "failed to register pushers: {}",s);
+        }
     });
+#else
+    (void)url; (void)appId; (void)appDiplayName; (void)pushKey;
+#endif
 }
