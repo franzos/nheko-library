@@ -44,9 +44,18 @@ constexpr size_t MAX_RESTORED_MESSAGES = 30'000;
 
 // Adjust the DB size to be  multiplication of 32MB
 // https://git.pantherx.org/development/mobile/matrix-client/-/issues/67#note_42854
+#ifdef defined(Q_OS_IOS)
+// Adjust DB size to prevent startup crash on iOS
+// https://git.pantherx.org/development/mobile/matrix-client/-/issues/164#note_51852
+// TODO: test the DB_SIZE=256MB on iOS
+constexpr auto DB_SIZE    = 240ULL * 1024ULL * 1024ULL; // 240MB
+constexpr auto MAX_DBS    = 200UL;
+constexpr auto BATCH_SIZE = 10;
+#else
 constexpr auto DB_SIZE    = 960ULL * 1024ULL * 1024ULL; // 960MB
 constexpr auto MAX_DBS    = 32384UL;
 constexpr auto BATCH_SIZE = 100;
+#endif
 
 // #if Q_PROCESSOR_WORDSIZE >= 5 // 40-bit or more, up to 2^(8*WORDSIZE) words addressable.
 // constexpr auto DB_SIZE                 = 32ULL * 1024ULL * 1024ULL * 1024ULL; // 32 GB
