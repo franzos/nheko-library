@@ -202,6 +202,7 @@ utils::getMessageDescription(const TimelineEvent &event,
     using Emote      = mtx::events::RoomEvent<mtx::events::msg::Emote>;
     using File       = mtx::events::RoomEvent<mtx::events::msg::File>;
     using Image      = mtx::events::RoomEvent<mtx::events::msg::Image>;
+    using Location   = mtx::events::RoomEvent<mtx::events::msg::Location>;
     using Notice     = mtx::events::RoomEvent<mtx::events::msg::Notice>;
     using Text       = mtx::events::RoomEvent<mtx::events::msg::Text>;
     using Video      = mtx::events::RoomEvent<mtx::events::msg::Video>;
@@ -218,6 +219,8 @@ utils::getMessageDescription(const TimelineEvent &event,
         return createDescriptionInfo<File>(event, localUser, displayName);
     } else if (std::holds_alternative<Image>(event)) {
         return createDescriptionInfo<Image>(event, localUser, displayName);
+    } else if (std::holds_alternative<Location>(event)) {
+        return createDescriptionInfo<Location>(event, localUser, displayName);
     } else if (std::holds_alternative<Notice>(event)) {
         return createDescriptionInfo<Notice>(event, localUser, displayName);
     } else if (std::holds_alternative<Text>(event)) {
@@ -320,6 +323,8 @@ utils::event_body(const mtx::events::collections::TimelineEvents &e)
     if (auto ev = std::get_if<RoomEvent<msg::File>>(&e); ev != nullptr)
         return QString::fromStdString(ev->content.body);
     if (auto ev = std::get_if<RoomEvent<msg::Image>>(&e); ev != nullptr)
+        return QString::fromStdString(ev->content.body);
+    if (auto ev = std::get_if<RoomEvent<msg::Location>>(&e); ev != nullptr)
         return QString::fromStdString(ev->content.body);
     if (auto ev = std::get_if<RoomEvent<msg::Notice>>(&e); ev != nullptr)
         return QString::fromStdString(ev->content.body);

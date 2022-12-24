@@ -102,6 +102,7 @@ messageDescription(const QString &username = QString(),
     using Emote      = mtx::events::RoomEvent<mtx::events::msg::Emote>;
     using File       = mtx::events::RoomEvent<mtx::events::msg::File>;
     using Image      = mtx::events::RoomEvent<mtx::events::msg::Image>;
+    using Location   = mtx::events::RoomEvent<mtx::events::msg::Location>;
     using Notice     = mtx::events::RoomEvent<mtx::events::msg::Notice>;
     using Sticker    = mtx::events::Sticker;
     using Text       = mtx::events::RoomEvent<mtx::events::msg::Text>;
@@ -123,6 +124,12 @@ messageDescription(const QString &username = QString(),
             return QCoreApplication::translate("message-description sent:", "You sent an image");
         else
             return QCoreApplication::translate("message-description sent:", "%1 sent an image")
+              .arg(username);
+    } else if (std::is_same<T, Location>::value) {
+        if (isLocal)
+            return QCoreApplication::translate("message-description sent:", "You sent an location");
+        else
+            return QCoreApplication::translate("message-description sent:", "%1 sent an location")
               .arg(username);
     } else if (std::is_same<T, File>::value) {
         if (isLocal)
