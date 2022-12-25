@@ -315,6 +315,20 @@ struct EventTransactionId
     }
 };
 
+struct EventGeoUri
+{
+    template<class Content>
+    using geo_uri_t = decltype(Content::geo_uri);
+    template<class T>
+    std::string operator()(const mtx::events::Event<T> &e)
+    {
+        if constexpr (is_detected<geo_uri_t, T>::value) {
+            return e.content.geo_uri;
+        }
+        return "";
+    }
+};
+
 struct EventMediaHeight
 {
     template<class Content>
@@ -487,6 +501,12 @@ std::string
 mtx::accessors::transaction_id(const mtx::events::collections::TimelineEvents &event)
 {
     return std::visit(EventTransactionId{}, event);
+}
+
+std::string
+mtx::accessors::geoUri(const mtx::events::collections::TimelineEvents &event)
+{
+    return std::visit(EventGeoUri{}, event);
 }
 
 int64_t
