@@ -248,10 +248,6 @@ else()
 						${GLIB_LDFLAGS})
 endif()
 
-if (NOT CMAKE_SYSTEM_NAME STREQUAL "Android" AND NOT IOS)
-	pkg_check_modules(coeurl REQUIRED IMPORTED_TARGET coeurl)
-endif()
-
 install(TARGETS matrix-client-library DESTINATION lib)
 foreach(HEADER ${HEADERS})
 	string(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})
