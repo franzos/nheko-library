@@ -100,7 +100,7 @@ set(SRC_FILES
 include(FeatureSummary)
 
 find_package(OpenSSL 1.1.0 REQUIRED)
-find_package(MatrixClient 0.6.0 REQUIRED)
+find_package(MatrixClient 0.8.2 REQUIRED)
 find_package(Olm 3 REQUIRED)
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(cmark REQUIRED 0.29.0)
