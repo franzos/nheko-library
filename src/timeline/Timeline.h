@@ -149,6 +149,10 @@ struct RoomEventType
     {
         return qml_mtx_events::EventType::ImageMessage;
     }
+    qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Location> &)
+    {
+        return qml_mtx_events::EventType::LocationMessage;
+    }
     qml_mtx_events::EventType operator()(const mtx::events::Event<mtx::events::msg::Notice> &)
     {
         return qml_mtx_events::EventType::NoticeMessage;

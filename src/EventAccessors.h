@@ -98,6 +98,9 @@ set_relations(mtx::events::collections::TimelineEvents &event, mtx::common::Rela
 std::string
 transaction_id(const mtx::events::collections::TimelineEvents &event);
 
+std::string
+geoUri(const mtx::events::collections::TimelineEvents &event);
+
 int64_t
 filesize(const mtx::events::collections::TimelineEvents &event);
 
