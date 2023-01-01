@@ -140,6 +140,7 @@ qt5_wrap_cpp(MOC_HEADERS
 	src/CacheCryptoStructs.h
 	src/Cache_p.h
 	src/Client.h
+	src/ChatPage.h
 	src/Config.h
 	src/PresenceEmitter.h
 	src/UIA.h
@@ -169,6 +170,7 @@ set(HEADERS
 	CacheStructs.h
 	Cache_p.h
 	Client.h
+	ChatPage.h
 	Config.h
 	UserProfile.h	
 	UserSettings.h	

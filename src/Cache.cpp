@@ -8,6 +8,7 @@
 #include "Cache_p.h"
 
 #include <stdexcept>
+#include <unordered_set>
 #include <variant>
 
 #include <QCoreApplication>
@@ -22,7 +23,7 @@
 #include <mtx/responses/common.hpp>
 #include <mtx/responses/messages.hpp>
 
-#include "Client.h"
+#include "ChatPage.h"
 #include "EventAccessors.h"
 #include "Logging.h"
 #include "MatrixClient.h"
@@ -44,7 +45,7 @@ constexpr size_t MAX_RESTORED_MESSAGES = 30'000;
 
 // Adjust the DB size to be  multiplication of 32MB
 // https://git.pantherx.org/development/mobile/matrix-client/-/issues/67#note_42854
-#ifdef defined(Q_OS_IOS)
+#if defined(Q_OS_IOS)
 // Adjust DB size to prevent startup crash on iOS
 // https://git.pantherx.org/development/mobile/matrix-client/-/issues/164#note_51852
 // TODO: test the DB_SIZE=256MB on iOS
@@ -549,7 +550,7 @@ Cache::importSessionKeys(const mtx::crypto::ExportedSessionKeys &keys)
             inboundMegolmSessionDb_.put(txn, key, pickled);
             megolmSessionDataDb_.put(txn, key, nlohmann::json(data).dump());
 
-            Client::instance()->receivedSessionKey(QString::fromStdString(index.room_id), QString::fromStdString(index.session_id));
+            ChatPage::instance()->receivedSessionKey(QString::fromStdString(index.room_id), QString::fromStdString(index.session_id));
             importCount++;
         } catch (const mtx::crypto::olm_exception &e) {
             nhlog::crypto()->critical(
@@ -1069,7 +1070,8 @@ Cache::runMigrations()
                                else if (j["token"].get<std::string>() != oldMessages.prev_batch)
                                    break;
 
-                               auto te = j["event"].get<mtx::events::collections::TimelineEvent>();
+                               mtx::events::collections::TimelineEvent te;
+                               from_json(j["event"], te);
                                oldMessages.events.push_back(te.data);
                            }
                            // messages were stored in reverse order, so we
@@ -1702,10 +1704,11 @@ Cache::saveState(const mtx::responses::Sync &res)
                     }
                 }
                     if (userReceipts.count(mtx::events::ephemeral::Receipt::ReadPrivate)) {
-                        auto ts = userReceipts.at(mtx::events::ephemeral::Receipt::ReadPrivate)
-                                    .users.at(local_user_id);
-                        if (ts.ts != 0)
-                            receipts[event_id][local_user_id] = ts.ts;
+                        const auto &users =
+                          userReceipts.at(mtx::events::ephemeral::Receipt::ReadPrivate).users;
+                        if (auto ts = users.find(local_user_id);
+                            ts != users.end() && ts->second.ts != 0)
+                            receipts[event_id][local_user_id] = ts->second.ts;
                     }
                 }
                 updateReadReceipt(txn, room.first, receipts);
@@ -2063,8 +2066,7 @@ Cache::getTimelineMessages(lmdb::txn &txn, const std::string &room_id, uint64_t 
 
         mtx::events::collections::TimelineEvent te;
         try {
-            auto j = nlohmann::json::parse(event);
-            te = j.get<mtx::events::collections::TimelineEvent>();
+            from_json(nlohmann::json::parse(event), te);
         } catch (std::exception &e) {
             nhlog::db()->error("Failed to parse message from cache {}", e.what());
             continue;
@@ -2094,8 +2096,7 @@ Cache::getEvent(const std::string &room_id, const std::string &event_id)
 
     mtx::events::collections::TimelineEvent te;
     try {
-        auto j = nlohmann::json::parse(event);
-        te = j.get<mtx::events::collections::TimelineEvent>();
+        from_json(nlohmann::json::parse(event), te);
     } catch (std::exception &e) {
         nhlog::db()->error("Failed to parse message from cache {}", e.what());
         return std::nullopt;
@@ -3065,8 +3066,8 @@ Cache::firstPendingMessage(const std::string &room_id)
             }
 
             try {
-                auto j = nlohmann::json::parse(event);
-                auto te = j.get<mtx::events::collections::TimelineEvent>();
+                mtx::events::collections::TimelineEvent te;
+                from_json(nlohmann::json::parse(event), te);
 
                 pendingCursor.close();
                 txn.commit();
@@ -3205,8 +3206,8 @@ Cache::saveTimelineMessages(lmdb::txn &txn,
 
             mtx::events::collections::TimelineEvent te;
             try {
-                auto j = nlohmann::json::parse(std::string_view(oldEvent.data(), oldEvent.size()));
-                te = j.get<mtx::events::collections::TimelineEvent>();
+                from_json(nlohmann::json::parse(std::string_view(oldEvent.data(), oldEvent.size())),
+                          te);
                 // overwrite the content and add redation data
                 std::visit(
                   [redaction](auto &ev) {
@@ -3466,7 +3467,8 @@ Cache::getTimelineMentionsForRoom(lmdb::txn &txn, const std::string &room_id)
         if (obj.count("event") == 0)
             continue;
 
-        auto notification = obj.get<mtx::responses::Notification>();
+        mtx::responses::Notification notification;
+        from_json(obj, notification);
 
         notif.notifications.push_back(notification);
     }
@@ -3799,7 +3801,8 @@ Cache::getImagePacks(const std::string &room_id, std::optional<bool> stickers)
 
     auto addPack = [&infos, stickers](const mtx::events::msc2545::ImagePack &pack,
                                       const std::string &source_room,
-                                      const std::string &state_key) {
+                                      const std::string &state_key,
+                                      bool from_space) {
         bool pack_is_sticker = pack.pack ? pack.pack->is_sticker() : true;
         bool pack_is_emoji   = pack.pack ? pack.pack->is_emoji() : true;
         bool pack_matches =
@@ -3809,6 +3812,7 @@ Cache::getImagePacks(const std::string &room_id, std::optional<bool> stickers)
             info.source_room = source_room;
             info.state_key   = state_key;
             info.pack.pack   = pack.pack;
+        info.from_space  = from_space;
 
             for (const auto &img : pack.images) {
             if (stickers.has_value() &&
@@ -3830,7 +3834,7 @@ Cache::getImagePacks(const std::string &room_id, std::optional<bool> stickers)
         auto tmp =
           std::get_if<mtx::events::EphemeralEvent<mtx::events::msc2545::ImagePack>>(&*accountpack);
         if (tmp)
-            addPack(tmp->content, "", "");
+            addPack(tmp->content, "", "", false);
     }
 
     // packs from rooms, that were enabled globally
@@ -3847,19 +3851,39 @@ Cache::getImagePacks(const std::string &room_id, std::optional<bool> stickers)
                     (void)d;
                     if (auto pack =
                           getStateEvent<mtx::events::msc2545::ImagePack>(txn, room_id2, state_id))
-                        addPack(pack->content, room_id2, state_id);
+                        addPack(pack->content, room_id2, state_id, false);
                 }
             }
         }
     }
 
-    // packs from current room
-    if (auto pack = getStateEvent<mtx::events::msc2545::ImagePack>(txn, room_id)) {
-        addPack(pack->content, room_id, "");
+    std::function<void(const std::string &room_id)> addRoomAndCanonicalParents;
+    std::unordered_set<std::string> visitedRooms;
+    addRoomAndCanonicalParents =
+      [this, &addRoomAndCanonicalParents, &addPack, &visitedRooms, &txn, &room_id](
+        const std::string &current_room) {
+          if (visitedRooms.count(current_room))
+              return;
+          else
+              visitedRooms.insert(current_room);
+
+          if (auto pack = getStateEvent<mtx::events::msc2545::ImagePack>(txn, current_room)) {
+              addPack(pack->content, current_room, "", current_room != room_id);
     }
-    for (const auto &pack : getStateEventsWithType<mtx::events::msc2545::ImagePack>(txn, room_id)) {
-        addPack(pack.content, room_id, pack.state_key);
+          for (const auto &pack :
+               getStateEventsWithType<mtx::events::msc2545::ImagePack>(txn, current_room)) {
+              addPack(pack.content, current_room, pack.state_key, current_room != room_id);
     }
+
+          for (const auto &parent :
+               getStateEventsWithType<mtx::events::state::space::Parent>(txn, current_room)) {
+              if (parent.content.canonical && parent.content.via && !parent.content.via->empty())
+                  addRoomAndCanonicalParents(parent.state_key);
+    }
+      };
+
+    // packs from current room and then iterate canonical space parents
+    addRoomAndCanonicalParents(room_id);
 
     return infos;
 }
@@ -4269,6 +4293,14 @@ Cache::updateUserKeys(const std::string &sync_token, const mtx::responses::Query
                             nhlog::crypto()->warn("device {}:{} has no signature", user, device_id);
                             continue;
                         }
+                        if (!device_keys.keys.count(device_signing_key) ||
+                            !device_keys.keys.count("curve25519:" + device_id)) {
+                            nhlog::crypto()->warn(
+                              "Device key has no curve25519 or ed25519 key  {}:{}",
+                              user,
+                              device_id);
+                            continue;
+                        }
 
                         if (!mtx::crypto::ed25519_verify_signature(
                               device_keys.keys.at(device_signing_key),
@@ -4344,6 +4376,11 @@ Cache::markUserKeysOutOfDate(lmdb::txn &txn,
     query.token = sync_token;
 
     for (const auto &user : user_ids) {
+        if (user.size() > 255) {
+            nhlog::db()->debug("Skipping device key query for user with invalid mxid: {}", user);
+            continue;
+        }
+
         nhlog::db()->debug("Marking user keys out of date: {}", user);
 
         std::string_view oldKeys;
@@ -4384,6 +4421,15 @@ void
 Cache::query_keys(const std::string &user_id,
                   std::function<void(const UserKeyCache &, mtx::http::RequestErr)> cb)
 {
+    if (user_id.size() > 255) {
+        nhlog::db()->debug("Skipping device key query for user with invalid mxid: {}", user_id);
+
+        mtx::http::ClientError err{};
+        err.parse_error = "invalid mxid, more than 255 bytes";
+        cb({}, err);
+        return;
+    }
+
     mtx::requests::QueryKeys req;
     std::string last_changed;
     {

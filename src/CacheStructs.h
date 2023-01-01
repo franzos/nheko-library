@@ -56,14 +56,14 @@ struct DescInfo
 inline bool
 operator==(const DescInfo &a, const DescInfo &b)
 {
-    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime) ==
-           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime);
+    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime) ==
+           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime);
 }
 inline bool
 operator!=(const DescInfo &a, const DescInfo &b)
 {
-    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime, a.datetime) !=
-           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime, b.datetime);
+    return std::tie(a.timestamp, a.event_id, a.userid, a.body, a.descriptiveTime) !=
+           std::tie(b.timestamp, b.event_id, b.userid, b.body, b.descriptiveTime);
 }
 
 //! UI info associated with a room.
@@ -126,5 +126,6 @@ struct ImagePackInfo
     mtx::events::msc2545::ImagePack pack;
     std::string source_room;
     std::string state_key;
+    bool from_space = false;
 };
  

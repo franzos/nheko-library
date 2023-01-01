@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.32]
+### Updated
+
+* Merge with upstream@0.10.2
+
 ## [0.1.31]
 ### Updated
 
