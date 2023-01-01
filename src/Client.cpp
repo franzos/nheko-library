@@ -1250,6 +1250,11 @@ Client::startChat(QString userid, bool encryptionEnabled)
     req.preset     = mtx::requests::Preset::TrustedPrivateChat;
     req.visibility = mtx::common::RoomVisibility::Private;
 
+    if (!encryptionEnabled) {
+        if (auto keys = cache::client()->userKeys(userid.toStdString()))
+            encryptionEnabled = !keys->device_keys.empty();
+    }
+
     if (encryptionEnabled) {
         mtx::events::StrippedEvent<mtx::events::state::Encryption> enc;
         enc.type              = mtx::events::EventType::RoomEncryption;

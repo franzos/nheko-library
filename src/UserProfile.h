@@ -169,8 +169,7 @@ private:
     void getGlobalProfileData();
 
 private:
-    QString roomid_;
-    QString userid_;
+    QString roomid_, userid_;
     QString globalUsername;
     QString globalAvatarUrl;
     DeviceInfoModel deviceList_;

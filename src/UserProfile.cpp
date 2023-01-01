@@ -9,7 +9,7 @@
 // #include <QStandardPaths>
 #include <QDebug>
 #include "Cache_p.h"
-#include "Client.h"
+#include "ChatPage.h"
 #include "Logging.h"
 #include "UserProfile.h"
 #include "Utils.h"
@@ -157,7 +157,7 @@ UserProfile::signOutDevice(const QString &deviceID)
           nhlog::ui()->info("Device {} successfully signed out!", deviceID.toStdString());
           // This is us. Let's update the interface accordingly
           if (isSelf() && deviceID.toStdString() == ::http::client()->device_id()) {
-              Client::instance()->dropToLogin(tr("You signed out this device."));
+              ChatPage::instance()->dropToLogin(tr("You signed out this device."));
           }
           refreshDevices();
       });
@@ -294,7 +294,7 @@ UserProfile::updateVerificationStatus()
 void
 UserProfile::banUser()
 {
-    Client::instance()->timeline(roomid_)->banUser(this->userid_, "");
+    ChatPage::instance()->timeline(roomid_)->banUser(this->userid_, "");
 }
 
 // void ignoreUser(){
@@ -304,19 +304,19 @@ UserProfile::banUser()
 void
 UserProfile::kickUser()
 {
-    Client::instance()->timeline(roomid_)->kickUser(this->userid_, "");
+    ChatPage::instance()->timeline(roomid_)->kickUser(this->userid_, "");
 }
 
 void
 UserProfile::startChat(bool encryption)
 {
-    Client::instance()->startChat(this->userid_, encryption);
+    ChatPage::instance()->startChat(this->userid_, encryption);
 }
 
 void
 UserProfile::startChat()
 {
-    Client::instance()->startChat(this->userid_);
+    ChatPage::instance()->startChat(this->userid_);
 }
 
 void
