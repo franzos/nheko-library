@@ -1442,7 +1442,16 @@ QVector<UserInformation> Client::knownUsers(const QString &filter){
                 uinfo.userId = m.user_id;
                 uinfo.displayName = m.display_name;
                 uinfo.avatarUrl = t.second->avatarUrl(m.user_id);
-                knownUsers.push_back(uinfo);
+                // check dupplication
+                bool dupplicate = false;
+                for(auto const &ku: knownUsers){
+                    if(ku.userId == uinfo.userId){
+                        dupplicate = true;
+                        break;
+                    }
+                }
+                if(!dupplicate) 
+                    knownUsers.push_back(uinfo);
             }
         }
     }
