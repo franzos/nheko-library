@@ -21,6 +21,27 @@ extern "C"
 CallDevices::CallDevices()
     : QObject()
 {
+    connect(UserSettings::instance().get(), &UserSettings::cameraChanged, this, &CallDevices::reloadCameraSettings);
+}
+
+void CallDevices::reloadCameraSettings(){
+    auto settings = UserSettings::instance();
+    if (settings->cameraResolution().isEmpty()){
+        auto resolutions_ = resolutions(settings->camera().toStdString());
+        if(resolutions_.size())
+            settings->setCameraResolution(QString::fromStdString(resolutions_.front()));
+        else
+            nhlog::dev()->warn("Camera resulotion error {}", settings->camera().toStdString());
+    }
+    if (settings->cameraFrameRate().isEmpty()){
+        if(!settings->cameraResolution().isEmpty()){
+            auto framerates = frameRates(settings->camera().toStdString(), settings->cameraResolution().toStdString());
+            if (framerates.size())
+                settings->setCameraFrameRate(QString::fromStdString(framerates.front()));
+            else 
+                nhlog::dev()->warn("Camera framerate error {}", settings->camera().toStdString());;
+        }
+    }
 }
 
 #ifdef GSTREAMER_AVAILABLE
@@ -99,22 +120,7 @@ namespace
                 else
                     nhlog::dev()->warn("Video source is not available!");
             }
-            if (settings->cameraResolution().isEmpty()){
-                auto resolutions = CallDevices::instance().resolutions(settings->camera().toStdString());
-                if(resolutions.size())
-                    settings->setCameraResolution(QString::fromStdString(resolutions.front()));
-                else
-                    nhlog::dev()->warn("Camera resulotion error {}", settings->camera().toStdString());
-            }
-            if (settings->cameraFrameRate().isEmpty()){
-                if(!settings->cameraResolution().isEmpty()){
-                    auto framerates = CallDevices::instance().frameRates(settings->camera().toStdString(), settings->cameraResolution().toStdString());
-                    if (framerates.size())
-                        settings->setCameraFrameRate(QString::fromStdString(framerates.front()));
-                    else 
-                        nhlog::dev()->warn("Camera framerate error {}", settings->camera().toStdString());;
-                }
-            }
+            CallDevices::instance().reloadCameraSettings();
         }
         else if (!isVideo && settings->microphone().isEmpty())
         {

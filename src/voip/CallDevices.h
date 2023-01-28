@@ -31,6 +31,7 @@ public:
 public slots:
     bool haveMic() const;
     bool haveCamera() const;
+    void reloadCameraSettings();
 
 signals:
     void devicesChanged();
