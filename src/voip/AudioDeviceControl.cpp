@@ -17,10 +17,13 @@ AudioDeviceControl::AudioDeviceControl(){
     connect(&_audioDevices, &AudioDevices::newOutputDeviceStatus,[&](uint32_t index) {
         emit newOutputDeviceStatus(index);
     });
+    connect(&_audioDevices, &AudioDevices::defaultOutputDeviceChanged,[&](uint32_t index) {
+        emit defaultOutputDeviceChanged(index);
+    });
 }
 
 qreal AudioDeviceControl::getMicrophoneVolume(const QString &deviceDesc){
-    auto index = audioDeviceIndex(deviceDesc);
+    auto index = audioDeviceSourceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return 0;
@@ -29,7 +32,7 @@ qreal AudioDeviceControl::getMicrophoneVolume(const QString &deviceDesc){
 }
 
 void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal volume){
-    auto index = audioDeviceIndex(deviceDesc);
+    auto index = audioDeviceSourceIndex(deviceDesc);
     if(index==-1){
         nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
         return;
@@ -37,12 +40,22 @@ void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal vo
     _audioDevices.setMicrophoneVolume(index, volume);
 }
 
-void AudioDeviceControl::setSpeakerVolume(qreal volume){
-    _audioDevices.setSpeakerVolume(volume);
+void AudioDeviceControl::setSpeakerVolume(const QString &deviceDesc, qreal volume){
+    auto index = audioDeviceSinkIndex(deviceDesc);
+    if(index==-1){
+        nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
+        return;
+    }
+    _audioDevices.setSpeakerVolume(index, volume);
 }
 
-qreal AudioDeviceControl::getSpeakerVolume(){
-    return _audioDevices.getSpeakerVolume();
+qreal AudioDeviceControl::getSpeakerVolume(const QString &deviceDesc){
+    auto index = audioDeviceSinkIndex(deviceDesc);
+    if(index==-1){
+        nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
+        return 0.0;
+    }
+    return _audioDevices.getSpeakerVolume(index);
 }
 
 QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc){
@@ -65,10 +78,20 @@ QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc){
     return QAudioDeviceInfo();
 }
 
-int32_t AudioDeviceControl::audioDeviceIndex(const QString &deviceDesc){
+int32_t AudioDeviceControl::audioDeviceSourceIndex(const QString &deviceDesc){
     auto sources = _audioDevices.sources();
     for(auto &source: sources.toStdMap()){
         if(source.second.desc == deviceDesc){
+            return source.second.index;
+        }
+    }
+    return -1;
+}
+
+int32_t  AudioDeviceControl::audioDeviceSinkIndex(const QString &desc){
+    auto sources = _audioDevices.sinks();
+    for(auto &source: sources.toStdMap()){
+        if(source.second.desc == desc){
             return source.second.index;
         }
     }
@@ -124,6 +147,31 @@ AudioDeviceInfo AudioDeviceControl::deviceInfo(qint32 index){
     return info;
 }
 
+QStringList AudioDeviceControl::audioOutputDevices() {
+    QStringList list;
+    auto ods = _audioDevices.sinks();
+
+    for(auto &od: ods.toStdMap()){
+        list << od.second.desc;
+    }
+    return list;   
+}
+
+void AudioDeviceControl::setDefaultAudioOutput(const QString &deviceDesc){
+    auto index = audioDeviceSinkIndex(deviceDesc);
+    if(index==-1){
+        nhlog::dev()->warn("Device description not found: {}" , deviceDesc.toStdString());
+        return;
+    }
+    std::string volumeCommand = "pacmd set-default-sink " + std::to_string(index); 
+    nhlog::dev()->debug("Exec: {}", volumeCommand);
+    system(volumeCommand.c_str());
+}
+
+QString AudioDeviceControl::defaultAudioOutput(){
+    return _audioDevices.defaultAudioOutput();
+}
+
 #else
 
 AudioDeviceControl::AudioDeviceControl() {}
@@ -138,11 +186,13 @@ void AudioDeviceControl::setMicrophoneVolume(const QString &deviceDesc, qreal vo
     Q_UNUSED(volume);
 }
 
-void AudioDeviceControl::setSpeakerVolume(qreal volume) {
+void AudioDeviceControl::setSpeakerVolume(const QString &deviceDesc, qreal volume) {
+    Q_UNUSED(deviceDesc);
     Q_UNUSED(volume);
 }
 
-qreal AudioDeviceControl::getSpeakerVolume() {
+qreal AudioDeviceControl::getSpeakerVolume(const QString &deviceDesc) {
+    Q_UNUSED(deviceDesc);
     return 0.0;
 }
 
@@ -151,8 +201,13 @@ QAudioDeviceInfo AudioDeviceControl::audioDeviceInfo(const QString &deviceDesc) 
     return QAudioDeviceInfo {};
 }
 
-int32_t AudioDeviceControl::audioDeviceIndex(const QString &deviceDesc) {
+int32_t AudioDeviceControl::audioDeviceSourceIndex(const QString &deviceDesc) {
     Q_UNUSED(deviceDesc);
+    return -1;
+}
+
+int32_t  AudioDeviceControl::audioDeviceSinkIndex(const QString &desc){
+    Q_UNUSED(desc);
     return -1;
 }
 
@@ -168,4 +223,17 @@ AudioDeviceInfo AudioDeviceControl::deviceInfo(qint32 index) {
     Q_UNUSED(index);
     return AudioDeviceInfo {};
 }
+
+QStringList AudioDeviceControl::audioOutputDevices() {
+    return QStringList();    
+}
+
+void AudioDeviceControl::setDefaultAudioOutput(const QString &deviceDesc){
+    Q_UNUSED(deviceDesc);
+}
+
+QString AudioDeviceControl::defaultAudioOutput(){
+    return "";
+}
+
 #endif

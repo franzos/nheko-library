@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.35]
+### Updated
+
+* Audio device output list, select device as default output and volume control.
+
 ## [0.1.34]
 ### Updated
 
 * Fixing issue in reloading the camera settings after setCamera.
-
 
 ## [0.1.33]
 ### Updated

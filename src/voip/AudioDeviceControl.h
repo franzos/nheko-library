@@ -28,18 +28,23 @@ public slots:
     void deviceChanged(const QString &deviceDesc);
     void setMicrophoneVolume(const QString &deviceDesc, qreal volume);
     qreal getMicrophoneVolume(const QString &deviceDesc);
-    void setSpeakerVolume(qreal volume);
-    qreal getSpeakerVolume();
+    void setSpeakerVolume(const QString &deviceDesc, qreal volume);
+    qreal getSpeakerVolume(const QString &deviceDesc);
     AudioDeviceInfo deviceInfo(qint32 index);
+    QStringList audioOutputDevices();
+    void setDefaultAudioOutput(const QString &deviceDesc);
+    QString defaultAudioOutput();
     
 private:
     QAudioDeviceInfo audioDeviceInfo(const QString &deviceDesc);
-    int32_t audioDeviceIndex(const QString &deviceDesc);
+    int32_t audioDeviceSourceIndex(const QString &deviceDesc);
+    int32_t audioDeviceSinkIndex(const QString &desc);
 
 signals:
     void levelChanged(const qreal &level);
     void newInputDeviceStatus(qint32 index);
     void newOutputDeviceStatus(qint32 index);
+    void defaultOutputDeviceChanged(qint32 index);
 
 private:
     QScopedPointer<AudioInfo> m_audioInfo;

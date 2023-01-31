@@ -40,6 +40,7 @@ public:
     void removeSource(uint32_t index);
     void updateSource(const pa_source_info &info);
 
+    void checkDefaultOutput();
     void removeSink(uint32_t index);
     void updateSink(const pa_sink_info &info);
     QMap<uint32_t, AudioDeviceInfo> sources() {return _sources;};
@@ -48,14 +49,17 @@ public:
 signals:
     void newInputDeviceStatus(uint32_t index);
     void newOutputDeviceStatus(uint32_t index);
+    void defaultOutputDeviceChanged(uint32_t index);
 
 public slots:
     void setMicrophoneVolume(uint32_t index, qreal volume);
     qreal getMicrophoneVolume(uint32_t index);
-    void setSpeakerVolume(qreal volume);
-    qreal getSpeakerVolume();
+    void setSpeakerVolume(uint32_t index, qreal volume);
+    qreal getSpeakerVolume(uint32_t index);
+    QString defaultAudioOutput();
 
 private:
     QMap<uint32_t, AudioDeviceInfo> _sources;
     QMap<uint32_t, AudioDeviceInfo> _sinks;
+    QString    _defaultAudioOutput;
 };

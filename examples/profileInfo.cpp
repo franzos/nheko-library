@@ -142,7 +142,10 @@ int main(int argc, char *argv[]){
     //     aic->setMicrophoneVolume("Built-in Audio Analog Stereo" ,0.25);
     //     aic->deviceChanged("Built-in Audio Analog Stereo");           
 
-    //     aic->setSpeakerVolume(0.63);
+    //     qDebug() << "Audio Device outputs:" << aic->audioOutputDevices();
+    //     qDebug() << "Default Audio device output:" << aic->defaultAudioOutput();
+    //     qDebug() << "Volume:" << aic->getSpeakerVolume(aic->defaultAudioOutput());
+    //     aic->setSpeakerVolume(aic->defaultAudioOutput(), 0.63);
     //     qDebug() << "Speaker Volume:" << (aic->getSpeakerVolume()* 100);
     // });
     // QObject::connect(aic, &AudioDeviceControl::levelChanged, [](qreal level){

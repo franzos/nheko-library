@@ -47,7 +47,7 @@ void source_cb(pa_context *, const pa_source_info *i, int eol, void *userdata) {
 }
 
 void sink_cb(pa_context *, const pa_sink_info *i, int eol, void *userdata) {
-    AudioDevices *inputDevices = static_cast<AudioDevices*>(userdata);
+    AudioDevices *outputDevices = static_cast<AudioDevices*>(userdata);
 
     if (eol < 0) {
         if (pa_context_errno(context) == PA_ERR_NOENTITY)
@@ -66,8 +66,9 @@ void sink_cb(pa_context *, const pa_sink_info *i, int eol, void *userdata) {
     if (w->updateSink(*i))
         ext_device_restore_subscribe_cb(c, PA_DEVICE_TYPE_SINK, i->index, w);
 #else
-    inputDevices->updateSink(*i);
+    outputDevices->updateSink(*i);
 #endif
+    outputDevices->checkDefaultOutput();
 }
 
 void subscribe_cb(pa_context *c, pa_subscription_event_type_t t, uint32_t index, void *userdata) {
@@ -297,16 +298,13 @@ qreal AudioDevices::getMicrophoneVolume(uint32_t index){
     return _sources[index].volume;
 }
 
-void AudioDevices::setSpeakerVolume(qreal volume){
-    for(auto const &s: _sinks){
-        std::string volumeCommand = "pactl -- set-sink-volume " + std::to_string(s.index) + " " + std::to_string(int(volume * 100)) + "%"; 
-        nhlog::dev()->debug("Exec: {}", volumeCommand);
-        system(volumeCommand.c_str());
-    }
+void AudioDevices::setSpeakerVolume(uint32_t index, qreal volume){
+    std::string volumeCommand = "pactl -- set-sink-volume " + std::to_string(index) + " " + std::to_string(int(volume * 100)) + "%"; 
+    nhlog::dev()->debug("Exec: {}", volumeCommand);
+    system(volumeCommand.c_str());
 }
 
-qreal AudioDevices::getSpeakerVolume(){
-    int index = 0; // TODO
+qreal AudioDevices::getSpeakerVolume(uint32_t index){
     if(!_sinks.count(index)){
         nhlog::dev()->warn("Output device index is not valid: ({})", index);
         return 0;
@@ -314,7 +312,23 @@ qreal AudioDevices::getSpeakerVolume(){
     return _sinks[index].volume;
 }
 
+QString AudioDevices::defaultAudioOutput(){
+    checkDefaultOutput();
+    return _defaultAudioOutput;
+}
 
+void AudioDevices::checkDefaultOutput(){
+    nhlog::dev()->debug("Checking the default audio output ...");
+    for(auto &s: _sinks.toStdMap()){
+        std::string volumeCommand = "pactl get-default-sink | grep -e " + s.second.name.toStdString(); 
+        auto result = system(volumeCommand.c_str());
+        if(result == 0){
+            _defaultAudioOutput = s.second.desc;
+            nhlog::dev()->debug("Default audio output is " + s.second.name.toStdString() + "(index: " + std::to_string(s.second.index) + ")");
+            emit defaultOutputDeviceChanged(s.second.index);
+        }
+    }
+}
 #else
 
 AudioDevices::AudioDevices(QObject* parent): QObject(parent) {}
@@ -345,7 +359,8 @@ qreal AudioDevices::getMicrophoneVolume(uint32_t index) {
     return 0;
 }
 
-void AudioDevices::setSpeakerVolume(qreal volume) {
+void AudioDevices::setSpeakerVolume(uint32_t index, qreal volume) {
+    Q_UNUSED(index);
     Q_UNUSED(volume);
 }
 
@@ -353,4 +368,10 @@ qreal AudioDevices::getSpeakerVolume() {
     return 0;
 }
 
+QString AudioDevices::defaultAudioOutput(){
+    return 0;
+}
+
+void AudioDevices::checkDefaultOutput(){
+}
 #endif
