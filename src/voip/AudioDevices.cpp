@@ -364,7 +364,7 @@ void AudioDevices::setSpeakerVolume(uint32_t index, qreal volume) {
     Q_UNUSED(volume);
 }
 
-qreal AudioDevices::getSpeakerVolume() {
+qreal AudioDevices::getSpeakerVolume(uint32_t index){
     return 0;
 }
 
