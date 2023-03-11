@@ -179,17 +179,17 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         emit cmUserInfoFailure(message);
     });
 
-    _cibaAuthenticationForCMuserInfo = new PX::AUTH::CibaAuthentication();
-    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::CibaAuthentication::loginDone, [&](const PX::AUTH::CMUserInfo &userInfo){
+    _cibaAuthenticationForCMuserInfo = new PX::AUTH::MATRIX::CibaAuthentication();
+    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::MATRIX::CibaAuthentication::loginDone, [&](const PX::AUTH::MATRIX::CMUserInfo &userInfo){
         _cmUserInfo->update(userInfo.cmAccessToken);
     });
-    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::CibaAuthentication::loginError, [&](const QString &message){
+    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::MATRIX::CibaAuthentication::loginError, [&](const QString &message){
         nhlog::net()->info("login failed: {}", message.toStdString());
         emit cmUserInfoFailure(message);
     });
 
-    _cibaAuthentication = new PX::AUTH::CibaAuthentication();
-    connect(_cibaAuthentication, &PX::AUTH::CibaAuthentication::loginDone, [&](const PX::AUTH::CMUserInfo &userInfo){
+    _cibaAuthentication = new PX::AUTH::MATRIX::CibaAuthentication();
+    connect(_cibaAuthentication, &PX::AUTH::MATRIX::CibaAuthentication::loginDone, [&](const PX::AUTH::MATRIX::CMUserInfo &userInfo){
         userSettings_.data()->setUserId(userInfo.userId);
         userSettings_.data()->setAccessToken(userInfo.matrixAccessToken);
         userSettings_.data()->setDeviceId(userInfo.deviceId);
@@ -204,7 +204,7 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
         loginDone(uinfo);    
     });
 
-    connect(_cibaAuthentication, &PX::AUTH::CibaAuthentication::loginError, [&](const QString &message){
+    connect(_cibaAuthentication, &PX::AUTH::MATRIX::CibaAuthentication::loginError, [&](const QString &message){
         nhlog::net()->info("login failed: {}", message.toStdString());
         emit loginErrorOccurred(message);
     });
