@@ -139,7 +139,7 @@ namespace
 
         gchar *name = gst_device_get_display_name(device);
         gchar *type = gst_device_get_device_class(device);
-        bool isVideo = (QString(type).contains("Video", Qt::CaseSensitive));
+        bool isVideo = (QString(type).contains("Video", Qt::CaseSensitive)) || (QString(type).contains("camera", Qt::CaseSensitive));
         g_free(type);
         nhlog::ui()->debug("WebRTC: {} device added: {}", isVideo ? "video" : "audio", name);
         if (!isVideo)
@@ -324,17 +324,31 @@ void CallDevices::init()
     if (!monitor)
     {
         monitor = gst_device_monitor_new();
+        if (!monitor) {
+            nhlog::ui()->warn("WebRTC: monitor is null");
+        }
         GstCaps *caps = gst_caps_new_empty_simple("audio/x-raw");
+        if (!caps) {
+            nhlog::ui()->warn("WebRTC: caps is null");
+        }
         gst_device_monitor_add_filter(monitor, "Audio/Source", caps);
         gst_device_monitor_add_filter(monitor, "Audio/Duplex", caps);
+        gst_device_monitor_add_filter(monitor, "openslessrc", caps);
         gst_caps_unref(caps);
         caps = gst_caps_new_empty_simple("video/x-raw");
+        if (!caps) {
+            nhlog::ui()->warn("WebRTC: caps is null - 2nd");
+        }
         gst_device_monitor_add_filter(monitor, "Video/Source", caps);
         gst_device_monitor_add_filter(monitor, "Video/Duplex", caps);
+        gst_device_monitor_add_filter(monitor, "androidcamerasrc", caps);
         // gst_device_monitor_add_filter(monitor, "Source/Video", caps);
         gst_caps_unref(caps);
 
         GstBus *bus = gst_device_monitor_get_bus(monitor);
+        if (!bus) {
+            nhlog::ui()->warn("WebRTC: bus is null");
+        }
         gst_bus_add_watch(bus, newBusMessage, nullptr);
         gst_object_unref(bus);
         if (!gst_device_monitor_start(monitor))

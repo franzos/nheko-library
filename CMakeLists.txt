@@ -43,7 +43,7 @@ find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
 find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui QuickControls2 QuickWidgets Svg REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Gui Multimedia QuickControls2 QuickWidgets Svg REQUIRED)
 
 set(
 	CMAKE_CXX_FLAGS
@@ -67,6 +67,9 @@ endif()
 # Declare source and header files.
 #
 set(SRC_FILES
+	src/gstreamer/gstreamer_android.c
+	src/gstreamer/gstreamer_android.cpp
+	src/gstreamer/gstreamer_android.h
 	src/Authentication.cpp
 	src/timeline/EventStore.cpp
 	src/timeline/Permissions.cpp
@@ -193,6 +196,7 @@ set(DEP_LIBS
 	cmark::cmark
 	spdlog::spdlog
 	Qt5::Gui
+	Qt5::Multimedia
 	Qt5::Network
 	Qt5::QuickControls2
 	Qt5::Svg
@@ -241,11 +245,18 @@ else()
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp)
 	endif()
-	find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
-	list(APPEND DEP_LIBS Qt5::Multimedia
+	# find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
+	list(APPEND DEP_LIBS #Qt5::Multimedia
 						${PULSE_LDFLAGS}
 						${GLIB_LDFLAGS})
 endif()
+
+if (ANDROID)
+	find_package(Qt5 5.15 COMPONENTS AndroidExtras REQUIRED)
+	list(APPEND DEP_LIBS Qt5::AndroidExtras)
+endif()
+
+
 
 install(TARGETS matrix-client-library DESTINATION lib)
 foreach(HEADER ${HEADERS})
@@ -256,8 +267,146 @@ endforeach(HEADER {HEADERS})
 if(TARGET PkgConfig::GSTREAMER)
 	target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
 	target_link_libraries(matrix-client-library PUBLIC PkgConfig::GSTREAMER)
-endif()
+elseif (ANDROID)
+	target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
 
+	if(CMAKE_ANDROID_ARCH_ABI STREQUAL "armeabi-v7a")
+		SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/armv7)
+	elseif (CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
+		SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/arm64)
+	else()
+		SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/$${CMAKE_ANDROID_ARCH_ABI})
+	endif()
+
+	target_include_directories(matrix-client-library PUBLIC
+								${GSTREAMER_ROOT}/include/gstreamer-1.0 
+								${GSTREAMER_ROOT}/lib/gstreamer-1.0/include
+								${GSTREAMER_ROOT}/include/glib-2.0
+								${GSTREAMER_ROOT}/lib/glib-2.0/include
+								${GSTREAMER_ROOT}/include)
+
+
+	
+	target_link_libraries(matrix-client-library PUBLIC 
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstcoreelements.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgsttypefindfunctions.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvert.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideorate.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoscale.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvertscale.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideofilter.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstautodetect.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideotestsrc.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstplayback.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstx264.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoparsersbad.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstandroidmedia.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtp.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtpmanager.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtpmanagerbad.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtponvif.a							
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopengl.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstqmlgl.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstwebrtc.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstnice.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstsdpelem.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopensles.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstxingmux.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrealmedia.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstlibav.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgsta52dec.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstamrnb.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstasf.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstasf.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstavi.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstisomp4.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstmatroska.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstogg.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstwavparse.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstbz2.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							
+							
+							
+							#plugin libs
+							${GSTREAMER_ROOT}/lib/liborc-0.4.a
+							${GSTREAMER_ROOT}/lib/libgstgl-1.0.a
+							${GSTREAMER_ROOT}/lib/libgraphene-1.0.a
+							${GSTREAMER_ROOT}/lib/libpng16.a
+							${GSTREAMER_ROOT}/lib/libjpeg.a
+							${GSTREAMER_ROOT}/lib/libx264.a
+							${GSTREAMER_ROOT}/lib/libgstvideo-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstrtp-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstsdp-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstwebrtc-1.0.a
+							# ${GSTREAMER_ROOT}/lib/libgstwebrtcnice-1.0.a
+							${GSTREAMER_ROOT}/lib/libwebrtc_audio_processing.a
+							${GSTREAMER_ROOT}/lib/libopencore-amrnb.a
+							${GSTREAMER_ROOT}/lib/libgstriff-1.0.a
+							${GSTREAMER_ROOT}/lib/libFLAC.a
+							${GSTREAMER_ROOT}/lib/libogg.a
+							${GSTREAMER_ROOT}/lib/libavformat.a
+							${GSTREAMER_ROOT}/lib/libbz2.a
+							${GSTREAMER_ROOT}/lib/libfreetype.a
+							${GSTREAMER_ROOT}/lib/libgstrtsp-1.0.a
+							${GSTREAMER_ROOT}/lib/liba52.a
+							${GSTREAMER_ROOT}/lib/libavcodec.a
+							${GSTREAMER_ROOT}/lib/libavutil.a							
+							${GSTREAMER_ROOT}/lib/libavfilter.a
+							${GSTREAMER_ROOT}/lib/libswresample.a
+
+
+							# ${GSTREAMER_ROOT}/lib/
+							# ${GSTREAMER_ROOT}/lib/
+							# ${GSTREAMER_ROOT}/lib/
+							# ${GSTREAMER_ROOT}/lib/
+							# ${GSTREAMER_ROOT}/lib/
+							# ${GSTREAMER_ROOT}/lib/
+
+							
+							
+							
+							
+							
+							# ${GSTREAMER_ROOT}/lib/libgstbadbase-1.0.a
+							# ${GSTREAMER_ROOT}/lib/libgstbadvideo-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstaudio-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstpbutils-1.0.a
+							${GSTREAMER_ROOT}/lib/libgsttag-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstphotography-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstcontroller-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstcodecparsers-1.0.a
+							EGL GLESv2
+
+							${GSTREAMER_ROOT}/lib/libgio-2.0.a
+							${GSTREAMER_ROOT}/lib/libglib-2.0.a
+							${GSTREAMER_ROOT}/lib/libgobject-2.0.a
+							${GSTREAMER_ROOT}/lib/libnice.a
+							${GSTREAMER_ROOT}/lib/libgstapp-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstsctp-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstnet-1.0.a
+
+							#gstreamer libs
+
+							${GSTREAMER_ROOT}/lib/libgstbase-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstreamer-1.0.a
+							${GSTREAMER_ROOT}/lib/libgmodule-2.0.a
+							${GSTREAMER_ROOT}/lib/libgobject-2.0.a
+							${GSTREAMER_ROOT}/lib/libglib-2.0.a
+							${GSTREAMER_ROOT}/lib/libffi.a
+							#LIBS += $${GSTREAMER_ROOT}/lib/libpcre.a
+							${GSTREAMER_ROOT}/lib/libsrtp2.a
+							# ${GSTREAMER_ROOT}/lib/libpcre2-8.a
+							${GSTREAMER_ROOT}/lib/libiconv.a
+							${GSTREAMER_ROOT}/lib/libintl.a
+							${GSTREAMER_ROOT}/lib/libz.a
+							)
+endif()
+# message(${DEP_LIBS})
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)

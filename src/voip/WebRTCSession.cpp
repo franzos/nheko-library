@@ -32,6 +32,8 @@ extern "C"
 #define gst_element_request_pad_simple gst_element_get_request_pad
 #endif
 
+extern "C" gboolean gst_qt_android_init (GError ** error);
+
 #endif
 
 // https://github.com/vector-im/riot-web/issues/10173
@@ -60,7 +62,8 @@ WebRTCSession::init(std::string *errorMessage)
         return true;
 
     GError *error = nullptr;
-    if (!gst_init_check(nullptr, nullptr, &error)) {
+    // if (!gst_init_check(nullptr, nullptr, &error)) {
+    if (!gst_qt_android_init(NULL)) {
         std::string strError("WebRTC: failed to initialise GStreamer: ");
         if (error) {
             strError += error->message;

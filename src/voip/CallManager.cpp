@@ -33,6 +33,9 @@ extern "C"
 {
 #include "gst/gst.h"
 }
+
+extern "C" gboolean gst_qt_android_init (GError ** error);
+
 #endif
 
 Q_DECLARE_METATYPE(std::vector<mtx::events::voip::CallCandidates::Candidate>)
@@ -63,8 +66,16 @@ CallManager::CallManager(QObject *parent)
 #ifdef GSTREAMER_AVAILABLE
     // TODO: we need to check Nheko's approach that doesn't require the following
     //       workaround to use the `qmlglsink` inside it's QML files
-    gst_init(NULL, NULL);
+    // gst_init(NULL, NULL);
+    if (!gst_qt_android_init(NULL)) {
+        nhlog::ui()->error("WebRTC: Failed to init gstreamer!");
+    }
     GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
+    if (!sink) {
+        nhlog::ui()->error("WebRTC: failed to make factory: qmlglsink");
+    } else {
+        nhlog::ui()->info("WebRTC: qmlglsink found");
+    }
     gst_object_unref(sink);
 #endif
 
@@ -176,14 +187,14 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
 
 
     if (callType == CallType::VIDEO && !CallDevices::instance().haveCamera()) {
-        std::string errorMessage = "Camera not connected!"; 
+        errorMessage = "Camera not connected!"; 
         nhlog::ui()->error(errorMessage);
         emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
         return false;
     }
 
     if (callType == CallType::VOICE && !CallDevices::instance().haveMic()) {
-        std::string errorMessage = "Microphone not connected!"; 
+        errorMessage = "Microphone not connected!"; 
         nhlog::ui()->error(errorMessage);
         emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
         return false;
@@ -302,6 +313,7 @@ CallManager::handleEvent(const RoomEvent<CallInvite> &callInviteEvent)
     }
 
     const QString &ringtone = UserSettings::instance()->ringtone();
+    Q_UNUSED(ringtone);
     roomid_ = QString::fromStdString(callInviteEvent.room_id);
     callid_ = callInviteEvent.content.call_id;
     remoteICECandidates_.clear();
