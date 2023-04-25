@@ -798,11 +798,25 @@ WebRTCSession::startPipeline(int opusPayloadType, int vp8PayloadType)
 bool
 WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
 {
+    GstElement *source = nullptr;
+#if defined(Q_OS_ANDROID)
+    // TODO: use the Android audio source
+    source     = gst_element_factory_make("autoaudiosrc", nullptr);
+#elif defined(Q_OS_IOS)
+    // TODO: use the iOS audio source
+#else
     GstDevice *device = devices_.audioDevice();
-    if (!device)
+    if (device) {
+        source     = gst_device_create_element(device, nullptr);
+    }
+#endif
+    if (source == nullptr) {
+        nhlog::ui()->error("WebRTC: unable to create audio source");
         return false;
+    }
 
-    GstElement *source     = gst_device_create_element(device, nullptr);
+    
+    // GstElement *source     = gst_device_create_element(device, nullptr);
     GstElement *volume     = gst_element_factory_make("volume", "srclevel");
     GstElement *convert    = gst_element_factory_make("audioconvert", nullptr);
     GstElement *resample   = gst_element_factory_make("audioresample", nullptr);
@@ -882,7 +896,20 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         if (!device)
             return false;
 
-        GstElement *camera = gst_device_create_element(device, nullptr);
+        GstElement *camera = nullptr;
+#if defined(Q_OS_ANDROID)
+        // camera = gst_element_factory_make("autovideosrc", nullptr);
+        camera = gst_element_factory_make("ahcsrc", nullptr);
+#elif defined(Q_OS_IOS)
+        // TODO: use the iOS video source
+#else
+        camera = gst_device_create_element(device, nullptr);
+#endif
+        if (camera == nullptr) {
+            nhlog::ui()->error("WebRTC: unable to create video source");
+            return false;
+        }
+        // GstElement *camera = gst_device_create_element(device, nullptr);
         GstCaps *caps      = gst_caps_new_simple("video/x-raw",
                                             "width",
                                             G_TYPE_INT,
