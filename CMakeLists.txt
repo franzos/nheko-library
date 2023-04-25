@@ -23,6 +23,14 @@ if(VOIP)
 	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
 endif()
 
+option(GSTREAMER_PATH "Path to the gstreamer build directory" OFF)
+if (NOT GSTREAMER_PATH)
+	# set(GSTREAMER_PATH "/usr/src/vendor/cerbero/build/dist/android_universal")
+	set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal/")
+endif()
+message(" + GSTREAMER_PATH: ${GSTREAMER_PATH}")
+
+
 option(CIBA_AUTHENTICATION "Whether the CIBA authentication method enabled or not" OFF)
 if(CIBA_AUTHENTICATION)
 	message(" + CIBA: enabled.")
@@ -271,12 +279,17 @@ elseif (ANDROID)
 	target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
 
 	if(CMAKE_ANDROID_ARCH_ABI STREQUAL "armeabi-v7a")
-		SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/armv7)
+		# SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/armv7)
+		SET(GSTREAMER_ROOT ${GSTREAMER_PATH}/armv7)
 	elseif (CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
-		SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/arm64)
+		# SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/arm64)
+		SET(GSTREAMER_ROOT ${GSTREAMER_PATH}/arm64)
 	else()
-		SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/$${CMAKE_ANDROID_ARCH_ABI})
+		# SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/$${CMAKE_ANDROID_ARCH_ABI})
+		SET(GSTREAMER_ROOT ${GSTREAMER_PATH}/$${CMAKE_ANDROID_ARCH_ABI})
 	endif()
+	message(" + GSTREAMER_ROOT: ${GSTREAMER_ROOT}")
+
 
 	target_include_directories(matrix-client-library PUBLIC
 								${GSTREAMER_ROOT}/include/gstreamer-1.0 
@@ -317,6 +330,8 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgsta52dec.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstamrnb.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstasf.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudioconvert.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudioresample.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstasf.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstavi.a
@@ -327,8 +342,21 @@ elseif (ANDROID)
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstbz2.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstdtls.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstsrtp.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopus.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvolume.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstcompositor.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvpx.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtsp.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtspclientsink.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudiotestsrc.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+
+
 							
 							
 							
@@ -358,10 +386,10 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libavutil.a							
 							${GSTREAMER_ROOT}/lib/libavfilter.a
 							${GSTREAMER_ROOT}/lib/libswresample.a
-
-
-							# ${GSTREAMER_ROOT}/lib/
-							# ${GSTREAMER_ROOT}/lib/
+							${GSTREAMER_ROOT}/lib/libopus.a
+							${GSTREAMER_ROOT}/lib/libvpx.a
+							${GSTREAMER_ROOT}/lib/libgstrtspserver-1.0.a
+							
 							# ${GSTREAMER_ROOT}/lib/
 							# ${GSTREAMER_ROOT}/lib/
 							# ${GSTREAMER_ROOT}/lib/
