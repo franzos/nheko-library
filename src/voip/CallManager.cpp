@@ -608,19 +608,19 @@ CallManager::previewWindow(unsigned int index) const
 #ifdef GSTREAMER_AVAILABLE
     if (windows_.empty() || index >= windows_.size() || !gst_is_initialized())
         return;
-    GstElement *ximagesrc = nullptr;
+
 #if defined(Q_OS_ANDROID)
-    // ximagesrc = gst_element_factory_make("autovideosrc", nullptr);
-    ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
+    GstElement *ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
+    // GstElement *ximagesrc = gst_element_factory_make("autovideosrc", nullptr);
 #elif defined(Q_OS_IOS)
     // TODO: implement iOS specific logic
 #else 
-    ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
-#endif
+    GstElement *ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
     if (!ximagesrc) {
         nhlog::ui()->error("Failed to create ximagesrc");
         return;
     }
+#endif
     GstElement *videoconvert = gst_element_factory_make("videoconvert", nullptr);
     GstElement *videoscale   = gst_element_factory_make("videoscale", nullptr);
     GstElement *capsfilter   = gst_element_factory_make("capsfilter", nullptr);

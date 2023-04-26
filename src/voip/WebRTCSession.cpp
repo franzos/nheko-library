@@ -385,6 +385,7 @@ addLocalPiP(GstElement *pipe, const std::pair<int, int> &videoCallSize)
     const gchar *element = isVideo ? "camerafilter" : "screenshare";
     const gchar *pad     = isVideo ? "sink" : "src";
     auto resolution      = getResolution(pipe, element, pad);
+    nhlog::ui()->debug("WebRTC: local resolution: {}x{} - element: {}", resolution.first, resolution.second, element);
     auto pipSize         = getPiPDimensions(resolution, videoCallSize.first, 0.25);
     nhlog::ui()->debug("WebRTC: local picture-in-picture: {}x{}", pipSize.first, pipSize.second);
     g_object_set(localPiPSinkPad_, "width", pipSize.first, "height", pipSize.second, nullptr);
@@ -742,6 +743,7 @@ WebRTCSession::startPipeline(int opusPayloadType, int vp8PayloadType)
         end();
         return false;
     }
+    nhlog::ui()->debug("WebRTC: pipeline created");
 
     webrtc_ = gst_bin_get_by_name(GST_BIN(pipe_), "webrtcbin");
 
@@ -872,6 +874,7 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
         return false;
     }
 
+    nhlog::ui()->info("WebRTC: audio pipeline created");
     return callType_ == CallType::VOICE || isRemoteVideoSendOnly_
              ? true
              : addVideoPipeline(vp8PayloadType);
@@ -881,8 +884,14 @@ bool
 WebRTCSession::addVideoPipeline(int vp8PayloadType)
 {
     // allow incoming video calls despite localUser having no webcam
+#if defined(Q_OS_ANDROID)
+    // TODO: Check if the Android device has a camera
+#elif defined(Q_OS_IOS)
+    // TODO: Check if the iOS device has a camera
+#else
     if (callType_ == CallType::VIDEO && !devices_.haveCamera())
         return !isOffering_;
+#endif
 
     auto settings            = UserSettings::instance();
     GstElement *camerafilter = nullptr;
@@ -892,17 +901,19 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     if (callType_ == CallType::VIDEO) {
         std::pair<int, int> resolution;
         std::pair<int, int> frameRate;
-        GstDevice *device = devices_.videoDevice(resolution, frameRate);
-        if (!device)
-            return false;
 
         GstElement *camera = nullptr;
 #if defined(Q_OS_ANDROID)
         // camera = gst_element_factory_make("autovideosrc", nullptr);
         camera = gst_element_factory_make("ahcsrc", nullptr);
+        resolution ={ 640, 480 };
+        frameRate  ={ 30, 1 };
 #elif defined(Q_OS_IOS)
         // TODO: use the iOS video source
 #else
+        GstDevice *device = devices_.videoDevice(resolution, frameRate);
+        if (!device)
+            return false;
         camera = gst_device_create_element(device, nullptr);
 #endif
         if (camera == nullptr) {
@@ -927,7 +938,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         gst_caps_unref(caps);
 
         gst_bin_add_many(GST_BIN(pipe_), camera, camerafilter, nullptr);
+        // gst_bin_add_many(GST_BIN(pipe_), camera, nullptr);
         if (!gst_element_link_many(camera, videoconvert, camerafilter, nullptr)) {
+        // if (!gst_element_link_many(camera, videoconvert, nullptr)) {
             nhlog::ui()->error("WebRTC: failed to link camera elements");
             return false;
         }
@@ -935,6 +948,7 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
             nhlog::ui()->error("WebRTC: failed to link camerafilter -> tee");
             return false;
         }
+        nhlog::ui()->info("WebRTC: PiP camera pipeline created");
     }
 
     GstElement *queue  = gst_element_factory_make("queue", nullptr);
@@ -959,16 +973,18 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     gst_caps_unref(rtpcaps);
 
     gst_bin_add_many(GST_BIN(pipe_), queue, vp8enc, rtpvp8pay, rtpqueue, rtpcapsfilter, nullptr);
+    // gst_bin_add_many(GST_BIN(pipe_), queue, vp8enc, rtpvp8pay, rtpqueue, nullptr);
 
     GstElement *webrtcbin = gst_bin_get_by_name(GST_BIN(pipe_), "webrtcbin");
-    if (!gst_element_link_many(
-          tee, queue, vp8enc, rtpvp8pay, rtpqueue, rtpcapsfilter, webrtcbin, nullptr)) {
+    if (!gst_element_link_many(tee, queue, vp8enc, rtpvp8pay, rtpqueue, rtpcapsfilter, webrtcbin, nullptr)) {
+    // if (!gst_element_link_many(tee, queue, vp8enc, rtpvp8pay, rtpqueue, webrtcbin, nullptr)) {
         nhlog::ui()->error("WebRTC: failed to link rtp video elements");
         gst_object_unref(webrtcbin);
         return false;
     }
 
     gst_object_unref(webrtcbin);
+    nhlog::ui()->debug("WebRTC: video pipeline created");
     return true;
 }
 

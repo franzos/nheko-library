@@ -265,7 +265,6 @@ if (ANDROID)
 endif()
 
 
-
 install(TARGETS matrix-client-library DESTINATION lib)
 foreach(HEADER ${HEADERS})
 	string(REGEX MATCH "(.*)[/\\]" DIR ${HEADER})
@@ -351,8 +350,8 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtsp.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtspclientsink.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudiotestsrc.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopenh264.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopenh264.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 
@@ -389,8 +388,8 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libopus.a
 							${GSTREAMER_ROOT}/lib/libvpx.a
 							${GSTREAMER_ROOT}/lib/libgstrtspserver-1.0.a
+							${GSTREAMER_ROOT}/lib/libopenh264.a
 							
-							# ${GSTREAMER_ROOT}/lib/
 							# ${GSTREAMER_ROOT}/lib/
 							# ${GSTREAMER_ROOT}/lib/
 							# ${GSTREAMER_ROOT}/lib/
