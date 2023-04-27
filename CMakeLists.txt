@@ -322,7 +322,6 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstwebrtc.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstnice.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstsdpelem.a
-							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopensles.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstxingmux.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrealmedia.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstlibav.a
@@ -351,7 +350,8 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstrtspclientsink.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudiotestsrc.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopenh264.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopenh264.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopensles.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstencoding.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 
@@ -407,7 +407,7 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libgstphotography-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstcontroller-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstcodecparsers-1.0.a
-							EGL GLESv2
+							EGL GLESv2 OpenSLES
 
 							${GSTREAMER_ROOT}/lib/libgio-2.0.a
 							${GSTREAMER_ROOT}/lib/libglib-2.0.a

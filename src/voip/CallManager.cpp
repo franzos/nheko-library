@@ -610,8 +610,8 @@ CallManager::previewWindow(unsigned int index) const
         return;
 
 #if defined(Q_OS_ANDROID)
-    GstElement *ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
     // GstElement *ximagesrc = gst_element_factory_make("autovideosrc", nullptr);
+    GstElement *ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
 #elif defined(Q_OS_IOS)
     // TODO: implement iOS specific logic
 #else 

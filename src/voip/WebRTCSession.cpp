@@ -297,7 +297,15 @@ newAudioSinkChain(GstElement *pipe)
     GstElement *queue    = gst_element_factory_make("queue", nullptr);
     GstElement *convert  = gst_element_factory_make("audioconvert", nullptr);
     GstElement *resample = gst_element_factory_make("audioresample", nullptr);
+#if defined(Q_OS_ANDROID)
+    // GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
+    GstElement *sink     = gst_element_factory_make("openslessink", nullptr);
+    // GstElement *sink     = gst_element_factory_make("opensles", nullptr);
+#elif defined(Q_OS_IOS)
+    // TODO: use avaudiosink
+#else
     GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
+#endif
     gst_bin_add_many(GST_BIN(pipe), queue, convert, resample, sink, nullptr);
     gst_element_link_many(queue, convert, resample, sink, nullptr);
     gst_element_sync_state_with_parent(queue);
@@ -803,7 +811,8 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
     GstElement *source = nullptr;
 #if defined(Q_OS_ANDROID)
     // TODO: use the Android audio source
-    source     = gst_element_factory_make("autoaudiosrc", nullptr);
+    // source     = gst_element_factory_make("autoaudiosrc", nullptr);
+    source     = gst_element_factory_make("openslessrc", nullptr);    
 #elif defined(Q_OS_IOS)
     // TODO: use the iOS audio source
 #else
@@ -984,7 +993,7 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     }
 
     gst_object_unref(webrtcbin);
-    nhlog::ui()->debug("WebRTC: video pipeline created");
+    nhlog::ui()->debug("WebRTC: vieo pipeline created");
     return true;
 }
 

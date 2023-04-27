@@ -190,7 +190,7 @@ GST_PLUGIN_STATIC_DECLARE(webrtc);
 GST_PLUGIN_STATIC_DECLARE(nice);
 GST_PLUGIN_STATIC_DECLARE(sdpelem);
 GST_PLUGIN_STATIC_DECLARE(rtpmanagerbad);
-// GST_PLUGIN_STATIC_DECLARE(opensles);          // Android Audio devices
+GST_PLUGIN_STATIC_DECLARE(opensles);          // Android Audio devices
 GST_PLUGIN_STATIC_DECLARE(audiotestsrc);
 GST_PLUGIN_STATIC_DECLARE(audioconvert);
 GST_PLUGIN_STATIC_DECLARE(audioresample);
@@ -266,7 +266,7 @@ gst_android_register_static_plugins (void)
     GST_PLUGIN_STATIC_REGISTER(nice);
     GST_PLUGIN_STATIC_REGISTER(sdpelem);
     GST_PLUGIN_STATIC_REGISTER(rtpmanagerbad);
-    // GST_PLUGIN_STATIC_REGISTER(opensles);
+    GST_PLUGIN_STATIC_REGISTER(opensles);
 
     GST_PLUGIN_STATIC_REGISTER(audiotestsrc);
     GST_PLUGIN_STATIC_REGISTER(audioconvert);
