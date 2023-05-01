@@ -954,9 +954,7 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         gst_caps_unref(caps);
 
         gst_bin_add_many(GST_BIN(pipe_), camera, camerafilter, nullptr);
-        // gst_bin_add_many(GST_BIN(pipe_), camera, nullptr);
         if (!gst_element_link_many(camera, videoconvert, camerafilter, nullptr)) {
-        // if (!gst_element_link_many(camera, videoconvert, nullptr)) {
             nhlog::ui()->error("WebRTC: failed to link camera elements");
             return false;
         }
@@ -1003,7 +1001,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     }
 
     gst_object_unref(webrtcbin);
-    nhlog::ui()->debug("WebRTC: vieo pipeline created");
+    nhlog::ui()->debug("WebRTC: video pipeline created");
+    GST_INFO_OBJECT(pipe_, "video pipeline created");
+    // GST_CAT_INFO_OBJECT();
     return true;
 }
 

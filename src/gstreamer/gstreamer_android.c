@@ -773,7 +773,8 @@ gst_android_init (JNIEnv * env, jclass klass, jobject context)
   /* Disable this for releases if performance is important
    * or increase the threshold to get more information */
   gst_debug_set_active (TRUE);
-  gst_debug_set_default_threshold (GST_LEVEL_FIXME);
+  // gst_debug_set_default_threshold (GST_LEVEL_FIXME);
+  gst_debug_set_default_threshold (GST_LEVEL_INFO);
   gst_debug_remove_log_function (gst_debug_log_default);
   gst_debug_add_log_function ((GstLogFunction) gst_debug_logcat, NULL, NULL);
 
