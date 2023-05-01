@@ -26,7 +26,7 @@ endif()
 option(GSTREAMER_PATH "Path to the gstreamer build directory" OFF)
 if (NOT GSTREAMER_PATH)
 	# set(GSTREAMER_PATH "/usr/src/vendor/cerbero/build/dist/android_universal")
-	set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal/")
+	set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal")
 endif()
 message(" + GSTREAMER_PATH: ${GSTREAMER_PATH}")
 

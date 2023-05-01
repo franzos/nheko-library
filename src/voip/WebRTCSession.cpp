@@ -447,6 +447,9 @@ linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
 {
     GstPad *sinkpad               = gst_element_get_static_pad(decodebin, "sink");
     GstCaps *sinkcaps             = gst_pad_get_current_caps(sinkpad);
+    nhlog::ui()->debug("WebRTC: ----------------------------> before check caps");
+    gchar *sinkCapsStr            = gst_caps_to_string(sinkcaps);
+    nhlog::ui()->debug("WebRTC: received caps: {}", sinkCapsStr);
     const GstStructure *structure = gst_caps_get_structure(sinkcaps, 0);
 
     gchar *mediaType = nullptr;
@@ -458,6 +461,7 @@ linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
 
     WebRTCSession *session = &WebRTCSession::instance();
     GstElement *queue      = nullptr;
+    nhlog::ui()->debug("WebRTC: media type = {}", mediaType);
     if (!std::strcmp(mediaType, "audio")) {
         nhlog::ui()->debug("WebRTC: received incoming audio stream");
         haveAudioStream_ = true;
@@ -942,6 +946,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
                                             frameRate.first,
                                             frameRate.second,
                                             nullptr);
+        gchar *capsStr     = gst_caps_to_string(caps);
+        nhlog::ui()->debug("WebRTC: ----> pip caps: {}", capsStr);
+
         camerafilter       = gst_element_factory_make("capsfilter", "camerafilter");
         g_object_set(camerafilter, "caps", caps, nullptr);
         gst_caps_unref(caps);
@@ -978,6 +985,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
                                            G_TYPE_INT,
                                            vp8PayloadType,
                                            nullptr);
+    gchar *capsStr            = gst_caps_to_string(rtpcaps);
+    nhlog::ui()->debug("WebRTC: ----> rtp caps: {}", capsStr);
+
     g_object_set(rtpcapsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
 

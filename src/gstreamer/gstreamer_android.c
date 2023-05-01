@@ -789,9 +789,20 @@ gst_android_init (JNIEnv * env, jclass klass, jobject context)
     g_free (message);
     return;
   }
-  gst_debug_set_threshold_for_name("amc*", GST_LEVEL_TRACE);
+  // gst_debug_set_threshold_for_name("amc*", GST_LEVEL_TRACE);
+  // gst_debug_set_threshold_for_name("decodebin*", GST_LEVEL_TRACE);
   gst_android_register_static_plugins ();
   gst_android_load_gio_modules ();
+  
+  GstElementFactory *androidOpusFactory = gst_element_factory_find("amcauddec-omxgoogleopusdecoder");
+  if (androidOpusFactory == NULL) {
+    __android_log_print (ANDROID_LOG_ERROR, "GStreamer", "androidmedia plugin not found");
+  } else {
+    __android_log_print (ANDROID_LOG_INFO, "GStreamer", "androidmedia plugin found");
+    gst_plugin_feature_set_rank(GST_PLUGIN_FEATURE(androidOpusFactory), GST_RANK_NONE);
+    __android_log_print(ANDROID_LOG_INFO, "GStreamer", "set androidmedia rank to NONE");
+  }
+  
   __android_log_print (ANDROID_LOG_INFO, "GStreamer",
       "GStreamer initialization complete");
 }
