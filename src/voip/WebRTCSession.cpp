@@ -34,6 +34,10 @@ extern "C"
 
 extern "C" gboolean gst_qt_android_init (GError ** error);
 
+#define RTP_PICTURE_ID_NONE 0
+#define RTP_PICTURE_ID_7_BIT 1
+#define RTP_PICTURE_ID_15_BIT 2
+
 #endif
 
 // https://github.com/vector-im/riot-web/issues/10173
@@ -450,6 +454,7 @@ linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
     nhlog::ui()->debug("WebRTC: ----------------------------> before check caps");
     gchar *sinkCapsStr            = gst_caps_to_string(sinkcaps);
     nhlog::ui()->debug("WebRTC: received caps: {}", sinkCapsStr);
+    g_free(sinkCapsStr);
     const GstStructure *structure = gst_caps_get_structure(sinkcaps, 0);
 
     gchar *mediaType = nullptr;
@@ -948,6 +953,7 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
                                             nullptr);
         gchar *capsStr     = gst_caps_to_string(caps);
         nhlog::ui()->debug("WebRTC: ----> pip caps: {}", capsStr);
+        g_free(capsStr);
 
         camerafilter       = gst_element_factory_make("capsfilter", "camerafilter");
         g_object_set(camerafilter, "caps", caps, nullptr);
@@ -968,8 +974,12 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     GstElement *queue  = gst_element_factory_make("queue", nullptr);
     GstElement *vp8enc = gst_element_factory_make("vp8enc", nullptr);
     g_object_set(vp8enc, "deadline", 1, nullptr);
+    g_object_set(vp8enc, "keyframe-max-dist", 2000, nullptr);
     g_object_set(vp8enc, "error-resilient", 1, nullptr);
     GstElement *rtpvp8pay     = gst_element_factory_make("rtpvp8pay", nullptr);
+    g_object_set(rtpvp8pay, "name", "videopay", nullptr);
+    g_object_set(rtpvp8pay, "picture-id-mode", RTP_PICTURE_ID_15_BIT, nullptr);
+    g_object_set(rtpvp8pay, "pt", vp8PayloadType, nullptr);
     GstElement *rtpqueue      = gst_element_factory_make("queue", nullptr);
     GstElement *rtpcapsfilter = gst_element_factory_make("capsfilter", nullptr);
     GstCaps *rtpcaps          = gst_caps_new_simple("application/x-rtp",
@@ -985,16 +995,15 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
                                            nullptr);
     gchar *capsStr            = gst_caps_to_string(rtpcaps);
     nhlog::ui()->debug("WebRTC: ----> rtp caps: {}", capsStr);
+    g_free(capsStr);
 
     g_object_set(rtpcapsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
 
     gst_bin_add_many(GST_BIN(pipe_), queue, vp8enc, rtpvp8pay, rtpqueue, rtpcapsfilter, nullptr);
-    // gst_bin_add_many(GST_BIN(pipe_), queue, vp8enc, rtpvp8pay, rtpqueue, nullptr);
 
     GstElement *webrtcbin = gst_bin_get_by_name(GST_BIN(pipe_), "webrtcbin");
     if (!gst_element_link_many(tee, queue, vp8enc, rtpvp8pay, rtpqueue, rtpcapsfilter, webrtcbin, nullptr)) {
-    // if (!gst_element_link_many(tee, queue, vp8enc, rtpvp8pay, rtpqueue, webrtcbin, nullptr)) {
         nhlog::ui()->error("WebRTC: failed to link rtp video elements");
         gst_object_unref(webrtcbin);
         return false;
@@ -1002,8 +1011,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
 
     gst_object_unref(webrtcbin);
     nhlog::ui()->debug("WebRTC: video pipeline created");
-    GST_INFO_OBJECT(pipe_, "video pipeline created");
-    // GST_CAT_INFO_OBJECT();
+    gchar* dot = gst_debug_bin_to_dot_data(GST_BIN(pipe_), GST_DEBUG_GRAPH_SHOW_VERBOSE);
+    nhlog::ui()->debug("WebRTC: pipeline = {}", dot);
+    g_free(dot);
     return true;
 }
 
