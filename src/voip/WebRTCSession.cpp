@@ -291,8 +291,10 @@ setWaitForKeyFrame(GstBin *decodebin G_GNUC_UNUSED, GstElement *element, gpointe
 {
     if (!std::strcmp(
           gst_plugin_feature_get_name(GST_PLUGIN_FEATURE(gst_element_get_factory(element))),
-          "rtpvp8depay"))
+          "rtpvp8depay")) {
         g_object_set(element, "wait-for-keyframe", TRUE, nullptr);
+        g_object_set(element, "request-keyframe", TRUE, nullptr);
+    }
 }
 
 GstElement *
