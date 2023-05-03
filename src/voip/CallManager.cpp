@@ -185,7 +185,11 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
         return false;
     }
 
-
+#if defined(Q_OS_ANDROID)
+    // TODO: add camera / microphone verification code for android
+#elif defined(Q_OS_IOS)
+    // TODO: add camera / microphone verification code for android
+#else
     if (callType == CallType::VIDEO && !CallDevices::instance().haveCamera()) {
         errorMessage = "Camera not connected!"; 
         nhlog::ui()->error(errorMessage);
@@ -199,7 +203,8 @@ CallManager::sendInvite(const QString &roomid, CallType callType, unsigned int w
         emit Client::instance()->showNotification(QString::fromStdString(errorMessage));
         return false;
     }
-    
+#endif
+
     callType_ = callType;
     roomid_   = roomid;
     session_.setTurnServers(turnURIs_);
