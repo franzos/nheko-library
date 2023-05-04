@@ -131,7 +131,8 @@ parseSDP(const std::string &sdp, GstWebRTCSDPType type)
 {
     GstSDPMessage *msg;
     gst_sdp_message_new(&msg);
-    if (gst_sdp_message_parse_buffer((guint8 *)sdp.c_str(), sdp.size(), msg) == GST_SDP_OK) {
+    if (gst_sdp_message_parse_buffer((guint8 *)sdp.c_str(), static_cast<guint>(sdp.size()), msg) ==
+        GST_SDP_OK) {
         return gst_webrtc_session_description_new(type, msg);
     } else {
         nhlog::ui()->error("WebRTC: failed to parse remote session description");
@@ -304,11 +305,9 @@ newAudioSinkChain(GstElement *pipe)
     GstElement *convert  = gst_element_factory_make("audioconvert", nullptr);
     GstElement *resample = gst_element_factory_make("audioresample", nullptr);
 #if defined(Q_OS_ANDROID)
-    // GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
     GstElement *sink     = gst_element_factory_make("openslessink", nullptr);
-    // GstElement *sink     = gst_element_factory_make("opensles", nullptr);
 #elif defined(Q_OS_IOS)
-    // TODO: use avaudiosink
+    // TODO: use ios specific sink
 #else
     GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
 #endif
@@ -822,7 +821,6 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
     GstElement *source = nullptr;
 #if defined(Q_OS_ANDROID)
     // TODO: use the Android audio source
-    // source     = gst_element_factory_make("autoaudiosrc", nullptr);
     source     = gst_element_factory_make("openslessrc", nullptr);    
 #elif defined(Q_OS_IOS)
     // TODO: use the iOS audio source
@@ -837,8 +835,6 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
         return false;
     }
 
-    
-    // GstElement *source     = gst_device_create_element(device, nullptr);
     GstElement *volume     = gst_element_factory_make("volume", "srclevel");
     GstElement *convert    = gst_element_factory_make("audioconvert", nullptr);
     GstElement *resample   = gst_element_factory_make("audioresample", nullptr);
@@ -940,7 +936,7 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
             nhlog::ui()->error("WebRTC: unable to create video source");
             return false;
         }
-        // GstElement *camera = gst_device_create_element(device, nullptr);
+
         GstCaps *caps      = gst_caps_new_simple("video/x-raw",
                                             "width",
                                             G_TYPE_INT,
