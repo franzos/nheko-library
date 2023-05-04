@@ -854,6 +854,9 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
                                            "payload",
                                            G_TYPE_INT,
                                            opusPayloadType,
+                                           "sprop-stereo",
+                                           G_TYPE_STRING,
+                                           "0",
                                            nullptr);
     g_object_set(capsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
