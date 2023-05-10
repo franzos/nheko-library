@@ -792,6 +792,9 @@ gst_android_init (JNIEnv * env, jclass klass, jobject context)
   // gst_debug_set_threshold_for_name("amc*", GST_LEVEL_TRACE);
   // gst_debug_set_threshold_for_name("decodebin*", GST_LEVEL_TRACE);
   gst_debug_set_threshold_for_name("webrtc*", GST_LEVEL_LOG);
+  gst_debug_set_threshold_for_name("*SCHEDULING*", GST_LEVEL_TRACE); // GST_DEBUG=*SCHEDULING*:7
+  gst_debug_set_threshold_for_name("*vp8*", GST_LEVEL_TRACE); // GST_DEBUG=*vp8*:7,*vpx*:7
+  gst_debug_set_threshold_for_name("*vpx*", GST_LEVEL_TRACE);
   gst_android_register_static_plugins ();
   gst_android_load_gio_modules ();
   
