@@ -699,7 +699,7 @@ WebRTCSession::acceptOffer(const std::string &sdp)
 
     // avoid a race that sometimes leaves the generated answer without media tracks (a=ssrc
     // lines)
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 
     // set-remote-description first, then create-answer
     GstPromise *promise = gst_promise_new_with_change_func(createAnswer, webrtc_, nullptr);
