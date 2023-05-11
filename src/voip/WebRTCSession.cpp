@@ -980,7 +980,7 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     GstElement *queue  = gst_element_factory_make("queue", nullptr);
     GstElement *vp8enc = gst_element_factory_make("vp8enc", nullptr);
     g_object_set(vp8enc, "deadline", 1, nullptr);
-    g_object_set(vp8enc, "keyframe-max-dist", 2000, nullptr);
+    g_object_set(vp8enc, "keyframe-max-dist", 500, nullptr);
     g_object_set(vp8enc, "error-resilient", 1, nullptr);
     GstElement *rtpvp8pay     = gst_element_factory_make("rtpvp8pay", nullptr);
     g_object_set(rtpvp8pay, "name", "videopay", nullptr);
