@@ -152,6 +152,21 @@ setLocalDescription(GstPromise *promise, gpointer webrtc)
     gst_promise_unref(promise);
     g_signal_emit_by_name(webrtc, "set-local-description", gstsdp, nullptr);
 
+
+    // Adjust the do-nack param for transceivers
+    GArray* transceivers; 
+    g_signal_emit_by_name(webrtc, "get-transceivers", &transceivers);
+    nhlog::ui()->debug("WebRTC: transceivers count: {}", transceivers->len);
+    if(transceivers->len == 0) {
+        nhlog::ui()->error("WebRTC: unable to get transceivers");
+    }
+    for (uint32_t i = 0; i < transceivers->len; ++i) {
+        // set do-nack param for the transceiver
+        auto transceiver = g_array_index(transceivers, GstWebRTCRTPTransceiver*, i);
+        g_object_set(transceiver, "do-nack", TRUE, nullptr);
+    }
+    g_array_unref(transceivers);
+
     gchar *sdp = gst_sdp_message_as_text(gstsdp->sdp);
     localsdp_  = std::string(sdp);
     g_free(sdp);
