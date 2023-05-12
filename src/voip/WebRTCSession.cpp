@@ -152,21 +152,6 @@ setLocalDescription(GstPromise *promise, gpointer webrtc)
     gst_promise_unref(promise);
     g_signal_emit_by_name(webrtc, "set-local-description", gstsdp, nullptr);
 
-
-    // Adjust the do-nack param for transceivers
-    GArray* transceivers; 
-    g_signal_emit_by_name(webrtc, "get-transceivers", &transceivers);
-    nhlog::ui()->debug("WebRTC: transceivers count: {}", transceivers->len);
-    if(transceivers->len == 0) {
-        nhlog::ui()->error("WebRTC: unable to get transceivers");
-    }
-    for (uint32_t i = 0; i < transceivers->len; ++i) {
-        // set do-nack param for the transceiver
-        auto transceiver = g_array_index(transceivers, GstWebRTCRTPTransceiver*, i);
-        g_object_set(transceiver, "do-nack", TRUE, nullptr);
-    }
-    g_array_unref(transceivers);
-
     gchar *sdp = gst_sdp_message_as_text(gstsdp->sdp);
     localsdp_  = std::string(sdp);
     g_free(sdp);
@@ -174,6 +159,26 @@ setLocalDescription(GstPromise *promise, gpointer webrtc)
 
     nhlog::ui()->debug(
       "WebRTC: local description set ({}):\n{}", isAnswer ? "answer" : "offer", localsdp_);
+}
+
+bool
+adjustWebRTCTransceivers(GstElement *webrtc)
+{
+    // Adjust the do-nack param for transceivers
+    GArray* transceivers; 
+    g_signal_emit_by_name(webrtc, "get-transceivers", &transceivers);
+    nhlog::ui()->debug("WebRTC: transceivers count: {}", transceivers->len);
+    if(transceivers->len == 0) {
+        nhlog::ui()->error("WebRTC: unable to get transceivers");
+        return false;
+    }
+    for (uint32_t i = 0; i < transceivers->len; ++i) {
+        // set do-nack param for the transceiver
+        auto transceiver = g_array_index(transceivers, GstWebRTCRTPTransceiver*, i);
+        g_object_set(transceiver, "do-nack", TRUE, nullptr);
+    }
+    g_array_unref(transceivers);
+    return true;
 }
 
 void
@@ -778,6 +783,14 @@ WebRTCSession::startPipeline(int opusPayloadType, int vp8PayloadType)
     nhlog::ui()->debug("WebRTC: pipeline created");
 
     webrtc_ = gst_bin_get_by_name(GST_BIN(pipe_), "webrtcbin");
+    if (!webrtc_) {
+        nhlog::ui()->error("WebRTC: webrtcbin not found");
+        end();
+        return false;
+    }
+    if (!::adjustWebRTCTransceivers(webrtc_)) {
+        nhlog::ui()->error("WebRTC: failed to adjust transceivers");
+    }
 
     if (UserSettings::instance()->useStunServer()) {
         nhlog::ui()->info("WebRTC: setting STUN server: {}", STUN_SERVER);

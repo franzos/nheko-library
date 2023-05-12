@@ -791,11 +791,13 @@ gst_android_init (JNIEnv * env, jclass klass, jobject context)
   }
   // gst_debug_set_threshold_for_name("amc*", GST_LEVEL_TRACE);
   // gst_debug_set_threshold_for_name("decodebin*", GST_LEVEL_TRACE);
-  gst_debug_set_threshold_for_name("webrtc*", GST_LEVEL_LOG);
-  gst_debug_set_threshold_for_name("*SCHEDULING*", GST_LEVEL_TRACE); // GST_DEBUG=*SCHEDULING*:7
-  gst_debug_set_threshold_for_name("*vp8*", GST_LEVEL_TRACE); // GST_DEBUG=*vp8*:7,*vpx*:7
-  gst_debug_set_threshold_for_name("*vpx*", GST_LEVEL_TRACE);
-  gst_debug_set_threshold_for_name("videoencoder", GST_LEVEL_DEBUG);
+  // gst_debug_set_threshold_for_name("webrtc*", GST_LEVEL_LOG);
+  // gst_debug_set_threshold_for_name("*SCHEDULING*", GST_LEVEL_TRACE); // GST_DEBUG=*SCHEDULING*:7
+  gst_debug_set_threshold_for_name("rtpsession", GST_LEVEL_TRACE); // rtpsession:7
+  gst_debug_set_threshold_for_name("gstrtpfunnel", GST_LEVEL_TRACE); // gstrtpfunnel:7
+  gst_debug_set_threshold_for_name("videoencoder", GST_LEVEL_DEBUG); // videoencoder:5
+  gst_debug_set_threshold_for_name("*vp8*", GST_LEVEL_TRACE); // *vp8*:7
+  gst_debug_set_threshold_for_name("*vpx*", GST_LEVEL_TRACE); // *vpx*:7
   gst_android_register_static_plugins ();
   gst_android_load_gio_modules ();
   
