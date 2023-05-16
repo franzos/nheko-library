@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.37]
+### Updated
+
+* Update to working correctly with CIBA in library.
+
+
 ## [0.1.36]
 ### Updated
 

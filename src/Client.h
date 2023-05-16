@@ -37,7 +37,7 @@
 #if CIBA_AUTHENTICATION
 #include <px-auth-lib-cpp/UserProfile.h>
 #include <px-auth-lib-cpp/Authentication.h>
-#include <px-auth-lib-cpp/CibaAuthentication.h>
+#include <px-auth-lib-cpp/CibaMatrixAuthentication.h>
 #endif
 
 class UserSettings;
@@ -213,8 +213,8 @@ private:
     static Client           *instance_;
     Authentication          *_authentication;
 #if CIBA_AUTHENTICATION
-    PX::AUTH::CibaAuthentication *_cibaAuthentication;
-    PX::AUTH::CibaAuthentication *_cibaAuthenticationForCMuserInfo;
+    PX::AUTH::MATRIX::CibaAuthentication *_cibaAuthentication;
+    PX::AUTH::MATRIX::CibaAuthentication *_cibaAuthenticationForCMuserInfo;
     PX::AUTH::UserProfile        *_cmUserInfo;
 #endif
     QString _clientName;
