@@ -12,6 +12,7 @@
 #include <string_view>
 #include <thread>
 #include <utility>
+#include <QMetaEnum>
 
 #include "CallDevices.h"
 #include "Logging.h"
@@ -32,7 +33,9 @@ extern "C"
 #define gst_element_request_pad_simple gst_element_get_request_pad
 #endif
 
+#if defined(Q_OS_ANDROID)
 extern "C" gboolean gst_qt_android_init (GError ** error);
+#endif
 
 #define RTP_PICTURE_ID_NONE 0
 #define RTP_PICTURE_ID_7_BIT 1
@@ -65,9 +68,16 @@ WebRTCSession::init(std::string *errorMessage)
     if (initialised_)
         return true;
 
+    bool initialized = false;
     GError *error = nullptr;
-    // if (!gst_init_check(nullptr, nullptr, &error)) {
-    if (!gst_qt_android_init(NULL)) {
+#if defined(Q_OS_ANDROID)
+    initialized = gst_qt_android_init(NULL);
+#elif defined(Q_OS_IOS)
+    // TODO: iOS specific initialization goes here
+#else
+    initialized = gst_init_check(nullptr, nullptr, &error);
+#endif
+    if (!initialized) {
         std::string strError("WebRTC: failed to initialise GStreamer: ");
         if (error) {
             strError += error->message;
@@ -131,8 +141,7 @@ parseSDP(const std::string &sdp, GstWebRTCSDPType type)
 {
     GstSDPMessage *msg;
     gst_sdp_message_new(&msg);
-    if (gst_sdp_message_parse_buffer((guint8 *)sdp.c_str(), static_cast<guint>(sdp.size()), msg) ==
-        GST_SDP_OK) {
+    if (gst_sdp_message_parse_buffer((guint8 *)sdp.c_str(), sdp.size(), msg) == GST_SDP_OK) {
         return gst_webrtc_session_description_new(type, msg);
     } else {
         nhlog::ui()->error("WebRTC: failed to parse remote session description");
@@ -232,15 +241,16 @@ iceConnectionStateChanged(GstElement *webrtc,
                           GParamSpec *pspec G_GNUC_UNUSED,
                           gpointer user_data G_GNUC_UNUSED)
 {
+    auto prvState = std::string(QMetaEnum::fromType<webrtc::State>().valueToKey((int)WebRTCSession::instance().state()));
     GstWebRTCICEConnectionState newState;
     g_object_get(webrtc, "ice-connection-state", &newState, nullptr);
     switch (newState) {
     case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING:
-        nhlog::ui()->debug("WebRTC: GstWebRTCICEConnectionState -> Checking");
+        nhlog::ui()->debug("WebRTC: GstWebRTCICEConnectionState {} -> Checking", prvState);
         emit WebRTCSession::instance().stateChanged(State::CONNECTING);
         break;
     case GST_WEBRTC_ICE_CONNECTION_STATE_FAILED:
-        nhlog::ui()->error("WebRTC: GstWebRTCICEConnectionState -> Failed");
+        nhlog::ui()->error("WebRTC: GstWebRTCICEConnectionState {} -> Failed", prvState);
         emit WebRTCSession::instance().stateChanged(State::ICEFAILED);
         break;
     default:
@@ -327,7 +337,7 @@ newAudioSinkChain(GstElement *pipe)
 #if defined(Q_OS_ANDROID)
     GstElement *sink     = gst_element_factory_make("openslessink", nullptr);
 #elif defined(Q_OS_IOS)
-    // TODO: use ios specific sink
+    // TODO: use iOS specific sink
 #else
     GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
 #endif
@@ -472,10 +482,6 @@ linkNewPad(GstElement *decodebin, GstPad *newpad, GstElement *pipe)
 {
     GstPad *sinkpad               = gst_element_get_static_pad(decodebin, "sink");
     GstCaps *sinkcaps             = gst_pad_get_current_caps(sinkpad);
-    nhlog::ui()->debug("WebRTC: ----------------------------> before check caps");
-    gchar *sinkCapsStr            = gst_caps_to_string(sinkcaps);
-    nhlog::ui()->debug("WebRTC: received caps: {}", sinkCapsStr);
-    g_free(sinkCapsStr);
     const GstStructure *structure = gst_caps_get_structure(sinkcaps, 0);
 
     gchar *mediaType = nullptr;
@@ -718,7 +724,7 @@ WebRTCSession::acceptOffer(const std::string &sdp)
 
     // avoid a race that sometimes leaves the generated answer without media tracks (a=ssrc
     // lines)
-    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
     // set-remote-description first, then create-answer
     GstPromise *promise = gst_promise_new_with_change_func(createAnswer, webrtc_, nullptr);
@@ -847,7 +853,6 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
 {
     GstElement *source = nullptr;
 #if defined(Q_OS_ANDROID)
-    // TODO: use the Android audio source
     source     = gst_element_factory_make("openslessrc", nullptr);    
 #elif defined(Q_OS_IOS)
     // TODO: use the iOS audio source
@@ -888,9 +893,6 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
                                            G_TYPE_STRING,
                                            "16000",
                                            nullptr);
-    gchar* capsStr = gst_caps_to_string(rtpcaps);
-    nhlog::ui()->debug("WebRTC: audio rtp caps: {}", capsStr);
-    g_free(capsStr);
     g_object_set(capsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
 
@@ -985,10 +987,6 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
                                             frameRate.first,
                                             frameRate.second,
                                             nullptr);
-        gchar *capsStr     = gst_caps_to_string(caps);
-        nhlog::ui()->debug("WebRTC: ----> pip caps: {}", capsStr);
-        g_free(capsStr);
-
         camerafilter       = gst_element_factory_make("capsfilter", "camerafilter");
         g_object_set(camerafilter, "caps", caps, nullptr);
         gst_caps_unref(caps);
@@ -1027,10 +1025,6 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
                                            G_TYPE_INT,
                                            vp8PayloadType,
                                            nullptr);
-    gchar *capsStr            = gst_caps_to_string(rtpcaps);
-    nhlog::ui()->debug("WebRTC: ----> video rtp caps: {}", capsStr);
-    g_free(capsStr);
-
     g_object_set(rtpcapsfilter, "caps", rtpcaps, nullptr);
     gst_caps_unref(rtpcaps);
 
@@ -1045,9 +1039,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
 
     gst_object_unref(webrtcbin);
     nhlog::ui()->debug("WebRTC: video pipeline created");
-    gchar* dot = gst_debug_bin_to_dot_data(GST_BIN(pipe_), GST_DEBUG_GRAPH_SHOW_VERBOSE);
-    nhlog::ui()->debug("WebRTC: pipeline = {}", dot);
-    g_free(dot);
+    // gchar* dot = gst_debug_bin_to_dot_data(GST_BIN(pipe_), GST_DEBUG_GRAPH_SHOW_VERBOSE);
+    // nhlog::ui()->debug("WebRTC: pipeline = {}", dot);
+    // g_free(dot);
     return true;
 }
 

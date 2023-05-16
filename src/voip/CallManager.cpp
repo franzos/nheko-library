@@ -29,14 +29,17 @@
 #endif
 
 #ifdef GSTREAMER_AVAILABLE
+
 extern "C"
 {
 #include "gst/gst.h"
 }
 
+#if defined(Q_OS_ANDROID)
 extern "C" gboolean gst_qt_android_init (GError ** error);
-
 #endif
+
+#endif // GSTREAMER_AVAILABLE
 
 Q_DECLARE_METATYPE(std::vector<mtx::events::voip::CallCandidates::Candidate>)
 Q_DECLARE_METATYPE(mtx::events::voip::CallCandidates::Candidate)
@@ -66,15 +69,19 @@ CallManager::CallManager(QObject *parent)
 #ifdef GSTREAMER_AVAILABLE
     // TODO: we need to check Nheko's approach that doesn't require the following
     //       workaround to use the `qmlglsink` inside it's QML files
-    // gst_init(NULL, NULL);
+#if defined(Q_OS_ANDROID)
     if (!gst_qt_android_init(NULL)) {
         nhlog::ui()->error("WebRTC: Failed to init gstreamer!");
     }
+#elif defined(Q_OS_IOS)
+    // TODO: iOS specific gstreamer init
+#else
+    gst_init(NULL, NULL);
+#endif
+
     GstElement *sink = gst_element_factory_make("qmlglsink", NULL);
     if (!sink) {
         nhlog::ui()->error("WebRTC: failed to make factory: qmlglsink");
-    } else {
-        nhlog::ui()->info("WebRTC: qmlglsink found");
     }
     gst_object_unref(sink);
 #endif
@@ -608,13 +615,15 @@ CallManager::previewWindow(unsigned int index) const
     if (windows_.empty() || index >= windows_.size() || !gst_is_initialized())
         return;
 
+    GstElement *ximagesrc = nullptr;
 #if defined(Q_OS_ANDROID)
-    // GstElement *ximagesrc = gst_element_factory_make("autovideosrc", nullptr);
-    GstElement *ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
+    ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
 #elif defined(Q_OS_IOS)
-    // TODO: implement iOS specific logic
+    // TODO: choose iOS video source
 #else 
-    GstElement *ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
+    *ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
+    
+#endif
     if (!ximagesrc) {
         nhlog::ui()->error("Failed to create ximagesrc");
         return;

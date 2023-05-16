@@ -23,12 +23,13 @@ if(VOIP)
 	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
 endif()
 
-option(GSTREAMER_PATH "Path to the gstreamer build directory" OFF)
-if (NOT GSTREAMER_PATH)
-	# set(GSTREAMER_PATH "/usr/src/vendor/cerbero/build/dist/android_universal")
-	set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal")
+if (ANDROID)
+	option(GSTREAMER_PATH "Path to the gstreamer build directory" OFF)
+	if (NOT GSTREAMER_PATH)
+		set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal")
+	endif()
+	message(" + GSTREAMER_PATH: ${GSTREAMER_PATH}")
 endif()
-message(" + GSTREAMER_PATH: ${GSTREAMER_PATH}")
 
 
 option(CIBA_AUTHENTICATION "Whether the CIBA authentication method enabled or not" OFF)
@@ -50,8 +51,10 @@ option(BUILD_TESTS "Whether build the tests or not" OFF)
 find_package(spdlog 1.0.0 CONFIG REQUIRED)
 find_package(LMDB REQUIRED)
 
-find_package(Qt5Network REQUIRED)
-find_package(Qt5 5.15 COMPONENTS Gui Multimedia QuickControls2 QuickWidgets Svg REQUIRED)
+find_package(Qt5 5.15 COMPONENTS Gui Network Multimedia QuickControls2 QuickWidgets Svg REQUIRED)
+if (ANDROID)
+	find_package(Qt5 5.15 COMPONENTS AndroidExtras REQUIRED)
+endif()
 
 set(
 	CMAKE_CXX_FLAGS
@@ -75,9 +78,6 @@ endif()
 # Declare source and header files.
 #
 set(SRC_FILES
-	src/gstreamer/gstreamer_android.c
-	src/gstreamer/gstreamer_android.cpp
-	src/gstreamer/gstreamer_android.h
 	src/Authentication.cpp
 	src/timeline/EventStore.cpp
 	src/timeline/Permissions.cpp
@@ -104,6 +104,13 @@ set(SRC_FILES
 	src/UserSettings.cpp
 	src/Utils.cpp
 	)
+if (ANDROID)
+	list(APPEND SRC_FILES 
+				src/gstreamer/gstreamer_android.c
+				src/gstreamer/gstreamer_android.cpp
+				src/gstreamer/gstreamer_android.h
+				)
+endif()
 
 include(FeatureSummary)
 
@@ -236,7 +243,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+if (ANDROID)
+	list(APPEND DEP_LIBS Qt5::AndroidExtras)
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
 	endif()
@@ -253,17 +261,9 @@ else()
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp)
 	endif()
-	# find_package(Qt5 5.15 COMPONENTS Multimedia REQUIRED)
-	list(APPEND DEP_LIBS #Qt5::Multimedia
-						${PULSE_LDFLAGS}
-						${GLIB_LDFLAGS})
+	list(APPEND DEP_LIBS ${PULSE_LDFLAGS}
+			     ${GLIB_LDFLAGS})
 endif()
-
-if (ANDROID)
-	find_package(Qt5 5.15 COMPONENTS AndroidExtras REQUIRED)
-	list(APPEND DEP_LIBS Qt5::AndroidExtras)
-endif()
-
 
 install(TARGETS matrix-client-library DESTINATION lib)
 foreach(HEADER ${HEADERS})
@@ -278,34 +278,28 @@ elseif (ANDROID)
 	target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
 
 	if(CMAKE_ANDROID_ARCH_ABI STREQUAL "armeabi-v7a")
-		# SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/armv7)
 		SET(GSTREAMER_ROOT ${GSTREAMER_PATH}/armv7)
 	elseif (CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
-		# SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/arm64)
 		SET(GSTREAMER_ROOT ${GSTREAMER_PATH}/arm64)
 	else()
-		# SET(GSTREAMER_ROOT /usr/src/vendor/cerbero/build/dist/android_universal/$${CMAKE_ANDROID_ARCH_ABI})
 		SET(GSTREAMER_ROOT ${GSTREAMER_PATH}/$${CMAKE_ANDROID_ARCH_ABI})
 	endif()
 	message(" + GSTREAMER_ROOT: ${GSTREAMER_ROOT}")
 
-
 	target_include_directories(matrix-client-library PUBLIC
-								${GSTREAMER_ROOT}/include/gstreamer-1.0 
-								${GSTREAMER_ROOT}/lib/gstreamer-1.0/include
-								${GSTREAMER_ROOT}/include/glib-2.0
-								${GSTREAMER_ROOT}/lib/glib-2.0/include
-								${GSTREAMER_ROOT}/include)
-
-
+							 ${GSTREAMER_ROOT}/include/gstreamer-1.0 
+							 ${GSTREAMER_ROOT}/lib/gstreamer-1.0/include
+							 ${GSTREAMER_ROOT}/include/glib-2.0
+							 ${GSTREAMER_ROOT}/lib/glib-2.0/include
+							 ${GSTREAMER_ROOT}/include)
 	
 	target_link_libraries(matrix-client-library PUBLIC 
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstcoreelements.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgsttypefindfunctions.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvert.a
-							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideorate.a
 							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoscale.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvertscale.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideorate.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideofilter.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstautodetect.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideotestsrc.a
@@ -330,16 +324,13 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstasf.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudioconvert.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstaudioresample.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstasf.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstavi.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstisomp4.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstmatroska.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstogg.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstwavparse.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstbz2.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstdtls.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstsrtp.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopus.a
@@ -352,12 +343,6 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopenh264.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopensles.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstencoding.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/
-
-
-							
-							
 							
 							#plugin libs
 							${GSTREAMER_ROOT}/lib/liborc-0.4.a
@@ -390,17 +375,6 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libgstrtspserver-1.0.a
 							${GSTREAMER_ROOT}/lib/libopenh264.a
 							
-							# ${GSTREAMER_ROOT}/lib/
-							# ${GSTREAMER_ROOT}/lib/
-							# ${GSTREAMER_ROOT}/lib/
-
-							
-							
-							
-							
-							
-							# ${GSTREAMER_ROOT}/lib/libgstbadbase-1.0.a
-							# ${GSTREAMER_ROOT}/lib/libgstbadvideo-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstaudio-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstpbutils-1.0.a
 							${GSTREAMER_ROOT}/lib/libgsttag-1.0.a
@@ -433,7 +407,7 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libz.a
 							)
 endif()
-# message(${DEP_LIBS})
+
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})
 
 IF(BUILD_EXAMPLES)
