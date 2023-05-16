@@ -169,9 +169,10 @@ G_PASTE(g_io_module_, G_PASTE(name, _load_static)) ()
 /* Declaration of static plugins */
 GST_PLUGIN_STATIC_DECLARE(coreelements);
 GST_PLUGIN_STATIC_DECLARE(typefindfunctions);
-GST_PLUGIN_STATIC_DECLARE(videoconvert);
+// GST_PLUGIN_STATIC_DECLARE(videoconvert);
+GST_PLUGIN_STATIC_DECLARE(videoconvertscale);
 GST_PLUGIN_STATIC_DECLARE(videorate);
-GST_PLUGIN_STATIC_DECLARE(videoscale);
+// GST_PLUGIN_STATIC_DECLARE(videoscale);
 GST_PLUGIN_STATIC_DECLARE(videofilter);
 GST_PLUGIN_STATIC_DECLARE(autodetect);
 GST_PLUGIN_STATIC_DECLARE(playback);
@@ -246,9 +247,10 @@ gst_android_register_static_plugins (void)
 
     GST_PLUGIN_STATIC_REGISTER(coreelements);
     GST_PLUGIN_STATIC_REGISTER(typefindfunctions);
-    GST_PLUGIN_STATIC_REGISTER(videoconvert);
+    // GST_PLUGIN_STATIC_REGISTER(videoconvert);
+    GST_PLUGIN_STATIC_REGISTER(videoconvertscale);
     GST_PLUGIN_STATIC_REGISTER(videorate);
-    GST_PLUGIN_STATIC_REGISTER(videoscale);
+    // GST_PLUGIN_STATIC_REGISTER(videoscale);
     GST_PLUGIN_STATIC_REGISTER(videofilter);
     GST_PLUGIN_STATIC_REGISTER(autodetect);
     GST_PLUGIN_STATIC_REGISTER(playback);
@@ -793,6 +795,7 @@ gst_android_init (JNIEnv * env, jclass klass, jobject context)
   // gst_debug_set_threshold_for_name("decodebin*", GST_LEVEL_TRACE);
   // gst_debug_set_threshold_for_name("webrtc*", GST_LEVEL_LOG);
   // gst_debug_set_threshold_for_name("*SCHEDULING*", GST_LEVEL_TRACE); // GST_DEBUG=*SCHEDULING*:7
+
   gst_debug_set_threshold_for_name("rtpsession", GST_LEVEL_TRACE); // rtpsession:7
   gst_debug_set_threshold_for_name("gstrtpfunnel", GST_LEVEL_TRACE); // gstrtpfunnel:7
   gst_debug_set_threshold_for_name("videoencoder", GST_LEVEL_DEBUG); // videoencoder:5

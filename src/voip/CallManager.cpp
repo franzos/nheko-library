@@ -625,9 +625,7 @@ CallManager::previewWindow(unsigned int index) const
         nhlog::ui()->error("Failed to create ximagesrc");
         return;
     }
-#endif
     GstElement *videoconvert = gst_element_factory_make("videoconvert", nullptr);
-    GstElement *videoscale   = gst_element_factory_make("videoscale", nullptr);
     GstElement *capsfilter   = gst_element_factory_make("capsfilter", nullptr);
     GstElement *ximagesink   = gst_element_factory_make("ximagesink", nullptr);
 
@@ -642,9 +640,9 @@ CallManager::previewWindow(unsigned int index) const
 
     pipe_ = gst_pipeline_new(nullptr);
     gst_bin_add_many(
-      GST_BIN(pipe_), ximagesrc, videoconvert, videoscale, capsfilter, ximagesink, nullptr);
+      GST_BIN(pipe_), ximagesrc, videoconvert, capsfilter, ximagesink, nullptr);
     if (!gst_element_link_many(
-          ximagesrc, videoconvert, videoscale, capsfilter, ximagesink, nullptr)) {
+          ximagesrc, videoconvert, capsfilter, ximagesink, nullptr)) {
         nhlog::ui()->error("Failed to link preview window elements");
         gst_object_unref(pipe_);
         pipe_ = nullptr;

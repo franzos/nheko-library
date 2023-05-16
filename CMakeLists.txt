@@ -302,10 +302,10 @@ elseif (ANDROID)
 	target_link_libraries(matrix-client-library PUBLIC 
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstcoreelements.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgsttypefindfunctions.a
-							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvert.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvert.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideorate.a
-							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoscale.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvertscale.a
+							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoscale.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvertscale.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideofilter.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstautodetect.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideotestsrc.a
@@ -370,7 +370,7 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libgstrtp-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstsdp-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstwebrtc-1.0.a
-							# ${GSTREAMER_ROOT}/lib/libgstwebrtcnice-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstwebrtcnice-1.0.a
 							${GSTREAMER_ROOT}/lib/libwebrtc_audio_processing.a
 							${GSTREAMER_ROOT}/lib/libopencore-amrnb.a
 							${GSTREAMER_ROOT}/lib/libgstriff-1.0.a
@@ -427,7 +427,7 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libffi.a
 							#LIBS += $${GSTREAMER_ROOT}/lib/libpcre.a
 							${GSTREAMER_ROOT}/lib/libsrtp2.a
-							# ${GSTREAMER_ROOT}/lib/libpcre2-8.a
+							${GSTREAMER_ROOT}/lib/libpcre2-8.a
 							${GSTREAMER_ROOT}/lib/libiconv.a
 							${GSTREAMER_ROOT}/lib/libintl.a
 							${GSTREAMER_ROOT}/lib/libz.a

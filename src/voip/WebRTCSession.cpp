@@ -627,7 +627,7 @@ WebRTCSession::havePlugins(bool isVideo, std::string *errorMessage)
                                    nullptr};
 
     const gchar *videoPlugins[] = {
-      "compositor", "opengl", "qmlgl", "rtp", "videoconvert", "vpx", nullptr};
+      "compositor", "opengl", "qmlgl", "rtp", "videoconvertscale", "vpx", nullptr};
 
     std::string strError("Missing GStreamer plugins: ");
     const gchar **needed  = isVideo ? videoPlugins : voicePlugins;
@@ -960,7 +960,6 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
 
         GstElement *camera = nullptr;
 #if defined(Q_OS_ANDROID)
-        // camera = gst_element_factory_make("autovideosrc", nullptr);
         camera = gst_element_factory_make("ahcsrc", nullptr);
         // resolution ={ 640, 480 };
         resolution = { 480, 640 };
