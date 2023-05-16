@@ -936,14 +936,8 @@ bool
 WebRTCSession::addVideoPipeline(int vp8PayloadType)
 {
     // allow incoming video calls despite localUser having no webcam
-#if defined(Q_OS_ANDROID)
-    // TODO: Check if the Android device has a camera
-#elif defined(Q_OS_IOS)
-    // TODO: Check if the iOS device has a camera
-#else
     if (callType_ == CallType::VIDEO && !devices_.haveCamera())
         return !isOffering_;
-#endif
 
     auto settings            = UserSettings::instance();
     GstElement *camerafilter = nullptr;

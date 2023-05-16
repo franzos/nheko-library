@@ -361,12 +361,33 @@ void CallDevices::init()
 
 bool CallDevices::haveMic() const
 {
-    return !audioSources_.empty();
+    bool result = false;
+    
+#if defined(Q_OS_ANDROID)
+    // TODO: add microphone verification code for android
+    result = true;
+#elif defined(Q_OS_IOS)
+    // TODO: add microphone verification code for iOS
+    result = true;
+#else
+    result = !audioSources_.empty();
+#endif
+    return result;
 }
 
 bool CallDevices::haveCamera() const
 {
-    return !videoSources_.empty();
+    bool result = false;
+#if defined(Q_OS_ANDROID)
+    // TODO: add camera verification code for android
+    result = true;
+#elif defined(Q_OS_IOS)
+    // TODO: add camera verification code for iOS
+    result = true;
+#else
+    result = !videoSources_.empty();
+#endif
+    return result;
 }
 
 std::vector<std::string>
