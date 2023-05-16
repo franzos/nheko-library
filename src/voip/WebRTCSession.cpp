@@ -947,6 +947,10 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
 
     auto settings            = UserSettings::instance();
     GstElement *camerafilter = nullptr;
+    // https://gstreamer.freedesktop.org/documentation/videofilter/videoflip.html?gi-language=c
+    GstElement *flip         = gst_element_factory_make("videoflip", nullptr);
+    g_object_set(flip, "method", 3 /** counterclockwise */, nullptr);
+
     GstElement *videoconvert = gst_element_factory_make("videoconvert", nullptr);
     GstElement *tee          = gst_element_factory_make("tee", "videosrctee");
     gst_bin_add_many(GST_BIN(pipe_), videoconvert, tee, nullptr);
@@ -958,8 +962,11 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
 #if defined(Q_OS_ANDROID)
         // camera = gst_element_factory_make("autovideosrc", nullptr);
         camera = gst_element_factory_make("ahcsrc", nullptr);
-        resolution ={ 640, 480 };
+        // resolution ={ 640, 480 };
+        resolution = { 480, 640 };
         frameRate  ={ 30, 1 };
+        g_object_set(camera, "device", "1", nullptr);               // Select the front camera
+        
 #elif defined(Q_OS_IOS)
         // TODO: use the iOS video source
 #else
@@ -993,8 +1000,8 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         g_object_set(camerafilter, "caps", caps, nullptr);
         gst_caps_unref(caps);
 
-        gst_bin_add_many(GST_BIN(pipe_), camera, camerafilter, nullptr);
-        if (!gst_element_link_many(camera, videoconvert, camerafilter, nullptr)) {
+        gst_bin_add_many(GST_BIN(pipe_), camera, camerafilter, flip, nullptr);
+        if (!gst_element_link_many(camera, flip, videoconvert, camerafilter, nullptr)) {
             nhlog::ui()->error("WebRTC: failed to link camera elements");
             return false;
         }
