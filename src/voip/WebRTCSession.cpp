@@ -35,6 +35,8 @@ extern "C"
 
 #if defined(Q_OS_ANDROID)
 extern "C" gboolean gst_qt_android_init (GError ** error);
+#elif defined(Q_OS_IOS)
+#include "../gstreamer/gst_ios_init.h"
 #endif
 
 #define RTP_PICTURE_ID_NONE 0
@@ -74,6 +76,8 @@ WebRTCSession::init(std::string *errorMessage)
     initialized = gst_qt_android_init(NULL);
 #elif defined(Q_OS_IOS)
     // TODO: iOS specific initialization goes here
+    gst_ios_init();
+    initialized = true;
 #else
     initialized = gst_init_check(nullptr, nullptr, &error);
 #endif
@@ -337,7 +341,7 @@ newAudioSinkChain(GstElement *pipe)
 #if defined(Q_OS_ANDROID)
     GstElement *sink     = gst_element_factory_make("openslessink", nullptr);
 #elif defined(Q_OS_IOS)
-    // TODO: use iOS specific sink
+    GstElement *sink = gst_element_factory_make("osxaudiosink", nullptr);
 #else
     GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
 #endif
@@ -855,7 +859,7 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
 #if defined(Q_OS_ANDROID)
     source     = gst_element_factory_make("openslessrc", nullptr);    
 #elif defined(Q_OS_IOS)
-    // TODO: use the iOS audio source
+    source     = gst_element_factory_make("autoaudiosrc", nullptr);
 #else
     GstDevice *device = devices_.audioDevice();
     if (device) {
@@ -963,7 +967,9 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         g_object_set(camera, "device", "1", nullptr);               // Select the front camera
         
 #elif defined(Q_OS_IOS)
-        // TODO: use the iOS video source
+        camera = gst_element_factory_make("avfvideosrc", nullptr);
+        resolution = { 480, 640 };
+        frameRate  ={ 30, 1 };
 #else
         GstDevice *device = devices_.videoDevice(resolution, frameRate);
         if (!device)

@@ -1,5 +1,9 @@
-cmake_minimum_required(VERSION 3.13)
-project(matrix-client-library)
+cmake_minimum_required(VERSION 3.16)
+project(matrix-client-library LANGUAGES CXX)
+if (APPLE)
+	enable_language(OBJC)
+	enable_language(OBJCXX)
+endif()
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard")
 set(CMAKE_CXX_STANDARD_REQUIRED ON CACHE BOOL "Require C++ standard to be supported")
@@ -23,10 +27,14 @@ if(VOIP)
 	pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-sdp-1.0>=1.18 gstreamer-webrtc-1.0>=1.18)
 endif()
 
-if (ANDROID)
+if (ANDROID OR IOS)
 	option(GSTREAMER_PATH "Path to the gstreamer build directory" OFF)
 	if (NOT GSTREAMER_PATH)
-		set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal")
+		if (ANDROID)
+			set(GSTREAMER_PATH "/vendor/cerbero/build/dist/android_universal")
+		elseif(IOS)
+			set(GSTREAMER_PATH "$ENV{HOME}/Library/Developer/GStreamer/iPhone.sdk")
+		endif()
 	endif()
 	message(" + GSTREAMER_PATH: ${GSTREAMER_PATH}")
 endif()
@@ -54,6 +62,8 @@ find_package(LMDB REQUIRED)
 find_package(Qt5 5.15 COMPONENTS Gui Network Multimedia QuickControls2 QuickWidgets Svg REQUIRED)
 if (ANDROID)
 	find_package(Qt5 5.15 COMPONENTS AndroidExtras REQUIRED)
+elseif(IOS)
+	find_package(Qt5 5.15 COMPONENTS MacExtras REQUIRED)
 endif()
 
 set(
@@ -110,6 +120,10 @@ if (ANDROID)
 				src/gstreamer/gstreamer_android.cpp
 				src/gstreamer/gstreamer_android.h
 				)
+elseif(IOS)
+	list(APPEND SRC_FILES
+			src/gstreamer/gst_ios_init.h
+			src/gstreamer/gst_ios_init.m)
 endif()
 
 include(FeatureSummary)
@@ -249,6 +263,7 @@ if (ANDROID)
 		list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
 	endif()
 elseif(IOS)
+	list(APPEND DEP_LIBS Qt5::MacExtras)
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp)
 	endif()
@@ -406,6 +421,11 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libintl.a
 							${GSTREAMER_ROOT}/lib/libz.a
 							)
+elseif(IOS)
+	target_compile_definitions(matrix-client-library PUBLIC GSTREAMER_AVAILABLE)
+
+	target_include_directories(matrix-client-library 
+							  PUBLIC ${GSTREAMER_PATH}/GStreamer.framework/Headers)
 endif()
 
 target_link_libraries(matrix-client-library PUBLIC ${DEP_LIBS})

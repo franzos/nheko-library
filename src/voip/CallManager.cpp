@@ -37,6 +37,8 @@ extern "C"
 
 #if defined(Q_OS_ANDROID)
 extern "C" gboolean gst_qt_android_init (GError ** error);
+#elif defined(Q_OS_IOS)
+#include "../gstreamer/gst_ios_init.h"
 #endif
 
 #endif // GSTREAMER_AVAILABLE
@@ -74,7 +76,7 @@ CallManager::CallManager(QObject *parent)
         nhlog::ui()->error("WebRTC: Failed to init gstreamer!");
     }
 #elif defined(Q_OS_IOS)
-    // TODO: iOS specific gstreamer init
+    gst_ios_init();
 #else
     gst_init(NULL, NULL);
 #endif
@@ -619,7 +621,7 @@ CallManager::previewWindow(unsigned int index) const
 #if defined(Q_OS_ANDROID)
     ximagesrc = gst_element_factory_make("ahcsrc", nullptr);
 #elif defined(Q_OS_IOS)
-    // TODO: choose iOS video source
+    ximagesrc = gst_element_factory_make("avfvideosrc", nullptr);
 #else 
     *ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
     
