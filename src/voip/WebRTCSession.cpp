@@ -875,6 +875,16 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
     GstElement *convert    = gst_element_factory_make("audioconvert", nullptr);
     GstElement *resample   = gst_element_factory_make("audioresample", nullptr);
     GstElement *queue1     = gst_element_factory_make("queue", nullptr);
+
+    GstElement *rateFilter = gst_element_factory_make("capsfilter", nullptr);
+    GstCaps *rateCaps      = gst_caps_new_simple("audio/x-raw",
+                                           "rate",
+                                           G_TYPE_INT,
+                                           16000,
+                                           nullptr);
+    g_object_set(rateFilter, "caps", rateCaps, nullptr);
+    gst_caps_unref(rateCaps);
+
     GstElement *opusenc    = gst_element_factory_make("opusenc", nullptr);
     GstElement *rtp        = gst_element_factory_make("rtpopuspay", nullptr);
     GstElement *queue2     = gst_element_factory_make("queue", nullptr);
@@ -910,6 +920,7 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
                      convert,
                      resample,
                      queue1,
+                     rateFilter,
                      opusenc,
                      rtp,
                      queue2,
@@ -922,6 +933,7 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
                                convert,
                                resample,
                                queue1,
+                               rateFilter,
                                opusenc,
                                rtp,
                                queue2,
