@@ -623,8 +623,7 @@ CallManager::previewWindow(unsigned int index) const
 #elif defined(Q_OS_IOS)
     ximagesrc = gst_element_factory_make("avfvideosrc", nullptr);
 #else 
-    *ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
-    
+    ximagesrc = gst_element_factory_make("ximagesrc", nullptr);
 #endif
     if (!ximagesrc) {
         nhlog::ui()->error("Failed to create ximagesrc");
