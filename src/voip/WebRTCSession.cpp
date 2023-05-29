@@ -241,21 +241,58 @@ addLocalICECandidate(GstElement *webrtc G_GNUC_UNUSED,
     localcandidates_.push_back({std::string() /*max-bundle*/, (uint16_t)mlineIndex, candidate});
 }
 
+std::string GST_WEBRTC_ICE_CONNECTION_STATE_STR(GstWebRTCICEConnectionState state) {
+    std::string result;
+    switch (state) {
+        case GST_WEBRTC_ICE_CONNECTION_STATE_NEW: // (0) – new
+            result = std::string("NEW");
+            break;
+        case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING: // (1) – checking
+            result = std::string("CHECKING");
+            break;
+        case GST_WEBRTC_ICE_CONNECTION_STATE_CONNECTED: // (2) – connected
+            result = std::string("CONNECTED");
+            break;
+        case GST_WEBRTC_ICE_CONNECTION_STATE_COMPLETED: // (3) – completed
+            result = std::string("COMPLETED");
+            break;
+        case GST_WEBRTC_ICE_CONNECTION_STATE_FAILED: // (4) – failed
+            result = std::string("FAILED");
+            break;
+        case GST_WEBRTC_ICE_CONNECTION_STATE_DISCONNECTED: // (5) – disconnected
+            result = std::string("DISCONNECTED");
+            break;
+        case GST_WEBRTC_ICE_CONNECTION_STATE_CLOSED: // (6) – closed
+            result = std::string("CLOSED");
+            break;
+        default:
+            result = std::string("UNKNOWN");
+            break;
+    }
+    return result + "(" + std::to_string(state) + ")";
+}
+
 void
 iceConnectionStateChanged(GstElement *webrtc,
                           GParamSpec *pspec G_GNUC_UNUSED,
                           gpointer user_data G_GNUC_UNUSED)
 {
-    auto prvState = std::string(QMetaEnum::fromType<webrtc::State>().valueToKey((int)WebRTCSession::instance().state()));
+    static GstWebRTCICEConnectionState prvState = GST_WEBRTC_ICE_CONNECTION_STATE_NEW;
     GstWebRTCICEConnectionState newState;
     g_object_get(webrtc, "ice-connection-state", &newState, nullptr);
+
+    auto prvStateStr = GST_WEBRTC_ICE_CONNECTION_STATE_STR(prvState);
+    auto newStateStr = GST_WEBRTC_ICE_CONNECTION_STATE_STR(newState);
+    nhlog::ui()->debug("WebRTC: GstWebRTCICEConnectionState {} -> {}", prvStateStr, newStateStr);
+    prvState = newState;
+
     switch (newState) {
     case GST_WEBRTC_ICE_CONNECTION_STATE_CHECKING:
-        nhlog::ui()->debug("WebRTC: GstWebRTCICEConnectionState {} -> Checking", prvState);
+        // nhlog::ui()->debug("WebRTC: GstWebRTCICEConnectionState {} -> Checking", prvState);
         emit WebRTCSession::instance().stateChanged(State::CONNECTING);
         break;
     case GST_WEBRTC_ICE_CONNECTION_STATE_FAILED:
-        nhlog::ui()->error("WebRTC: GstWebRTCICEConnectionState {} -> Failed", prvState);
+        // nhlog::ui()->error("WebRTC: GstWebRTCICEConnectionState {} -> Failed", prvState);
         emit WebRTCSession::instance().stateChanged(State::ICEFAILED);
         break;
     default:
