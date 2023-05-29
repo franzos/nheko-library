@@ -13,6 +13,7 @@
 #include <thread>
 #include <utility>
 #include <QMetaEnum>
+#include <QCameraInfo>
 
 #include "CallDevices.h"
 #include "Logging.h"
@@ -961,7 +962,6 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
     GstElement *camerafilter = nullptr;
     // https://gstreamer.freedesktop.org/documentation/videofilter/videoflip.html?gi-language=c
     GstElement *flip         = gst_element_factory_make("videoflip", nullptr);
-    g_object_set(flip, "method", 3 /** counterclockwise */, nullptr);
 
     GstElement *videoconvert = gst_element_factory_make("videoconvert", nullptr);
     GstElement *tee          = gst_element_factory_make("tee", "videosrctee");
@@ -977,11 +977,16 @@ WebRTCSession::addVideoPipeline(int vp8PayloadType)
         resolution = { 480, 640 };
         frameRate  ={ 30, 1 };
         g_object_set(camera, "device", "1", nullptr);               // Select the front camera
+        g_object_set(flip, "method", 3 /* counterclockwise */, nullptr); // adjust camera rotation
         
 #elif defined(Q_OS_IOS)
         camera = gst_element_factory_make("avfvideosrc", nullptr);
         resolution = { 480, 640 };
         frameRate  ={ 30, 1 };
+        auto cameraCount = QCameraInfo::availableCameras().count();
+        if (cameraCount > 0)
+            g_object_set(camera, "device-index", cameraCount - 1, nullptr);       // Select the front camera
+        g_object_set(flip, "method", 1 /* clockwise */, nullptr); // adjust camera rotation
 #else
         GstDevice *device = devices_.videoDevice(resolution, frameRate);
         if (!device)
