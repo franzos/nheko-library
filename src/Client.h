@@ -129,6 +129,9 @@ public slots:
     QString getLibraryVersion();
     QString extractHostName(QString userId);
     void forwardMessageToRoom(mtx::events::collections::TimelineEvents *e, QString roomId);
+// #ifdef Q_OS_ANDROID
+    void registerPushers(const QString &url, const QString &appId, const QString &appDiplayName, const QString &pushKey);
+// #endif
 
 signals:
     // Authentication signals
@@ -168,7 +171,6 @@ signals:
     void prepareTimelines();
     void newNotifications(const mtx::responses::Notifications &notifications);
     void initialSyncChanged(bool isInitialSync);
-
     // room signals
     void leftRoom(const QString &room_id);
     void roomLeaveFailed(const QString &error);
