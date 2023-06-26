@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-project(matrix-client-library LANGUAGES CXX)
-if (APPLE)
+project(matrix-client-library LANGUAGES C CXX)
+if (IOS)
 	enable_language(OBJC)
 	enable_language(OBJCXX)
 endif()
