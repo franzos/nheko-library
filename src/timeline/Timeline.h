@@ -295,8 +295,8 @@ public slots:
     int  eventSize() {return _events.size();};
     QVector<DescInfo> getEvents(int from, int len, bool markAsRead = true);
     void updateLastMessage();
-    int highlightCount() { return _highlightCount; }
-    int notificationCount() { return _notificationCount; }
+    int highlightCount() { return static_cast<int>(_highlightCount); }
+    int notificationCount() { return static_cast<int>(_notificationCount); }
     void updateTypingUsers(const QStringList &users) {
         if (this->_typingUsers != users) {
             this->_typingUsers = users;
