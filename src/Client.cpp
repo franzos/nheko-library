@@ -1576,7 +1576,15 @@ void Client::registerPushers(const QString &url, const QString &appId, const QSt
     pusher.device_display_name = UserSettings::instance()->deviceId().toStdString();
     pusher.lang = "en";
     pusher.data.url = (url + "/_matrix/push/v1/notify").toStdString();
+#if defined(Q_OS_ANDROID)
     pusher.data.format = "event_id_only";
+#elif defined(Q_OS_IOS)
+    nlohmann::json default_payload = nlohmann::json::object();
+    default_payload["aps"] = nlohmann::json::object();
+    default_payload["aps"]["content-available"] = 1;    // allow the app to be woken up in the background
+    default_payload["aps"]["mutable-content"] = 1;      // allow the app to modify the notification
+    pusher.data.default_payload = default_payload;
+#endif
     pusher.append = false;
     http::client()->set_pusher(pusher, [&](const mtx::responses::Empty&, const std::optional<mtx::http::ClientError>& error) {
         if(error){

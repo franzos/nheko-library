@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 
+## [0.1.40]
+### Changes
+* adjust iOS specific push notification parameters
+
+### Fixed
+* fix compile issue on iOS target
+
 ## [0.1.39]
 ### Changes
 * add WebRTC support for iOS
