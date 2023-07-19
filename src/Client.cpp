@@ -1577,7 +1577,7 @@ void Client::registerPushers(const QString &url, const QString &appId, const QSt
     pusher.lang = "en";
     pusher.data.url = (url + "/_matrix/push/v1/notify").toStdString();
 #if defined(Q_OS_ANDROID)
-    pusher.data.format = "event_id_only";
+    // pusher.data.format = "event_id_only";
 #elif defined(Q_OS_IOS)
     nlohmann::json default_payload = nlohmann::json::object();
     default_payload["aps"] = nlohmann::json::object();
