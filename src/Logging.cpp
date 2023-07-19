@@ -68,6 +68,9 @@ init(const std::string &file_path, bool enable_logger, bool enable_debug_log)
 {
     std::vector<spdlog::sink_ptr> sinks;
 #ifdef Q_OS_ANDROID
+    Q_UNUSED(file_path);
+    Q_UNUSED(MAX_FILE_SIZE);
+    Q_UNUSED(MAX_LOG_FILES);
     sinks.push_back(std::make_shared<spdlog::sinks::android_sink_mt>());
 #else
     sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(file_path, MAX_FILE_SIZE, MAX_LOG_FILES));
