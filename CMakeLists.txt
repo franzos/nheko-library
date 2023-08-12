@@ -329,6 +329,7 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstopengl.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstqmlgl.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstwebrtc.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstwebrtcdsp.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstnice.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstsdpelem.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstxingmux.a
@@ -391,6 +392,7 @@ elseif (ANDROID)
 							${GSTREAMER_ROOT}/lib/libopenh264.a
 							
 							${GSTREAMER_ROOT}/lib/libgstaudio-1.0.a
+							${GSTREAMER_ROOT}/lib/libgstbadaudio-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstpbutils-1.0.a
 							${GSTREAMER_ROOT}/lib/libgsttag-1.0.a
 							${GSTREAMER_ROOT}/lib/libgstphotography-1.0.a

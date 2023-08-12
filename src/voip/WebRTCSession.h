@@ -64,6 +64,7 @@ public:
     bool acceptOffer(const std::string &sdp);
     bool acceptAnswer(const std::string &sdp);
     void acceptICECandidates(const std::vector<mtx::events::voip::CallCandidates::Candidate> &);
+    void recalculateLatency() const;
 
     bool isMicMuted() const;
     bool toggleMicMute();

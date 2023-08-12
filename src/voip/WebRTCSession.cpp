@@ -135,6 +135,10 @@ newBusMessage(GstBus *bus G_GNUC_UNUSED, GstMessage *msg, gpointer user_data)
         g_free(debug);
         session->end();
         break;
+    case GST_MESSAGE_LATENCY:
+        nhlog::ui()->info("WebRTC: latency message received");
+        session->recalculateLatency();
+        break;
     default:
         break;
     }
@@ -383,9 +387,12 @@ newAudioSinkChain(GstElement *pipe)
 #else
     GstElement *sink     = gst_element_factory_make("autoaudiosink", nullptr);
 #endif
+    GstElement *probe      = gst_bin_get_by_name(GST_BIN(pipe), "rx-aec");
+
     gst_bin_add_many(GST_BIN(pipe), queue, convert, resample, sink, nullptr);
-    gst_element_link_many(queue, convert, resample, sink, nullptr);
+    gst_element_link_many(queue, convert, resample, probe, sink, nullptr);
     gst_element_sync_state_with_parent(queue);
+    gst_element_sync_state_with_parent(probe);
     gst_element_sync_state_with_parent(convert);
     gst_element_sync_state_with_parent(resample);
     gst_element_sync_state_with_parent(sink);
@@ -816,6 +823,18 @@ WebRTCSession::acceptICECandidates(
     }
 }
 
+void
+WebRTCSession::recalculateLatency() const
+{
+    if (pipe_ != nullptr) {
+        if (gst_bin_recalculate_latency(GST_BIN(pipe_))) {
+            nhlog::ui()->info("WebRTC: latency recalculated");
+        } else {
+            nhlog::ui()->warn("WebRTC: failed to recalculate latency");
+        }
+   }
+}
+
 bool
 WebRTCSession::startPipeline(int opusPayloadType, int vp8PayloadType)
 {
@@ -914,6 +933,14 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
     GstElement *resample   = gst_element_factory_make("audioresample", nullptr);
     GstElement *queue1     = gst_element_factory_make("queue", nullptr);
 
+    GstElement *dsp        = gst_element_factory_make("webrtcdsp", "tx-aec");
+    GstElement * probe     = gst_element_factory_make("webrtcechoprobe", "rx-aec");
+    if (!probe || !dsp) {
+        nhlog::ui()->error("WebRTC: unable to create webrtcdsp / webrtcechoprobe");
+        return false;
+    }
+    g_object_set(G_OBJECT(dsp), "echo-cancel", TRUE, NULL);
+    g_object_set(G_OBJECT(dsp), "probe", "rx-aec", NULL);
     GstElement *rateFilter = gst_element_factory_make("capsfilter", nullptr);
     GstCaps *rateCaps      = gst_caps_new_simple("audio/x-raw",
                                            "rate",
@@ -957,6 +984,7 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
                      volume,
                      convert,
                      resample,
+                     dsp, probe, // echo cancellation elements
                      queue1,
                      rateFilter,
                      opusenc,
@@ -970,6 +998,7 @@ WebRTCSession::createPipeline(int opusPayloadType, int vp8PayloadType)
                                volume,
                                convert,
                                resample,
+                               dsp,
                                queue1,
                                rateFilter,
                                opusenc,
