@@ -311,8 +311,8 @@ elseif (ANDROID)
 	target_link_libraries(matrix-client-library PUBLIC 
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstcoreelements.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgsttypefindfunctions.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvert.a
-							# ${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoscale.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvert.a
+							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoscale.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideoconvertscale.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideorate.a
 							${GSTREAMER_ROOT}/lib/gstreamer-1.0/libgstvideofilter.a
