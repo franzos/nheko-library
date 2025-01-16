@@ -38,6 +38,8 @@
 #include <px-auth-lib-cpp/UserProfile.h>
 #include <px-auth-lib-cpp/Authentication.h>
 #include <px-auth-lib-cpp/CibaMatrixAuthentication.h>
+#include <ones_oidc_cpp/ones_oidc.hpp>
+#include <ones_oidc_cpp/matrix_auth_signals.hpp>
 #endif
 
 class UserSettings;
@@ -215,9 +217,11 @@ private:
     static Client           *instance_;
     Authentication          *_authentication;
 #if CIBA_AUTHENTICATION
-    PX::AUTH::MATRIX::CibaAuthentication *_cibaAuthentication;
-    PX::AUTH::MATRIX::CibaAuthentication *_cibaAuthenticationForCMuserInfo;
-    PX::AUTH::UserProfile        *_cmUserInfo;
+    // PX::AUTH::MATRIX::CibaAuthentication *_cibaAuthentication;
+    // PX::AUTH::MATRIX::CibaAuthentication *_cibaAuthenticationForCMuserInfo;
+    // PX::AUTH::UserProfile        *_cmUserInfo;
+
+    onesoidc::MatrixAuthSignals *_onesCibaAuth;
 #endif
     QString _clientName;
     QMap<QString, Timeline *> _timelines;

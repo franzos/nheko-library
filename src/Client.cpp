@@ -171,43 +171,86 @@ Client::Client(QSharedPointer<UserSettings> userSettings)
     }); 
     // -------------------- to get CM user info
 #if CIBA_AUTHENTICATION
-    _cmUserInfo = new PX::AUTH::UserProfile();
-    connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdated, [&](const PX::AUTH::UserProfileInfo &info){
-        emit cmUserInfoUpdated(info);
-    });
-    connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdateFailed, [&](const QString &message){
-        emit cmUserInfoFailure(message);
-    });
+    // _cmUserInfo = new PX::AUTH::UserProfile();
+    // connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdated, [&](const PX::AUTH::UserProfileInfo &info){
+    //     emit cmUserInfoUpdated(info);
+    // });
+    // connect(_cmUserInfo, &PX::AUTH::UserProfile::profileUpdateFailed, [&](const QString &message){
+    //     emit cmUserInfoFailure(message);
+    // });
 
-    _cibaAuthenticationForCMuserInfo = new PX::AUTH::MATRIX::CibaAuthentication();
-    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::MATRIX::CibaAuthentication::loginDone, [&](const PX::AUTH::MATRIX::CMUserInfo &userInfo){
-        _cmUserInfo->update(userInfo.cmAccessToken);
-    });
-    connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::MATRIX::CibaAuthentication::loginError, [&](const QString &message){
-        nhlog::net()->info("login failed: {}", message.toStdString());
-        emit cmUserInfoFailure(message);
-    });
+    // _cibaAuthenticationForCMuserInfo = new PX::AUTH::MATRIX::CibaAuthentication();
+    // connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::MATRIX::CibaAuthentication::loginDone, [&](const PX::AUTH::MATRIX::CMUserInfo &userInfo){
+    //     _cmUserInfo->update(userInfo.cmAccessToken);
+    // });
+    // connect(_cibaAuthenticationForCMuserInfo, &PX::AUTH::MATRIX::CibaAuthentication::loginError, [&](const QString &message){
+    //     nhlog::net()->info("login failed: {}", message.toStdString());
+    //     emit cmUserInfoFailure(message);
+    // });
 
-    _cibaAuthentication = new PX::AUTH::MATRIX::CibaAuthentication();
-    connect(_cibaAuthentication, &PX::AUTH::MATRIX::CibaAuthentication::loginDone, [&](const PX::AUTH::MATRIX::CMUserInfo &userInfo){
-        userSettings_.data()->setUserId(userInfo.userId);
-        userSettings_.data()->setAccessToken(userInfo.matrixAccessToken);
-        userSettings_.data()->setDeviceId(userInfo.deviceId);
-        userSettings_.data()->setHomeserver(userInfo.homeServer);
-        userSettings_.data()->setCMUserId(userInfo.cmUserId);
-        UserInformation uinfo;
-        uinfo.userId   = userInfo.userId;
-        uinfo.cmUserId = userInfo.cmUserId;
-        uinfo.accessToken = userInfo.matrixAccessToken;
-        uinfo.deviceId    = userInfo.deviceId;
-        uinfo.homeServer  = userInfo.homeServer;
-        loginDone(uinfo);    
-    });
+    // _cibaAuthentication = new PX::AUTH::MATRIX::CibaAuthentication();
+    // connect(_cibaAuthentication, &PX::AUTH::MATRIX::CibaAuthentication::loginDone, [&](const PX::AUTH::MATRIX::CMUserInfo &userInfo){
+    //     userSettings_.data()->setUserId(userInfo.userId);
+    //     userSettings_.data()->setAccessToken(userInfo.matrixAccessToken);
+    //     userSettings_.data()->setDeviceId(userInfo.deviceId);
+    //     userSettings_.data()->setHomeserver(userInfo.homeServer);
+    //     userSettings_.data()->setCMUserId(userInfo.cmUserId);
+    //     UserInformation uinfo;
+    //     uinfo.userId   = userInfo.userId;
+    //     uinfo.cmUserId = userInfo.cmUserId;
+    //     uinfo.accessToken = userInfo.matrixAccessToken;
+    //     uinfo.deviceId    = userInfo.deviceId;
+    //     uinfo.homeServer  = userInfo.homeServer;
+    //     loginDone(uinfo);    
+    // });
 
-    connect(_cibaAuthentication, &PX::AUTH::MATRIX::CibaAuthentication::loginError, [&](const QString &message){
-        nhlog::net()->info("login failed: {}", message.toStdString());
-        emit loginErrorOccurred(message);
-    });
+    // connect(_cibaAuthentication, &PX::AUTH::MATRIX::CibaAuthentication::loginError, [&](const QString &message){
+    //     nhlog::net()->info("login failed: {}", message.toStdString());
+    //     emit loginErrorOccurred(message);
+    // });
+
+    _onesCibaAuth = new onesoidc::MatrixAuthSignals();
+
+    QObject::connect(_onesCibaAuth, &onesoidc::MatrixAuthSignals::authenticated,
+        [&](const onesoidc::MatrixFinalResponse& response) {
+            onesoidc::LOG_DEBUG("Matrix authentication successful");
+            onesoidc::LOG_DEBUG("User ID: " + response.userId);
+            onesoidc::LOG_DEBUG("Access Token: " + response.accessToken);
+            onesoidc::LOG_DEBUG("Home Server: " + response.homeServer);
+            onesoidc::LOG_DEBUG("Device ID: " + response.deviceId);
+
+            userSettings_.data()->setUserId(response.userId);
+            userSettings_.data()->setAccessToken(response.accessToken);
+            userSettings_.data()->setDeviceId(response.deviceId);
+            userSettings_.data()->setHomeserver(response.homeServer);
+            // setCMUserId
+
+            UserInformation uinfo;
+            uinfo.userId   = response.userId;
+            uinfo.accessToken = response.accessToken;
+            uinfo.deviceId    = response.deviceId;
+            uinfo.homeServer  = response.homeServer;
+            // cmUserId
+            emit loginOk(uinfo);
+
+        });
+
+    QObject::connect(_onesCibaAuth, &onesoidc::MatrixAuthSignals::waitingForAuthorization,
+        [&]() {
+            nhlog::net()->info("Waiting for authorization...");
+        });
+    
+    QObject::connect(_onesCibaAuth, &onesoidc::MatrixAuthSignals::error,
+        [&](const QString& error) {
+            nhlog::net()->info("login failed: {}", error.toStdString());
+            emit loginErrorOccurred(error);
+        });
+
+    QObject::connect(_onesCibaAuth, &onesoidc::MatrixAuthSignals::finished,
+        [&]() {
+            nhlog::net()->info("login finished");
+        });
+
 #endif
 
     //
@@ -1075,8 +1118,8 @@ Client::getProfileInfo(QString userid)
 
 #if CIBA_AUTHENTICATION
 void Client::getCMuserInfo() {
-    _cibaAuthenticationForCMuserInfo->setServer(UserSettings::instance()->homeserver());
-    _cibaAuthenticationForCMuserInfo->loginRequest(UserSettings::instance()->cmUserId());
+    // _cibaAuthenticationForCMuserInfo->setServer(UserSettings::instance()->homeserver());
+    // _cibaAuthenticationForCMuserInfo->loginRequest(UserSettings::instance()->cmUserId());
 }
 #endif
 void
@@ -1403,13 +1446,27 @@ void Client::removeTimeline(const QString &roomID){
     }
 }
 #if CIBA_AUTHENTICATION
-void Client::loginWithCiba(QString username,QString server, QString accessToken){
-    _cibaAuthentication->setServer(server);
-    _cibaAuthentication->loginRequest(username, accessToken);
+void Client::loginWithCiba(QString username, QString server, QString accessToken){
+    // TODO: accessToken is not used
+
+    // _cibaAuthentication->setServer(server);
+    // _cibaAuthentication->loginRequest(username, accessToken);
+    
+    try {
+        if (!onesoidc::MatrixAuth::checkSupported(server)) {
+            throw onesoidc::AuthError("Matrix CIBA authentication not supported by server");
+        }
+        onesoidc::LOG_DEBUG("Matrix CIBA authentication is supported");
+        onesoidc::LOG_DEBUG("Starting Matrix authentication for user: " + username);
+        _onesCibaAuth->startAuth(server, username);
+        
+    } catch (const std::exception& e) {
+        onesoidc::LOG_ERROR("Failed to start Matrix authentication: " + QString(e.what()));
+    }
 }
 
 void Client::cancelCibaLogin(){
-    _cibaAuthentication->cancel();
+    // _cibaAuthentication->cancel();
 }
 #endif
 QString Client::getLibraryVersion(){

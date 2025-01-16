@@ -261,11 +261,13 @@ if (ANDROID)
 	list(APPEND DEP_LIBS Qt5::AndroidExtras)
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp_${CMAKE_ANDROID_ARCH_ABI})
+		# ones_oidc_cpp
 	endif()
 elseif(IOS)
 	list(APPEND DEP_LIBS Qt5::MacExtras)
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp)
+		# ones_oidc_cpp
 	endif()
 else()
 	pkg_check_modules(
@@ -275,6 +277,7 @@ else()
 	)
 	if(CIBA_AUTHENTICATION)
 		list(APPEND DEP_LIBS px-auth-lib-cpp)
+		list(APPEND DEP_LIBS ones_oidc_cpp)
 	endif()
 	list(APPEND DEP_LIBS ${PULSE_LDFLAGS}
 			     ${GLIB_LDFLAGS})
