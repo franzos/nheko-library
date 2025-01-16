@@ -2,12 +2,6 @@
 # Author: Franz Geffke <franz@pantherx.org>
 # Version: 0.0.8
 
-# GitLab provided templates
-include:
-  - template: SAST.gitlab-ci.yml
-  - template: Code-Quality.gitlab-ci.yml
-  - template: License-Scanning.gitlab-ci.yml
-
 # Git submodules
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
@@ -23,7 +17,7 @@ deploy:
   script:
     - cd ../
     - apk add py-pip
-    - pip install --user awscli
+    - pip install --break-system-packages --user awscli
     - export PATH="$PATH:/root/.local/bin"
     - export AWS_ACCESS_KEY_ID=$(echo "$AWS_ACCESS_KEY_ID")
     - export AWS_SECRET_ACCESS_KEY=$(echo "$AWS_SECRET_ACCESS_KEY")
